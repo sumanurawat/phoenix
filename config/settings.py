@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # API Keys
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # LLM Models
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gemini-2.5-pro-exp-03-25")

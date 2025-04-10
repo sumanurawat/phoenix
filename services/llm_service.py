@@ -10,7 +10,7 @@ import google.generativeai as genai
 from google.api_core.exceptions import ResourceExhausted
 
 from config.settings import (
-    GOOGLE_API_KEY, DEFAULT_MODEL, FALLBACK_MODEL, 
+    GEMINI_API_KEY, DEFAULT_MODEL, FALLBACK_MODEL, 
     FINAL_FALLBACK_MODEL, MAX_RETRIES, RETRY_DELAY
 )
 from services.utils import format_chat_history, handle_api_error
@@ -23,11 +23,11 @@ class LLMService:
     
     def __init__(self):
         """Initialize the LLM service with API credentials."""
-        if not GOOGLE_API_KEY:
+        if not GEMINI_API_KEY:
             logger.error("Gemini API key not found in environment variables")
-            raise ValueError("Gemini API key not found. Please set the GOOGLE_API_KEY environment variable.")
+            raise ValueError("Gemini API key not found. Please set the GEMINI_API_KEY environment variable.")
         
-        genai.configure(api_key=GOOGLE_API_KEY)
+        genai.configure(api_key=GEMINI_API_KEY)
         self.models = {
             "primary": DEFAULT_MODEL,
             "fallback": FALLBACK_MODEL,

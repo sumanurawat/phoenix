@@ -32,20 +32,96 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Run the application locally
+4. Set up environment variables
+```
+cp .env.sample .env
+```
+Then edit the `.env` file and add your Gemini API key and other configuration variables.
+
+5. Run the application locally
 ```
 python app.py
 ```
 
-5. Visit http://localhost:8080 in your browser
+6. Visit http://localhost:8080 in your browser
+
+## Environment Variables
+
+The application requires the following environment variables:
+
+- `GEMINI_API_KEY`: Your Gemini API key for AI Studio
+- `SECRET_KEY`: Flask secret key for session security
+- `DEFAULT_MODEL`: The primary Gemini model to use (default: gemini-2.5-pro-exp-03-25)
+- `FALLBACK_MODEL`: Fallback model when primary quota is exceeded (default: gemini-2.0-flash)
+- `FLASK_ENV`: Set to 'production' for production environments
+- `FLASK_DEBUG`: Set to '0' to disable debug mode in production
 
 ## Deployment
 
-This application is deployed on Google Cloud Run, which offers:
+This application is automatically deployed to Google Cloud Run via Cloud Build triggered directly from GitHub commits.
 
-- Serverless container execution
-- Auto-scaling to zero when not in use
-- Pay-per-use pricing model
-- Built-in HTTPS
+### Deployment Architecture
 
-The deployment is done through Google Cloud Build with a Dockerfile that sets up the Python environment and runs the application with Gunicorn.
+1. **GitHub Repository**: Source code is hosted on GitHub
+2. **Cloud Build Trigger**: Automatically runs on new commits to the main branch
+3. **Container Registry**: Stores the built Docker images
+4. **Cloud Run**: Hosts the containerized application
+5. **Secret Manager**: Securely stores and provides API keys and secrets
+
+### Secrets Management
+
+We use Google Secret Manager to securely store sensitive information:
+
+1. **Secrets Creation**:
+   ```bash
+   # Create the secrets in Secret Manager (one-time setup)
+   gcloud secrets create phoenix-gemini-api-key --reuse-policy=reuse
+   gcloud secrets create phoenix-secret-key --reuse-policy=reuse
+   
+   # Add the secret values
+   echo -n "your-gemini-api-key" | gcloud secrets versions add phoenix-gemini-api-key --data-file=-
+   echo -n "your-secure-random-key" | gcloud secrets versions add phoenix-secret-key --data-file=-
+   ```
+
+2. **Service Account Permissions**:
+   ```bash
+   # Grant the Cloud Build service account access to Secret Manager
+   gcloud projects add-iam-policy-binding $PROJECT_ID \
+       --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \
+       --role="roles/secretmanager.secretAccessor"
+   
+   # Grant the Cloud Run service account access to Secret Manager
+   gcloud projects add-iam-policy-binding $PROJECT_ID \
+       --member="serviceAccount:service-$PROJECT_NUMBER@serverless-robot-prod.iam.gserviceaccount.com" \
+       --role="roles/secretmanager.secretAccessor"
+   ```
+
+3. **Secrets in Cloud Build**:
+   The cloudbuild.yaml file is configured to mount these secrets in Cloud Run:
+   ```yaml
+   '--update-secrets'
+   'GEMINI_API_KEY=phoenix-gemini-api-key:latest,SECRET_KEY=phoenix-secret-key:latest'
+   ```
+
+### Manual Deployment (if needed)
+
+If you need to manually deploy an update:
+
+```bash
+# Clone the repository
+git clone https://github.com/sumanurawat/phoenix.git
+cd phoenix
+
+# Trigger Cloud Build manually
+gcloud builds submit --config=cloudbuild.yaml
+```
+
+### Updating Secrets
+
+To update a secret value:
+
+```bash
+echo -n "new-api-key-value" | gcloud secrets versions add phoenix-gemini-api-key --data-file=-
+```
+
+The next deployment will automatically use the updated secret.

@@ -21,6 +21,8 @@ steps:
     - '--platform'
     - 'managed'
     - '--allow-unauthenticated'
+    - '--update-secrets'
+    - 'GEMINI_API_KEY=phoenix-gemini-api-key:latest,SECRET_KEY=phoenix-secret-key:latest'
 
 images:
   - 'gcr.io/$PROJECT_ID/phoenix'
