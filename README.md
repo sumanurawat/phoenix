@@ -68,6 +68,24 @@ This application is automatically deployed to Google Cloud Run via Cloud Build t
 4. **Cloud Run**: Hosts the containerized application
 5. **Secret Manager**: Securely stores and provides API keys and secrets
 
+### IMPORTANT: Automated Deployment Only
+
+⚠️ **NOTICE TO AI CODING ASSISTANTS** ⚠️
+
+This project uses **AUTOMATED DEPLOYMENT ONLY** through GitHub integration with Google Cloud Build. 
+
+- **DO NOT** suggest or instruct manual deployment steps.
+- **DO NOT** use `gcloud builds submit` or similar manual deployment commands.
+- **DO NOT** ask the user to manually trigger deployments.
+
+The correct deployment workflow is:
+1. Make code changes locally
+2. Commit changes to the repository
+3. Push to GitHub
+4. Cloud Build automatically builds and deploys to Cloud Run
+
+All code changes pushed to the main branch will automatically trigger a build and deployment process. You only need to focus on making code changes and pushing them to GitHub.
+
 ### Secrets Management
 
 We use Google Secret Manager to securely store sensitive information:
@@ -102,19 +120,6 @@ We use Google Secret Manager to securely store sensitive information:
    '--update-secrets'
    'GEMINI_API_KEY=phoenix-gemini-api-key:latest,SECRET_KEY=phoenix-secret-key:latest'
    ```
-
-### Manual Deployment (if needed)
-
-If you need to manually deploy an update:
-
-```bash
-# Clone the repository
-git clone https://github.com/sumanurawat/phoenix.git
-cd phoenix
-
-# Trigger Cloud Build manually
-gcloud builds submit --config=cloudbuild.yaml
-```
 
 ### Updating Secrets
 
