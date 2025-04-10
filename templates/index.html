@@ -8,12 +8,22 @@
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to My Flask Website</h1>
-        <p>This is a simple Flask website hosted on Google Cloud Platform.</p>
-        <div class="deployment-info">
-            <p>✅ This site is configured with continuous deployment!</p>
-            <p>Changes pushed to GitHub are automatically deployed to Cloud Run.</p>
-            <p><small>Last updated: April 9, 2025</small></p>
+        <h1>Phoenix AI Platform</h1>
+        <div class="tools-section">
+            <h2>AI Tools</h2>
+            <div class="tools-grid">
+                <a href="{{ url_for('derplexity') }}" class="tool-card">
+                    <div class="tool-card-inner">
+                        <h3>Derplexity</h3>
+                        <p>An advanced chat interface powered by Google's Gemini AI</p>
+                        <div class="tool-button">Try Derplexity</div>
+                    </div>
+                </a>
+                <!-- More tools can be added here -->
+            </div>
+        </div>
+        <div class="footer">
+            <p><small>Phoenix AI Platform | Last updated: April 9, 2025</small></p>
         </div>
     </div>
 </body>

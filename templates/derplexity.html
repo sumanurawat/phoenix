@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+</head>
+<body class="chat-page">
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <a href="{{ url_for('index') }}" class="back-button">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h1>Derplexity</h1>
+            </div>
+            <div class="chat-header-right">
+                <button id="clear-chat-btn" title="Clear chat">
+                    <i class="fas fa-trash-alt"></i> Clear Chat
+                </button>
+                <span class="model-info">
+                    Model: <span id="current-model">{{ chat.model_info.current_model }}</span>
+                </span>
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="chat-messages">
+            {% if not chat.messages %}
+            <div class="welcome-message">
+                <h2>Welcome to Derplexity</h2>
+                <p>Ask me anything! I'm powered by Google's Gemini models and will automatically switch to lighter models if needed.</p>
+            </div>
+            {% else %}
+                {% for message in chat.messages %}
+                <div class="message {{ 'user-message' if message.role == 'user' else 'assistant-message' }}">
+                    <div class="message-content">
+                        <div class="message-text markdown-content">{{ message.content }}</div>
+                        <div class="message-meta">
+                            {{ message.timestamp }}
+                            {% if message.role == 'assistant' and message.model_used %}
+                            <span class="model-badge">{{ message.model_used }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        
+        <div class="chat-input-container">
+            <form id="chat-form">
+                <textarea 
+                    id="chat-input" 
+                    placeholder="Ask anything..." 
+                    rows="1"
+                    autofocus
+                ></textarea>
+                <button type="submit" id="send-button">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const chatMessages = document.getElementById('chat-messages');
+        const clearChatBtn = document.getElementById('clear-chat-btn');
+        const currentModelSpan = document.getElementById('current-model');
+
+        // Auto-resize textarea based on content
+        chatInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        // Submit message on form submit
+        chatForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const message = chatInput.value.trim();
+            if (!message) return;
+            
+            // Reset textarea
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            
+            // Add user message to UI
+            addMessage('user', message);
+            
+            // Show loading indicator
+            const loadingMessage = addLoadingMessage();
+            
+            try {
+                // Send message to server
+                const response = await fetch('/api/chat/message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message }),
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to send message');
+                }
+                
+                const data = await response.json();
+                
+                // Remove loading indicator
+                loadingMessage.remove();
+                
+                // Get the assistant's response (last message)
+                const chat = data.chat;
+                const assistantMessage = chat.messages[chat.messages.length - 1];
+                
+                // Add assistant message to UI
+                if (assistantMessage && assistantMessage.role === 'assistant') {
+                    addMessage('assistant', assistantMessage.content, assistantMessage.model_used);
+                }
+                
+                // Update model info
+                if (chat.model_info && chat.model_info.current_model) {
+                    currentModelSpan.textContent = chat.model_info.current_model;
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                loadingMessage.remove();
+                addMessage('assistant', 'Sorry, there was an error processing your request.');
+            }
+        });
+
+        // Clear chat history
+        clearChatBtn.addEventListener('click', async function() {
+            if (confirm('Are you sure you want to clear the chat history?')) {
+                try {
+                    const response = await fetch('/api/chat/clear', {
+                        method: 'POST',
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to clear chat');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Clear messages from UI
+                    chatMessages.innerHTML = `
+                        <div class="welcome-message">
+                            <h2>Welcome to Derplexity</h2>
+                            <p>Ask me anything! I'm powered by Google's Gemini models and will automatically switch to lighter models if needed.</p>
+                        </div>
+                    `;
+                    
+                    // Update model info
+                    if (data.chat.model_info && data.chat.model_info.current_model) {
+                        currentModelSpan.textContent = data.chat.model_info.current_model;
+                    }
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Failed to clear chat history.');
+                }
+            }
+        });
+
+        // Function to add a message to the UI
+        function addMessage(role, content, model = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}-message`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            
+            let modelBadge = '';
+            if (role === 'assistant' && model) {
+                modelBadge = `<span class="model-badge">${model}</span>`;
+            }
+            
+            // Convert markdown to HTML
+            const html = marked.parse(content);
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-text markdown-content">${html}</div>
+                    <div class="message-meta">
+                        ${timestamp}
+                        ${modelBadge}
+                    </div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            
+            // Apply syntax highlighting to code blocks
+            messageDiv.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            return messageDiv;
+        }
+
+        // Function to add loading message
+        function addLoadingMessage() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message assistant-message loading';
+            loadingDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-text">
+                        <div class="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(loadingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            return loadingDiv;
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Apply Markdown formatting to existing messages
+            document.querySelectorAll('.markdown-content').forEach((element) => {
+                element.innerHTML = marked.parse(element.textContent);
+            });
+            
+            // Apply syntax highlighting to code blocks
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+            
+            // Scroll to bottom of chat
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+    </script>
+</body>
+</html>

@@ -33,6 +33,12 @@ ENV/
 # Flask
 instance/
 .webassets-cache
+flask_session/
+
+# Environment variables
+.env
+.env.*
+!.env.example
 
 # MacOS
 .DS_Store
