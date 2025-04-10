@@ -2,29 +2,43 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{{ title }}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1>Phoenix AI Platform</h1>
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <h1 class="display-4">Phoenix AI Platform</h1>
+        </div>
         <div class="tools-section">
-            <h2>AI Tools</h2>
-            <div class="tools-grid">
-                <a href="{{ url_for('derplexity') }}" class="tool-card">
-                    <div class="tool-card-inner">
-                        <h3>Derplexity</h3>
-                        <p>An advanced chat interface powered by Google's Gemini AI</p>
-                        <div class="tool-button">Try Derplexity</div>
-                    </div>
-                </a>
-                <!-- More tools can be added here -->
+            <h2 class="h3 mb-4 text-center">AI Tools</h2>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4">
+                    <a href="{{ url_for('derplexity') }}" class="text-decoration-none">
+                        <div class="card h-100 shadow-sm hover-card">
+                            <div class="card-body">
+                                <h3 class="card-title h5">Derplexity</h3>
+                                <p class="card-text">An advanced chat interface powered by Google's Gemini AI</p>
+                                <div class="btn btn-primary mt-3">Try Derplexity</div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <!-- More tools can be added here as new columns -->
             </div>
         </div>
-        <div class="footer">
+        <div class="footer mt-5 text-center text-muted">
             <p><small>Phoenix AI Platform | Last updated: April 9, 2025</small></p>
         </div>
     </div>
+    
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
