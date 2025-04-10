@@ -1,18 +1,23 @@
-# Simple Flask Website
+# Phoenix - Simple Flask Website
 
-A minimalist Flask web application with a single page.
+A minimalist Flask web application deployed on Google Cloud Run.
+
+## Live Demo
+
+Visit the live application at: https://phoenix-234619602247.us-central1.run.app
 
 ## Features
 
 - Single page web application
 - Responsive design
-- Deployed on Google Cloud Platform
+- Containerized with Docker
+- Deployed on Google Cloud Run
 
-## Setup
+## Local Setup
 
 1. Clone the repository
 ```
-git clone <your-repo-url>
+git clone https://github.com/sumanurawat/phoenix.git
 cd phoenix
 ```
 
@@ -36,4 +41,11 @@ python app.py
 
 ## Deployment
 
-This application is configured to be deployed on Google Cloud Platform.
+This application is deployed on Google Cloud Run, which offers:
+
+- Serverless container execution
+- Auto-scaling to zero when not in use
+- Pay-per-use pricing model
+- Built-in HTTPS
+
+The deployment is done through Google Cloud Build with a Dockerfile that sets up the Python environment and runs the application with Gunicorn.
