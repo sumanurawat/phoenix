@@ -1,6 +1,5 @@
 flask==2.3.3
 gunicorn==21.2.0
-requests==2.31.0
 # Uncomment these when ready to implement:
 # google-cloud-aiplatform==1.38.0  # For Gemini API
 # google-generativeai==0.3.2  # For Gemini models
