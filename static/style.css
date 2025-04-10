@@ -23,3 +23,20 @@ h1 {
 p {
     color: #666;
 }
+
+.deployment-info {
+    margin-top: 30px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border-left: 4px solid #28a745;
+}
+
+.deployment-info p {
+    margin: 8px 0;
+}
+
+.deployment-info small {
+    color: #999;
+    font-style: italic;
+}
