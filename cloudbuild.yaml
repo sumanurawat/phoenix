@@ -24,3 +24,7 @@ steps:
 
 images:
   - 'gcr.io/$PROJECT_ID/phoenix'
+
+# Add options for logging when using a service account
+options:
+  logging: CLOUD_LOGGING_ONLY
