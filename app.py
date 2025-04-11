@@ -69,6 +69,10 @@ def create_app():
         return render_template('derplexity.html', 
                             title='Derplexity Chat', 
                             chat=session["chat"])
+
+    @app.route('/sumanu')
+    def sumanu_info():
+        return render_template('sumanu.html')
     
     return app
 
