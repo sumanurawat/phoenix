@@ -37,12 +37,31 @@
             <div class="welcome-message">
                 <h2>Welcome to Derplexity</h2>
                 <p>Ask me anything! I'm powered by Google's Gemini models and will automatically switch to lighter models if needed.</p>
+                <p>You can also upload documents to provide context for our conversation.</p>
             </div>
             {% else %}
                 {% for message in chat.messages %}
-                <div class="message {{ 'user-message' if message.role == 'user' else 'assistant-message' }}">
+                <div class="message {{ 'user-message' if message.role == 'user' else 'assistant-message' }} {{ 'document-message' if message.get('is_document') else '' }}">
                     <div class="message-content">
-                        <div class="message-text markdown-content">{{ message.content }}</div>
+                        {% if message.get('is_document') %}
+                            <div class="document-container">
+                                <div class="document-header" onclick="toggleDocumentContent(this)">
+                                    <i class="fas fa-file-alt"></i> {{ message.content }}
+                                    <i class="fas fa-chevron-down toggle-icon"></i>
+                                </div>
+                                <div class="document-content collapsed">
+                                    {% for doc in chat.documents %}
+                                        {% if doc.id == message.document_id %}
+                                            <div class="document-text-preview">{{ doc.text_preview }}</div>
+                                            <div class="document-text-full">{{ doc.extracted_text }}</div>
+                                            <button class="btn btn-sm btn-outline-secondary show-more-btn" onclick="toggleFullDocumentText(this)">Show more</button>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="message-text markdown-content">{{ message.content }}</div>
+                        {% endif %}
                         <div class="message-meta">
                             {{ message.timestamp }}
                             {% if message.role == 'assistant' and message.model_used %}
@@ -57,15 +76,23 @@
         
         <div class="chat-input-container">
             <form id="chat-form">
-                <textarea 
-                    id="chat-input" 
-                    placeholder="Ask anything..." 
-                    rows="1"
-                    autofocus
-                ></textarea>
-                <button type="submit" id="send-button">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
+                <div class="input-wrapper">
+                    <div class="document-upload-container">
+                        <label for="document-upload" class="document-upload-label" title="Upload document">
+                            <i class="fas fa-paperclip"></i>
+                        </label>
+                        <input type="file" id="document-upload" accept=".pdf,.docx,.txt" class="document-upload-input" />
+                    </div>
+                    <textarea 
+                        id="chat-input" 
+                        placeholder="Ask anything..." 
+                        rows="1"
+                        autofocus
+                    ></textarea>
+                    <button type="submit" id="send-button">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
             </form>
         </div>
     </div>
@@ -76,11 +103,66 @@
         const chatMessages = document.getElementById('chat-messages');
         const clearChatBtn = document.getElementById('clear-chat-btn');
         const currentModelSpan = document.getElementById('current-model');
+        const documentUpload = document.getElementById('document-upload');
 
         // Auto-resize textarea based on content
         chatInput.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        // Handle document upload
+        documentUpload.addEventListener('change', async function(e) {
+            if (!this.files || !this.files[0]) return;
+            
+            const file = this.files[0];
+            
+            // Create a loading message
+            const loadingMessage = addLoadingMessage();
+            
+            // Create FormData
+            const formData = new FormData();
+            formData.append('document', file);
+            
+            try {
+                // Upload the document
+                const response = await fetch('/api/chat/upload-document', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                // Remove loading message
+                loadingMessage.remove();
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to upload document');
+                }
+                
+                const data = await response.json();
+                
+                // Update chat with new document message
+                updateChatWithNewMessages(data.chat);
+                
+                // Clear the file input
+                this.value = '';
+                
+            } catch (error) {
+                console.error('Error uploading document:', error);
+                loadingMessage.remove();
+                
+                // Show error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'message system-message error-message';
+                errorDiv.innerHTML = `
+                    <div class="message-content">
+                        <div class="message-text">Error uploading document: ${error.message}</div>
+                    </div>
+                `;
+                
+                chatMessages.appendChild(errorDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
         });
 
         // Submit message on form submit
@@ -159,6 +241,7 @@
                         <div class="welcome-message">
                             <h2>Welcome to Derplexity</h2>
                             <p>Ask me anything! I'm powered by Google's Gemini models and will automatically switch to lighter models if needed.</p>
+                            <p>You can also upload documents to provide context for our conversation.</p>
                         </div>
                     `;
                     
@@ -173,6 +256,97 @@
                 }
             }
         });
+
+        // Function to toggle document content visibility
+        function toggleDocumentContent(element) {
+            const container = element.closest('.document-container');
+            const content = container.querySelector('.document-content');
+            content.classList.toggle('collapsed');
+            
+            const icon = element.querySelector('.toggle-icon');
+            if (content.classList.contains('collapsed')) {
+                icon.className = 'fas fa-chevron-down toggle-icon';
+            } else {
+                icon.className = 'fas fa-chevron-up toggle-icon';
+            }
+        }
+        
+        // Function to toggle between preview and full document text
+        function toggleFullDocumentText(button) {
+            const container = button.closest('.document-content');
+            const preview = container.querySelector('.document-text-preview');
+            const full = container.querySelector('.document-text-full');
+            
+            if (preview.style.display !== 'none') {
+                preview.style.display = 'none';
+                full.style.display = 'block';
+                button.textContent = 'Show less';
+            } else {
+                preview.style.display = 'block';
+                full.style.display = 'none';
+                button.textContent = 'Show more';
+            }
+        }
+
+        // Function to update chat with new messages after document upload
+        function updateChatWithNewMessages(chat) {
+            // Clear existing messages
+            chatMessages.innerHTML = '';
+            
+            // Add all messages
+            for (const message of chat.messages) {
+                if (message.is_document) {
+                    // Add document message
+                    let documentContent = '';
+                    for (const doc of chat.documents) {
+                        if (doc.id === message.document_id) {
+                            documentContent = `
+                                <div class="document-text-preview">${doc.text_preview}</div>
+                                <div class="document-text-full" style="display: none;">${doc.extracted_text}</div>
+                                <button class="btn btn-sm btn-outline-secondary show-more-btn" onclick="toggleFullDocumentText(this)">Show more</button>
+                            `;
+                            break;
+                        }
+                    }
+                    
+                    const docMessageDiv = document.createElement('div');
+                    docMessageDiv.className = 'message document-message';
+                    docMessageDiv.innerHTML = `
+                        <div class="message-content">
+                            <div class="document-container">
+                                <div class="document-header" onclick="toggleDocumentContent(this)">
+                                    <i class="fas fa-file-alt"></i> ${message.content}
+                                    <i class="fas fa-chevron-down toggle-icon"></i>
+                                </div>
+                                <div class="document-content collapsed">
+                                    ${documentContent}
+                                </div>
+                            </div>
+                            <div class="message-meta">
+                                ${message.timestamp}
+                            </div>
+                        </div>
+                    `;
+                    
+                    chatMessages.appendChild(docMessageDiv);
+                } else {
+                    // Add regular message
+                    const role = message.role;
+                    const content = message.content;
+                    const model = message.model_used || null;
+                    
+                    addMessage(role, content, model);
+                }
+            }
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Update model info
+            if (chat.model_info && chat.model_info.current_model) {
+                currentModelSpan.textContent = chat.model_info.current_model;
+            }
+        }
 
         // Function to add a message to the UI
         function addMessage(role, content, model = null) {
