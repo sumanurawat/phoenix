@@ -1,44 +1,121 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>{{ title }}</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom styles -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container py-5">
-        <div class="text-center mb-5">
-            <h1 class="display-4">Phoenix AI Platform</h1>
-        </div>
-        <div class="tools-section">
-            <h2 class="h3 mb-4 text-center">AI Tools</h2>
-            <div class="row g-4">
-                <div class="col-md-6 col-lg-4">
-                    <a href="{{ url_for('derplexity') }}" class="text-decoration-none">
-                        <div class="card h-100 shadow-sm hover-card">
-                            <div class="card-body">
-                                <h3 class="card-title h5">Derplexity</h3>
-                                <p class="card-text">An advanced chat interface powered by Google's Gemini AI</p>
-                                <div class="btn btn-primary mt-3">Try Derplexity</div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                <!-- More tools can be added here as new columns -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Hero Section -->
+    <div class="text-center mb-5">
+        <h1 class="display-4">Sumanu Rawat's Portfolio</h1>
+        <p class="lead">Innovator | Developer | Visionary</p>
+        <p>Building cutting-edge solutions to shape the future of technology.</p>
+        <a href="#projects" class="btn btn-primary btn-lg mt-3">Explore My Work</a>
+    </div>
+
+    <!-- About Section -->
+    <div class="about-section py-5">
+        <div class="row align-items-center">
+            <div class="col-md-4"> <!-- Reduced column width for a smaller image -->
+                <img src="https://media.licdn.com/dms/image/v2/D5603AQF67cyOHe0eeA/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1690564909592?e=1749686400&v=beta&t=O7VDNXIftcce5x3pVgTUEEcMNBLu4mdyB4fd7g7y0Wg" alt="Sumanu Rawat" class="img-fluid rounded-circle shadow-sm">
+            </div>
+            <div class="col-md-8"> <!-- Increased column width for text -->
+                <h2>About Me</h2>
+                <p>
+                    Hi, I'm Sumanu Rawat, a passionate developer and entrepreneur with a vision to create impactful solutions. 
+                    With expertise in AI, web development, and scalable systems, I aim to solve real-world problems through innovation.
+                </p>
+                <p>
+                    I'm always looking for opportunities to collaborate with like-minded individuals and organizations. 
+                    Let's build something amazing together!
+                </p>
+                <a href="#contact" class="btn btn-outline-primary mt-3">Get in Touch</a>
             </div>
         </div>
-        <div class="footer mt-5 text-center text-muted">
-            <p><small>Phoenix AI Platform | Last updated: April 9, 2025</small></p>
+    </div>
+
+    <!-- Projects Section -->
+    <div id="projects" class="projects-section py-5">
+        <h2 class="text-center mb-5">My Projects</h2>
+        <div class="row g-4">
+            <!-- Project 1 -->
+            <div class="col-md-6 col-lg-4">
+                <a href="{{ url_for('derplexity') }}" class="text-decoration-none">
+                    <div class="card h-100 shadow-sm hover-card">
+                        <div class="card-body">
+                            <h3 class="card-title h5">Derplexity</h3>
+                            <p class="card-text">An advanced chat interface powered by Google's Gemini AI.</p>
+                            <div class="btn btn-primary mt-3">Learn More</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- Add more projects -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm hover-card">
+                    <div class="card-body">
+                        <h3 class="card-title h5">Project Name</h3>
+                        <p class="card-text">Brief description of the project and its impact.</p>
+                        <div class="btn btn-primary mt-3">Coming Soon</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm hover-card">
+                    <div class="card-body">
+                        <h3 class="card-title h5">Project Name</h3>
+                        <p class="card-text">Brief description of the project and its impact.</p>
+                        <div class="btn btn-primary mt-3">Coming Soon</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    
-    <!-- Bootstrap JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+
+    <!-- Contact Section -->
+    <div id="contact" class="contact-section py-5">
+        <h2 class="text-center mb-5">Get in Touch</h2>
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <form action="https://getform.io/f/aolmdjlb" method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" placeholder="Your Name">
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" placeholder="Your Email">
+                    </div>
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Message</label>
+                        <textarea class="form-control" id="message" rows="5" name="message" placeholder="Your Message"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send Message</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<style>
+    .timeline-frame {
+        position: relative;
+        padding: 2rem 0;
+        width: 100%;
+    }
+    .timeline-item {
+        position: relative;
+        text-align: center;
+        flex: 1;
+    }
+    .timeline-dot {
+        width: 20px;
+        height: 20px;
+        background: #007bff;
+        border-radius: 50%;
+        margin: 0 auto 1rem auto;
+    }
+    .timeline-date {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+</style>
