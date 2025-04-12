@@ -7,3 +7,4 @@ flask-session==0.5.0  # For server-side session management
 PyPDF2==3.0.1  # For PDF text extraction
 python-docx==1.0.1  # For DOCX text extraction
 Werkzeug==2.3.7  # For secure file handling
+google-api-python-client==2.70.0  # For Google API client

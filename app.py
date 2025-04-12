@@ -6,7 +6,7 @@ registers routes, and initializes services.
 """
 import os
 import logging
-from flask import Flask, render_template, session
+from flask import Flask, render_template, session, request
 from flask_session import Session
 
 # Import configurations
@@ -16,11 +16,13 @@ from config.settings import (
     SESSION_FILE_DIR, SESSION_FILE_THRESHOLD
 )
 
-# Import only the chat API routes
+# Import API routes
 from api.chat_routes import chat_bp
+from api.search_routes import search_bp
 
 # Import services
 from services.chat_service import ChatService
+from services.search_service import SearchService
 
 # Configure logging
 logging.basicConfig(
@@ -31,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize services
 chat_service = ChatService()
+search_service = SearchService()
 
 def create_app():
     """Create and configure the Flask application."""
@@ -50,8 +53,9 @@ def create_app():
     app.config["SESSION_FILE_THRESHOLD"] = SESSION_FILE_THRESHOLD
     Session(app)
     
-    # Register only the chat blueprint
+    # Register blueprints
     app.register_blueprint(chat_bp)
+    app.register_blueprint(search_bp)
     
     # Define routes
     @app.route('/')
@@ -69,6 +73,28 @@ def create_app():
         return render_template('derplexity.html', 
                             title='Derplexity Chat', 
                             chat=session["chat"])
+    
+    @app.route('/doogle')
+    def doogle():
+        """Render the Doogle search interface."""
+        query = request.args.get('q', '')
+        category = request.args.get('category', 'web')
+        page = int(request.args.get('page', 1))
+        
+        # Validate category - only allow web or news
+        if category not in ['web', 'news']:
+            category = 'web'
+        
+        # If there's a query, perform search and pass results to template
+        results = {}
+        if query:
+            results = search_service.search(query, category, page)
+            
+        return render_template('doogle.html', 
+                           title='Doogle Search', 
+                           query=query,
+                           category=category,
+                           results=results)
     
     return app
 

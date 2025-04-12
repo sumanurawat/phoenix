@@ -10,6 +10,8 @@ load_dotenv()
 
 # API Keys
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+GOOGLE_SEARCH_ENGINE_ID = os.getenv("GOOGLE_SEARCH_ENGINE_ID")
 
 # LLM Models
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gemini-2.5-pro-exp-03-25")

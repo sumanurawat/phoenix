@@ -11,12 +11,16 @@ fi
 echo "Checking if port 8080 is in use..."
 
 # Find processes using port 8080
-PID=$(lsof -ti tcp:8080)
+PIDS=$(lsof -ti tcp:8080)
 
-if [ -n "$PID" ]; then
-    echo "Port 8080 is in use by process(es): $PID"
+if [ -n "$PIDS" ]; then
+    echo "Port 8080 is in use by process(es): $PIDS"
     echo "Killing process(es)..."
-    kill -9 $PID
+    # Process each PID separately
+    for PID in $PIDS; do
+        echo "Killing process $PID"
+        kill -9 $PID
+    done
     echo "Process(es) killed."
 else
     echo "Port 8080 is not in use."
