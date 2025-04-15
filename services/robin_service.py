@@ -1,5 +1,6 @@
 """
-Robin Service: Fetches latest news articles from newsdata.io API.
+Robin Service: Fetches latest news articles from newsdata.io API and optionally crawls
+the full content from article URLs.
 """
 import requests
 import logging
@@ -7,6 +8,7 @@ import os
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from services.utils import handle_api_error
+from services.crawling_service import CrawlingService
 
 # Load API key from environment
 API_KEY = os.getenv("NEWSDATA_API_KEY")
@@ -25,9 +27,13 @@ class RobinService:
             logger.error("NewsData API key not found")
             raise ValueError("NewsData API key is required")
         
+        # Initialize the crawling service
+        self.crawling_service = CrawlingService()
+        
         logger.info(f"Robin News Service initialized with API key: {self.api_key[:5]}...")
     
-    def search_news(self, query: str, page: Optional[str] = None, language: str = "en") -> Dict[str, Any]:
+    def search_news(self, query: str, page: Optional[str] = None, language: str = "en", 
+                    crawl_content: bool = True) -> Dict[str, Any]:
         """
         Search for news articles based on a query.
         
@@ -35,6 +41,7 @@ class RobinService:
             query: The search query
             page: Page token for pagination (if provided)
             language: Language code(s) for articles
+            crawl_content: Whether to crawl the full content of each article
             
         Returns:
             Dictionary containing search results and metadata
@@ -44,7 +51,7 @@ class RobinService:
             params = {
                 "apikey": self.api_key,
                 "language": language,
-                "size": 10  # Number of results per page
+                "size": 10,  # Number of results per page
             }
             
             # Add query if provided
@@ -77,7 +84,7 @@ class RobinService:
             # Format results
             articles = []
             for item in data.get("results", []):
-                articles.append({
+                article = {
                     "title": item.get("title", "No title"),
                     "link": item.get("link", "#"),
                     "pubDate": item.get("pubDate", "Unknown date"),
@@ -85,7 +92,29 @@ class RobinService:
                     "description": item.get("description", ""),
                     "content": item.get("content", item.get("description", "No content available")),
                     "image_url": item.get("image_url", "")
-                })
+                }
+                
+                # If crawl_content is enabled and we have a valid URL, fetch the full content
+                if crawl_content and article["link"] and article["link"] != "#":
+                    try:
+                        logger.info(f"Crawling content for article: {article['title']}")
+                        crawl_result = self.crawling_service.fetch_article_content(article["link"])
+                        
+                        if crawl_result["success"]:
+                            # Update the article with the crawled content
+                            article["content"] = crawl_result["content"]
+                            # Update image if we got a better one from crawling
+                            if crawl_result.get("image_url") and not article["image_url"]:
+                                article["image_url"] = crawl_result["image_url"]
+                            
+                            logger.info(f"Successfully crawled content for article: {article['title']}")
+                        else:
+                            # Log the error but continue with the original content
+                            logger.warning(f"Failed to crawl content for article: {article['title']} - {crawl_result.get('error')}")
+                    except Exception as e:
+                        logger.error(f"Error during content crawling for {article['title']}: {str(e)}")
+                
+                articles.append(article)
             
             # Return formatted results
             return {
@@ -105,11 +134,40 @@ class RobinService:
                 "articles": [],
                 "has_more": False
             }
+    def get_article_content(self, article_url: str) -> Dict[str, Any]:
+        """
+        Fetch the full content for a specific article by crawling its URL.
+        
+        Args:
+            article_url: The URL of the article to crawl
+            
+        Returns:
+            Dictionary containing the crawled content and metadata
+        """
+        try:
+            logger.info(f"Crawling content for article URL: {article_url}")
+            
+            # Crawl the article content
+            crawl_result = self.crawling_service.fetch_article_content(article_url)
+            
+            if crawl_result["success"]:
+                logger.info(f"Successfully crawled content for article URL: {article_url}")
+                return {
+                    "success": True,
+                    "content": crawl_result["content"],
+                    "image_url": crawl_result.get("image_url"),
+                    "title": crawl_result.get("title")
+                }
+            else:
+                logger.warning(f"Failed to crawl content for article URL: {article_url} - {crawl_result.get('error')}")
+                return {
+                    "success": False,
+                    "error": crawl_result.get("error", "Failed to fetch article content")
+                }
+        
         except Exception as e:
-            logger.error(f"Unexpected error in news search: {str(e)}", exc_info=True)
+            logger.error(f"Error fetching article content: {str(e)}", exc_info=True)
             return {
                 "success": False,
-                "error": f"An unexpected error occurred: {str(e)}",
-                "articles": [],
-                "has_more": False
+                "error": f"An unexpected error occurred: {str(e)}"
             }

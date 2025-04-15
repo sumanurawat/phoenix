@@ -21,6 +21,25 @@ def search_news():
     page = data.get("page", 1)
     language = data.get("language", "en")
     
-    result = robin_service.search_news(query, page, language)
+    # First request - get basic article info quickly without crawling
+    result = robin_service.search_news(query, page, language, crawl_content=False)
+    
+    return jsonify(result)
+
+@robin_bp.route("/api/robin/article_content", methods=["POST"])
+def get_article_content():
+    """Endpoint to fetch full content for a specific article."""
+    data = request.get_json()
+    
+    article_url = data.get("article_url", "")
+    
+    if not article_url or article_url == "#":
+        return jsonify({
+            "success": False,
+            "error": "Invalid article URL"
+        })
+    
+    # Crawl the specific article
+    result = robin_service.get_article_content(article_url)
     
     return jsonify(result)

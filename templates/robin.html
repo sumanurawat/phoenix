@@ -132,20 +132,81 @@
             margin-bottom: 1rem;
         }
         
+        .content-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 15px 0;
+            height: 50px;
+        }
+        
+        .content-loading-indicator {
+            font-size: 0.9rem;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
         .news-content {
             font-size: 1rem;
             line-height: 1.6;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            position: relative;
         }
         
-        .news-link {
-            display: inline-block;
-            margin-top: 1rem;
-            color: #FF6B6B;
-            text-decoration: none;
+        .news-content.collapsed {
+            max-height: 120px; /* Height when collapsed */
         }
         
-        .news-link:hover {
-            text-decoration: underline;
+        .news-content.expanded {
+            max-height: 5000px; /* Large enough for most articles */
+        }
+        
+        .content-fade {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,1));
+            pointer-events: none;
+            display: none;
+        }
+        
+        .news-content.collapsed .content-fade {
+            display: block;
+        }
+        
+        .expand-btn {
+            margin-top: 10px;
+            margin-bottom: 5px;
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            color: #555;
+            border-radius: 15px;
+            padding: 3px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .expand-btn:hover {
+            background-color: #FF6B6B;
+            color: white;
+            border-color: #FF6B6B;
+        }
+        
+        .expand-btn i {
+            transition: transform 0.3s;
+            margin-right: 4px;
+        }
+        
+        .expand-btn.expanded i {
+            transform: rotate(180deg);
         }
         
         .loading-spinner {
@@ -312,6 +373,7 @@
         function createArticleElement(article) {
             const articleDiv = document.createElement('div');
             articleDiv.className = 'news-card';
+            articleDiv.dataset.articleUrl = article.link;
             
             const title = document.createElement('h3');
             title.className = 'news-title';
@@ -329,10 +391,73 @@
             meta.appendChild(source);
             meta.appendChild(date);
             
-            const content = document.createElement('div');
-            content.className = 'news-content';
-            content.textContent = article.content || article.description || 'No content available';
+            // Create content container with collapse/expand functionality
+            const contentWrapper = document.createElement('div');
+            contentWrapper.className = 'news-content collapsed';
             
+            // Check if we have substantial content initially
+            const hasInitialContent = article.content && article.content.length > 100;
+            
+            if (hasInitialContent) {
+                // Add the actual content if we already have it
+                const contentText = document.createElement('div');
+                contentText.className = 'content-text';
+                contentText.textContent = article.content;
+                
+                // Add gradient fade effect at the bottom when collapsed
+                const contentFade = document.createElement('div');
+                contentFade.className = 'content-fade';
+                
+                contentWrapper.appendChild(contentText);
+                contentWrapper.appendChild(contentFade);
+            } else {
+                // Show loading spinner for content that will be fetched
+                const contentSpinner = document.createElement('div');
+                contentSpinner.className = 'content-spinner';
+                contentSpinner.innerHTML = `
+                    <div class="content-loading-indicator">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span>Loading full article content...</span>
+                    </div>
+                `;
+                
+                // Add the description as initial content
+                const initialContent = document.createElement('div');
+                initialContent.className = 'content-text';
+                initialContent.textContent = article.description || 'Loading article content...';
+                
+                contentWrapper.appendChild(initialContent);
+                contentWrapper.appendChild(contentSpinner);
+                
+                // Fetch the full content in the background
+                fetchArticleContent(article.link).then(result => {
+                    // Remove the spinner
+                    contentSpinner.remove();
+                    
+                    if (result.success) {
+                        // Update the content
+                        initialContent.textContent = result.content;
+                        
+                        // Add gradient fade effect
+                        const contentFade = document.createElement('div');
+                        contentFade.className = 'content-fade';
+                        contentWrapper.appendChild(contentFade);
+                        
+                        // Add expand button if not already present
+                        if (!articleDiv.querySelector('.expand-btn')) {
+                            const expandBtn = createExpandButton(contentWrapper, articleDiv);
+                            articleDiv.insertBefore(expandBtn, articleDiv.querySelector('.news-link'));
+                        }
+                    } else {
+                        // Show error message
+                        initialContent.textContent = article.description || 'Could not load full article content.';
+                    }
+                });
+            }
+            
+            // Create link to original article
             const link = document.createElement('a');
             link.className = 'news-link';
             link.href = article.link;
@@ -341,10 +466,59 @@
             
             articleDiv.appendChild(title);
             articleDiv.appendChild(meta);
-            articleDiv.appendChild(content);
+            articleDiv.appendChild(contentWrapper);
+            
+            // Only add the expand button right away if we already have content
+            if (hasInitialContent) {
+                const expandBtn = createExpandButton(contentWrapper, articleDiv);
+                articleDiv.appendChild(expandBtn);
+            }
+            
             articleDiv.appendChild(link);
             
             return articleDiv;
+        }
+        
+        function createExpandButton(contentWrapper, articleDiv) {
+            const expandBtn = document.createElement('button');
+            expandBtn.className = 'expand-btn';
+            expandBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Read more';
+            expandBtn.addEventListener('click', function() {
+                const isExpanded = contentWrapper.classList.contains('expanded');
+                
+                if (isExpanded) {
+                    contentWrapper.classList.remove('expanded');
+                    contentWrapper.classList.add('collapsed');
+                    expandBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Read more';
+                    // Scroll to the top of the article
+                    articleDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    contentWrapper.classList.remove('collapsed');
+                    contentWrapper.classList.add('expanded');
+                    expandBtn.innerHTML = '<i class="fas fa-chevron-up"></i> Show less';
+                }
+                
+                expandBtn.classList.toggle('expanded');
+            });
+            
+            return expandBtn;
+        }
+        
+        function fetchArticleContent(articleUrl) {
+            return fetch('/api/robin/article_content', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    article_url: articleUrl
+                })
+            })
+            .then(response => response.json())
+            .catch(error => {
+                console.error('Error fetching article content:', error);
+                return { success: false, error: error.message };
+            });
         }
     </script>
 </body>
