@@ -82,10 +82,12 @@ def generate_summary():
     Articles:
     {compiled_content}
     
-    Task: Create a chatty tech gossip column summary based on these news articles. Use an engaging, 
-    slightly informal tone as if you're a tech journalist writing for a popular blog. 
-    Synthesize the key information across all articles, identify patterns and insights, 
-    and present a cohesive overview of the topic. Include relevant details but keep it concise and entertaining.
+    Task: Create an economic analysis summary based on these news articles. Evaluate the current economic 
+    situation and provide insights on potential future economic trends. Use a balanced, thoughtful tone 
+    with data-driven observations when possible. Analyze how the information in these articles might impact 
+    markets, industries, or economic policies. Identify patterns across articles that reveal underlying 
+    economic forces, and present a cohesive economic forecast. Format your response with markdown for 
+    better readability, using headings, bullet points, and emphasis where appropriate.
     """
     
     # Generate summary using LLM service
