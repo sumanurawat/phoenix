@@ -19,6 +19,7 @@ from config.settings import (
 # Import API routes
 from api.chat_routes import chat_bp
 from api.search_routes import search_bp
+from api.robin_routes import robin_bp
 
 # Import services
 from services.chat_service import ChatService
@@ -56,6 +57,7 @@ def create_app():
     # Register blueprints
     app.register_blueprint(chat_bp)
     app.register_blueprint(search_bp)
+    app.register_blueprint(robin_bp)
     
     # Define routes
     @app.route('/')
