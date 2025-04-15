@@ -9,7 +9,7 @@ from typing import Dict, Any, List, Optional
 from services.utils import handle_api_error
 
 # Load API key from environment
-API_KEY = os.getenv("NEWSDATA_API_KEY", "pub_80475329643622e7a5dce969c59ab9a492741")
+API_KEY = os.getenv("NEWSDATA_API_KEY")
 BASE_URL = "https://newsdata.io/api/1/latest"  # Using latest endpoint instead of news
 
 # Configure logging
