@@ -26,4 +26,4 @@ A smart news aggregator that curates personalized real-time updates on topics th
 
 ## About the Developer
 
-Created by [Suman Urawat](https://github.com/sumanurawat). Connect on [LinkedIn](https://www.linkedin.com/in/sumanurawat/).
+Created by [Sumanu Rawat](https://github.com/sumanurawat). Connect on [LinkedIn](https://www.linkedin.com/in/sumanurawat/).
