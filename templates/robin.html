@@ -371,7 +371,7 @@
                         </div>
                         <div id="ai-summary-content" class="ai-summary-content">
                             <div class="summary-placeholder">
-                                <p>After searching, click the button below to generate a tech gossip column from all results.</p>
+                                <p>After searching, click the button below to generate a summary column from all results.</p>
                                 <button id="generate-summary-btn" class="btn btn-primary mt-3" disabled>
                                     <i class="fas fa-magic me-2"></i>Generate Summary
                                 </button>
@@ -438,7 +438,7 @@
                 const summaryContent = document.getElementById('ai-summary-content');
                 summaryContent.innerHTML = `
                 <div class="summary-placeholder text-center">
-                    <p>After searching, click the button below to generate a tech gossip column from all the search results.</p>
+                    <p>After searching, click the button below to generate a summary column from all the search results.</p>
                     <button id="generate-summary-btn" class="btn btn-primary mt-3" disabled>
                         <i class="fas fa-magic me-2"></i>Generate Summary
                     </button>
@@ -659,7 +659,7 @@
             summaryContent.innerHTML = `
                 <div class="summary-loading">
                     <i class="fas fa-robot"></i>
-                    <p>Generating tech gossip column from ${allFetchedArticles.length} articles...</p>
+                    <p>Generating AI commentary column from ${allFetchedArticles.length} articles...</p>
                     <div class="spinner-border spinner-border-sm mt-2" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
@@ -732,7 +732,7 @@
         function requestAllArticlesSummary(articles) {
             const loadingMessage = document.querySelector('.summary-loading p');
             if (loadingMessage) {
-                loadingMessage.textContent = 'Generating AI tech gossip column...';
+                loadingMessage.textContent = 'Generating AI commentary column...';
             }
             
             // Call the API to generate a summary from all articles
