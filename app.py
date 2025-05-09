@@ -98,6 +98,12 @@ def create_app():
                            category=category,
                            results=results)
     
+    @app.route('/blogs')
+    def blogs():
+        """Render the Technical Blogs page."""
+        return render_template('blogs.html', 
+                           title='Technical Blogs - Sumanu Rawat')
+    
     return app
 
 # Create the application
