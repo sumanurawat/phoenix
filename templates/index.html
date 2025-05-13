@@ -61,66 +61,56 @@
             
             <section id="projects" class="projects">
                 <div class="container">
-                    <div class="row g-4">
-                        <div class="col-md-6 col-lg-4">
-                            <a href="{{ url_for('derplexity') }}" class="text-decoration-none">
-                                <div class="project-card">
-                                    <div class="project-icon">
-                                        <i class="fas fa-robot"></i>
-                                    </div>
-                                    <h3>Derplexity</h3>
-                                    <p>Advanced conversational AI interface powered by Google's Gemini, designed for natural and intuitive dialogues.</p>
-                                    <div class="project-cta">
-                                        <span>Explore <i class="fas fa-arrow-right"></i></span>
-                                    </div>
+                    <div class="project-list">
+                        <a href="{{ url_for('derplexity') }}" class="text-decoration-none">
+                            <div class="project-list-item">
+                                <div class="project-list-icon">
+                                    <i class="fas fa-robot"></i>
                                 </div>
-                            </a>
-                        </div>
-                        
-                        <div class="col-md-6 col-lg-4">
-                            <a href="{{ url_for('doogle') }}" class="text-decoration-none">
-                                <div class="project-card">
-                                    <div class="project-icon">
-                                        <i class="fas fa-search"></i>
-                                    </div>
-                                    <h3>Doogle</h3>
-                                    <p>Intelligent search engine that leverages AI to deliver precise, contextually relevant results for complex queries.</p>
-                                    <div class="project-cta">
-                                        <span>Search <i class="fas fa-arrow-right"></i></span>
-                                    </div>
+                                <div class="project-list-content">
+                                    <div class="project-list-title">Derplexity</div>
+                                    <div class="project-list-desc">Advanced conversational AI interface powered by Google's Gemini, designed for natural and intuitive dialogues.</div>
+                                    <div class="project-list-cta">Explore <i class="fas fa-arrow-right"></i></div>
                                 </div>
-                            </a>
-                        </div>
-                        
-                        <div class="col-md-6 col-lg-4">
-                            <a href="{{ url_for('robin.robin_page') }}" class="text-decoration-none">
-                                <div class="project-card">
-                                    <div class="project-icon">
-                                        <i class="far fa-newspaper"></i>
-                                    </div>
-                                    <h3>Robin</h3>
-                                    <p>Smart news aggregator that curates and delivers personalized real-time updates on topics that matter to you.</p>
-                                    <div class="project-cta">
-                                        <span>Discover <i class="fas fa-arrow-right"></i></span>
-                                    </div>
+                            </div>
+                        </a>
+                        <a href="{{ url_for('doogle') }}" class="text-decoration-none">
+                            <div class="project-list-item">
+                                <div class="project-list-icon">
+                                    <i class="fas fa-search"></i>
                                 </div>
-                            </a>
-                        </div>
-                        
-                        <div class="col-md-6 col-lg-4">
-                            <a href="{{ url_for('deeplink.show_deeplink') }}" class="text-decoration-none">
-                                <div class="project-card">
-                                    <div class="project-icon">
-                                        <i class="fas fa-link"></i>
-                                    </div>
-                                    <h3>Deep Link Converter</h3>
-                                    <p>A must-have tool for content creators. Convert YouTube URLs into deep links that open directly in the YouTube app, boosting viewer engagement.</p>
-                                    <div class="project-cta">
-                                        <span>Convert <i class="fas fa-arrow-right"></i></span>
-                                    </div>
+                                <div class="project-list-content">
+                                    <div class="project-list-title">Doogle</div>
+                                    <div class="project-list-desc">Intelligent search engine that leverages AI to deliver precise, contextually relevant results for complex queries.</div>
+                                    <div class="project-list-cta">Search <i class="fas fa-arrow-right"></i></div>
                                 </div>
-                            </a>
-                        </div>
+                            </div>
+                        </a>
+                        <a href="{{ url_for('robin.robin_page') }}" class="text-decoration-none">
+                            <div class="project-list-item">
+                                <div class="project-list-icon">
+                                    <i class="far fa-newspaper"></i>
+                                </div>
+                                <div class="project-list-content">
+                                    <div class="project-list-title">Robin</div>
+                                    <div class="project-list-desc">AI-powered news summarizer and aggregator for quick, reliable news digests.</div>
+                                    <div class="project-list-cta">Read <i class="fas fa-arrow-right"></i></div>
+                                </div>
+                            </div>
+                        </a>
+                        <a href="{{ url_for('deeplink.show_deeplink') }}" class="text-decoration-none">
+                            <div class="project-list-item">
+                                <div class="project-list-icon">
+                                    <i class="fas fa-link"></i>
+                                </div>
+                                <div class="project-list-content">
+                                    <div class="project-list-title">Deep Link Converter</div>
+                                    <div class="project-list-desc">Convert standard URLs into deep links for seamless app integration and user experience.</div>
+                                    <div class="project-list-cta">Convert <i class="fas fa-arrow-right"></i></div>
+                                </div>
+                            </div>
+                        </a>
+                        <!-- Add more projects here in the same format -->
                     </div>
                 </div>
             </section>
