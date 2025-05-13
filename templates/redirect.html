@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting...</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #f7fafc;
+            color: #4a5568;
+        }
+        .loading {
+            text-align: center;
+        }
+        .loading p {
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            display: inline-block;
+            width: 2rem;
+            height: 2rem;
+            border: 3px solid #e2e8f0;
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading">
+        <div class="spinner"></div>
+        <p>Opening in YouTube app...</p>
+    </div>
+
+    <script>
+        (function() {
+            const id = "{{ video_id }}";
+            const ua = navigator.userAgent || '';
+            const isInstagram = ua.includes('Instagram');
+            const isAndroid = /Android/i.test(ua);
+            const isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+            let targetUrl;
+            
+            if (isInstagram) {
+                if (isAndroid) {
+                    targetUrl = `intent://www.youtube.com/watch?v=${id}#Intent;package=com.google.android.youtube;scheme=https;end`;
+                } else if (isIOS) {
+                    targetUrl = `youtube://watch?v=${id}`;
+                    // Fallback for iOS in case youtube:// scheme fails
+                    setTimeout(() => {
+                        window.location.href = `https://www.youtube.com/watch?v=${id}`;
+                    }, 2500);
+                } else {
+                    targetUrl = `https://www.youtube.com/watch?v=${id}`;
+                }
+            } else {
+                targetUrl = `https://www.youtube.com/watch?v=${id}`;
+            }
+
+            window.location.href = targetUrl;
+        })();
+    </script>
+</body>
+</html>
