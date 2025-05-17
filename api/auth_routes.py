@@ -56,7 +56,13 @@ def login():
 @auth_bp.route('/login/google')
 def google_login():
     """Start Google OAuth flow for sign-in/sign-up."""
-    redirect_uri = url_for('auth.google_callback', _external=True)
+    prod_url_base = os.getenv('PRODUCTION_URL')
+    if prod_url_base:
+        # Ensure no trailing slash in prod_url_base and leading slash in callback path
+        redirect_uri = prod_url_base.rstrip('/') + url_for('auth.google_callback', _external=False)
+    else:
+        redirect_uri = url_for('auth.google_callback', _external=True)
+    
     auth_url, state = auth_service.get_google_auth_url(redirect_uri)
     session['oauth_state'] = state
     return redirect(auth_url)
@@ -80,11 +86,18 @@ def google_callback():
     try:
         # Exchange code for tokens
         token_url = 'https://oauth2.googleapis.com/token'
+        
+        prod_url_base = os.getenv('PRODUCTION_URL')
+        if prod_url_base:
+            callback_uri_for_token_exchange = prod_url_base.rstrip('/') + url_for('auth.google_callback', _external=False)
+        else:
+            callback_uri_for_token_exchange = url_for('auth.google_callback', _external=True)
+
         token_data = {
             'code': code,
             'client_id': os.getenv('GOOGLE_CLIENT_ID'),
             'client_secret': os.getenv('GOOGLE_CLIENT_SECRET'),
-            'redirect_uri': url_for('auth.google_callback', _external=True),
+            'redirect_uri': callback_uri_for_token_exchange, # Use the potentially overridden URI
             'grant_type': 'authorization_code'
         }
         token_response = requests.post(token_url, data=token_data)
