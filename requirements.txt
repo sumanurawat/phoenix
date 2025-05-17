@@ -9,3 +9,5 @@ python-docx==1.0.1  # For DOCX text extraction
 Werkzeug==2.3.7  # For secure file handling
 google-api-python-client==2.70.0  # For Google API client
 beautifulsoup4==4.12.2
+firebase-admin==6.2.0  # For Firebase Authentication
+requests==2.31.0  # For HTTP requests

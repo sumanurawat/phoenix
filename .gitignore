@@ -42,3 +42,13 @@ flask_session/
 
 # MacOS
 .DS_Store
+
+# Agent Instructions
+AGENT_INSTRUCTIONS.md
+
+# Firebase Service Account Key
+firebase-credentials.json
+
+# Temporary files
+temp_client_id.txt
+temp_client_secret.txt

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .profile-card {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 2rem 2.5rem;
+        }
+        .profile-avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 1rem;
+        }
+        .edit-btn {
+            float: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="profile-card text-center">
+            {% if user_picture %}
+                <img src="{{ user_picture }}" class="profile-avatar mb-2" alt="avatar">
+            {% else %}
+                <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ user_id or user_email }}" class="profile-avatar mb-2" alt="avatar">
+            {% endif %}
+            
+            <h2 class="mb-1">Welcome{% if user_name %}, {{ user_name }}{% elif user_email %}, {{ user_email }}{% endif %}</h2>
+            <p class="text-muted mb-3">User ID: <span class="fw-bold">{{ user_id }}</span></p>
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-secondary btn-sm">Logout</a>
+        </div>
+    </div>
+</body>
+</html>
