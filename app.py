@@ -16,6 +16,10 @@ from config.settings import (
     SESSION_FILE_DIR, SESSION_FILE_THRESHOLD
 )
 
+# Import Firebase Admin SDK
+import firebase_admin
+from firebase_admin import credentials
+
 # Import API routes
 from api.chat_routes import chat_bp
 from api.search_routes import search_bp
@@ -55,7 +59,37 @@ def create_app():
     app.config["SESSION_FILE_DIR"] = SESSION_FILE_DIR
     app.config["SESSION_FILE_THRESHOLD"] = SESSION_FILE_THRESHOLD
     Session(app)
-    
+
+    # Initialize Firebase Admin SDK (if not already initialized)
+    # This should be done before any services that use Firebase are initialized
+    # or blueprints that rely on Firebase services are registered.
+    if not firebase_admin._apps:
+        try:
+            # Try to load credentials from a JSON file path (e.g., for local development)
+            creds_path = os.getenv("FIREBASE_CREDENTIALS_PATH", "firebase-credentials.json")
+            if os.path.exists(creds_path):
+                cred = credentials.Certificate(creds_path)
+                app.logger.info(f"Initializing Firebase Admin SDK with credentials from: {creds_path}")
+            # Try to load credentials from an environment variable (e.g., for CI/CD or some PaaS)
+            elif os.getenv("FIREBASE_CREDENTIALS"):
+                import json
+                cred_dict = json.loads(os.getenv("FIREBASE_CREDENTIALS"))
+                cred = credentials.Certificate(cred_dict)
+                app.logger.info("Initializing Firebase Admin SDK with credentials from FIREBASE_CREDENTIALS env var.")
+            else:
+                # Fallback for environments like Google Cloud Run/Functions where Application Default Credentials (ADC) might be available.
+                # If running locally without a service account JSON or GOOGLE_APPLICATION_CREDENTIALS env var,
+                # this might not provide specific project access unless ADC are configured locally.
+                cred = credentials.ApplicationDefault()
+                app.logger.info("Initializing Firebase Admin SDK with Application Default Credentials.")
+            
+            firebase_admin.initialize_app(cred)
+            app.logger.info("Firebase Admin SDK initialized successfully.")
+        except Exception as e:
+            app.logger.error(f"Firebase Admin SDK initialization error: {e}")
+            # Depending on the application's needs, you might want to raise the exception
+            # or exit if Firebase is critical for all operations. For now, just log the error.
+
     # Register blueprints
     app.register_blueprint(chat_bp)
     app.register_blueprint(search_bp)
