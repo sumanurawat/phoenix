@@ -29,6 +29,52 @@
     </style>
 </head>
 <body>
+    <!-- 
+      Start of Top Navigation Bar for Authenticated Users
+      ----------------------------------------------------
+      This navigation bar provides consistent access across authenticated user pages.
+      It includes:
+      - A brand link to the main platform homepage.
+      - Links to major tools/features of the Phoenix platform (Derplexity, Doogle, Robin, Deep Link).
+      - A "Logout" link for user session management.
+    
+      Consideration for Future Refactoring:
+      If this navigation bar is to be used on multiple authenticated pages,
+      it would be beneficial to extract it into a shared base template 
+      (e.g., `base_authenticated.html` or `_authenticated_nav.html`) 
+      and use Jinja's `{% extends %}` or `{% include %}` directives.
+    -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">Phoenix Platform</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('derplexity') }}">Derplexity</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('doogle') }}">Doogle</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('robin.robin_page') }}">Robin</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('deeplink.show_deeplink') }}">Deep Link</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- End of Top Navigation Bar for Authenticated Users -->
+
     <div class="container py-5">
         <div class="profile-card text-center">
             {% if user_picture %}
@@ -39,8 +85,18 @@
             
             <h2 class="mb-1">Welcome{% if user_name %}, {{ user_name }}{% elif user_email %}, {{ user_email }}{% endif %}</h2>
             <p class="text-muted mb-3">User ID: <span class="fw-bold">{{ user_id }}</span></p>
-            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-secondary btn-sm">Logout</a>
+            
+            <!-- Call to Action (CTA) Button: Directs user to the short link creation page. -->
+            <a href="{{ url_for('deeplink.show_deeplink') }}" class="btn btn-primary mt-3">Create New Short Link</a>
+            
+            <!-- Original Logout button (now in navbar): This button was part of the initial profile card. 
+                 It's commented out as logout functionality is now primarily in the top navigation bar.
+                 It can be removed entirely or kept commented for reference. -->
+            <!-- <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-secondary btn-sm">Logout</a> -->
         </div>
     </div>
+
+    <!-- Bootstrap JS (needed for navbar toggler) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
