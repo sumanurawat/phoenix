@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Expired</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; color: #333; }
+        .container { max-width: 600px; margin: auto; padding: 20px; }
+        .message { font-size: 1.2em; margin-bottom: 20px; }
+        .error-message { color: #cc0000; font-size: 1em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="message">
+            Sorry, this link is no longer available, has expired, or is invalid.
+        </div>
+        {% if short_code %}
+            <p>Attempted link code: <strong>{{ short_code }}</strong></p>
+        {% endif %}
+        {% if error_message %}
+            <div class="error-message">
+                {{ error_message }}
+            </div>
+        {% endif %}
+        <p><a href="{{ url_for('deeplink.show_deeplink') }}">Create a new short link</a></p>
+    </div>
+</body>
+</html>

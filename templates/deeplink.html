@@ -3,20 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Deep Link Converter - Phoenix</title>
+    <title>Short Link Generator - Phoenix</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Custom styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .deeplink-container {
+        body {
+            background-color: var(--background-color, #f4f7f6); /* Fallback color */
+            color: var(--text-color, #333); /* Fallback color */
+        }
+        .shortlink-container { /* Renamed from deeplink-container */
             display: flex;
             flex-direction: column;
             min-height: 100vh;
         }
         
-        .deeplink-header {
+        .shortlink-header { /* Renamed from deeplink-header */
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -25,7 +29,7 @@
             background-color: #fff;
         }
         
-        .deeplink-header-left {
+        .shortlink-header-left { /* Renamed from deeplink-header-left */
             display: flex;
             align-items: center;
             gap: 1rem;
@@ -47,7 +51,7 @@
             color: #333;
         }
         
-        .deeplink-logo {
+        .shortlink-logo { /* Renamed from deeplink-logo */
             font-size: 1.5rem;
             font-weight: 500;
             color: var(--primary-color);
@@ -62,7 +66,7 @@
             box-shadow: var(--card-shadow);
         }
         
-        .youtube-input {
+        .url-input, .email-input { /* Combined styles for input fields */
             width: 100%;
             padding: 0.75rem;
             border: 2px solid #e0e0e0;
@@ -72,12 +76,12 @@
             transition: border-color 0.2s;
         }
         
-        .youtube-input:focus {
+        .url-input:focus, .email-input:focus {
             outline: none;
             border-color: var(--primary-color);
         }
         
-        .convert-btn {
+        .generate-btn { /* Renamed from convert-btn */
             width: 100%;
             padding: 0.75rem;
             background: var(--primary-color);
@@ -89,7 +93,7 @@
             transition: background 0.2s;
         }
         
-        .convert-btn:hover {
+        .generate-btn:hover {
             background: var(--primary-dark);
         }
         
@@ -97,7 +101,7 @@
             margin-top: 2rem;
         }
         
-        .deep-url-input {
+        .short-url-input { /* Renamed from deep-url-input */
             font-family: monospace;
             background: #f8f9fa;
             cursor: text;
@@ -125,58 +129,88 @@
             margin-bottom: 1rem;
             font-size: 0.9rem;
         }
+        .form-text {
+            font-size: 0.875em;
+            color: #6c757d;
+        }
     </style>
 </head>
 <body>
-    <div class="deeplink-container">
-        <header class="deeplink-header">
-            <div class="deeplink-header-left">
-                <a href="{{ url_for('index') }}" class="back-button">
+    <div class="shortlink-container">
+        <header class="shortlink-header">
+            <div class="shortlink-header-left">
+                <a href="{{ url_for('main.index') }}" class="back-button"> <!-- Assuming 'main.index' is your home page -->
                     <i class="fas fa-arrow-left"></i>
                 </a>
-                <div class="deeplink-logo">
-                    <i class="fas fa-link"></i> Deep Link Converter
+                <div class="shortlink-logo">
+                    <i class="fas fa-link"></i> Short Link Generator
                 </div>
             </div>
+            <!-- Add login/user info here if needed in future -->
         </header>
 
         <main class="container py-4">
-            <div class="row">
-                <div class="col-12">
+            <div class="row justify-content-center">
+                <div class="col-md-8 col-lg-6">
                     <div class="converter-form">
-                        <h2 class="mb-4">Deep Link Converter for Content Creators</h2>
-                        <p class="text-muted mb-4">
-                            As a content creator, sharing YouTube links on Instagram often means your viewers open videos in Instagram's browser. This prevents them from liking, subscribing, or commenting with their YouTube account, causing you to lose valuable engagement data. Use this tool to generate mobile-friendly deep links that open directly in the YouTube app, ensuring maximum viewer engagement.
+                        <h2 class="mb-3 text-center">Create a Short Link</h2>
+                        <p class="text-muted mb-4 text-center">
+                            Enter your long URL below to generate a shorter, shareable link.
                         </p>
                         
-                        <form method="post">
+                        <form method="POST" action="{{ url_for('deeplink.show_deeplink') }}">
                             {% if error %}
-                            <div class="error-message">
-                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                            <div class="alert alert-danger d-flex align-items-center" role="alert">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <div>
+                                    {{ error }}
+                                </div>
                             </div>
                             {% endif %}
 
-                            <input type="url" 
-                                   name="youtube_url" 
-                                   class="youtube-input"
-                                   placeholder="https://www.youtube.com/watch?v=..."
-                                   required>
+                            <div class="mb-3">
+                                <label for="original_url" class="form-label">Original URL</label>
+                                <input type="url" 
+                                       id="original_url"
+                                       name="original_url" 
+                                       class="form-control url-input"
+                                       placeholder="e.g., https://www.example.com/very/long/url"
+                                       required
+                                       value="{{ request.form.original_url if request and request.form }}">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="user_email" class="form-label">Your Email (Optional for Guests)</label>
+                                <input type="email"
+                                       id="user_email"
+                                       name="user_email"
+                                       class="form-control email-input"
+                                       placeholder="e.g., user@example.com"
+                                       value="{{ request.form.user_email if request and request.form }}">
+                                <div id="emailHelp" class="form-text">
+                                    If you're not logged in, providing an email helps manage your guest links (limited to 10 clicks).
+                                    If logged in, this field is ignored.
+                                </div>
+                            </div>
                             
-                            <button type="submit" class="convert-btn">
-                                <i class="fas fa-sync-alt me-2"></i>Convert
+                            <button type="submit" class="btn generate-btn w-100">
+                                <i class="fas fa-paper-plane me-2"></i>Generate Short Link
                             </button>
                         </form>
 
-                        {% if deep_url %}
-                        <div class="result-container">
-                            <label class="form-label">Deep Link URL</label>
-                            <input type="text" 
-                                   class="youtube-input deep-url-input" 
-                                   value="{{ deep_url }}" 
-                                   readonly>
-                            <button onclick="copyToClipboard(this)" class="copy-btn">
-                                <i class="far fa-copy me-2"></i>Copy
-                            </button>
+                        {% if short_url %}
+                        <div class="result-container mt-4">
+                            <label for="shortened_url_output" class="form-label">Your Short Link:</label>
+                            <div class="input-group">
+                                <input type="text" 
+                                       id="shortened_url_output"
+                                       class="form-control short-url-input" 
+                                       value="{{ short_url }}" 
+                                       readonly>
+                                <button onclick="copyToClipboard(this, '{{ short_url }}')" class="btn btn-outline-secondary copy-btn" type="button">
+                                    <i class="far fa-copy me-2"></i>Copy
+                                </button>
+                            </div>
                         </div>
                         {% endif %}
                     </div>
@@ -188,20 +222,22 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function copyToClipboard(button) {
-            const input = button.previousElementSibling;
-            input.select();
-            navigator.clipboard.writeText(input.value);
-            
-            // Visual feedback
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
-            button.style.background = '#28a745';
-            
-            setTimeout(() => {
-                button.innerHTML = originalText;
-                button.style.background = '';
-            }, 2000);
+        function copyToClipboard(button, textToCopy) {
+            navigator.clipboard.writeText(textToCopy).then(function() {
+                const originalButtonText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
+                button.classList.add('btn-success');
+                button.classList.remove('btn-outline-secondary');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalButtonText;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-secondary');
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Failed to copy: ', err);
+                // Optionally, provide user feedback about the copy failure
+            });
         }
     </script>
 </body>

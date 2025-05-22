@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Links Collection
+    match /links/{shortCode} {
+      // Anyone can read link documents (for redirection)
+      allow read: if true;
+
+      // Create:
+      // Authenticated users can create links associated with their userId
+      // Guests (unauthenticated users) can create links with userId as null
+      allow create: if (request.auth != null && request.resource.data.userId == request.auth.uid) ||
+                       (request.auth == null && request.resource.data.userId == null);
+
+      // Update:
+      // - Backend can update specific fields (clickCount, lastClickedAt, isExpired) - This rule implicitly allows backend updates.
+      // - Authenticated users can update their own links (for future features)
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+                    // Add specific field checks if needed for client-side updates, e.g.
+                    // && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['originalUrl', 'customAlias'])
+
+      // Delete: Authenticated users can delete their own links
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+
+      // Clicks Subcollection
+      match /clicks/{clickId} {
+        // Read: Only the user who owns the parent link can list clicks
+        allow read: if request.auth != null && get(/databases/$(database)/documents/links/$(shortCode)).data.userId == request.auth.uid;
+
+        // Create: New click documents can be created (triggered by server logic)
+        // This allows public write access for creating click documents.
+        // It's assumed the server validates and creates these documents.
+        allow create: if true; // Or restrict to a specific role/service account if possible
+
+        // Update/Delete: Disallow updates and deletes
+        allow update: if false;
+        allow delete: if false;
+      }
+    }
+  }
+}
