@@ -15,25 +15,10 @@ import secrets
 import string
 from google.cloud import firestore
 import firebase_admin # Assuming firebase_admin is initialized in app.py or similar
+from flask import current_app # Added to access app-configured Firestore client
 
-# Initialize Firestore client
-# This requires Firebase Admin SDK to be initialized, typically in the main app setup (e.g., app.py).
-# If `firebase_admin.initialize_app()` has not been called, this will fail.
-try:
-    db = firestore.Client()
-except Exception as e:
-    # This print statement is for debugging and helps diagnose initialization issues.
-    # In a production environment, this should be handled by a proper logging setup.
-    # The commented-out code below is an example of how one might attempt a fallback
-    # initialization, but it's generally better to ensure explicit initialization at app startup.
-    # from firebase_admin import credentials
-    # if not firebase_admin._apps:
-    #     cred = credentials.ApplicationDefault() # Or use a service account key
-    #     firebase_admin.initialize_app(cred)
-    #     db = firestore.Client()
-    print(f"Error initializing Firestore client in deeplink_service: {e}. Ensure Firebase Admin is initialized before this service module is imported.")
-    db = None # Setting db to None ensures functions relying on it will fail clearly if initialization failed.
-
+# Module-level Firestore client (db) is now removed.
+# It will be fetched from current_app.config['FIRESTORE_DB'] within each function.
 
 MAX_GENERATE_ATTEMPTS = 10 # Maximum attempts to generate a unique short code.
 
@@ -50,11 +35,12 @@ def generate_short_code(length=7):
         str: A unique short code.
 
     Raises:
-        ConnectionError: If the Firestore client (db) is not initialized.
+        ConnectionError: If the Firestore client (db) is not configured or available.
         ValueError: If a unique short code cannot be generated after MAX_GENERATE_ATTEMPTS.
     """
+    db = current_app.config.get('FIRESTORE_DB')
     if not db:
-        raise ConnectionError("Firestore client not initialized. Cannot generate short code.")
+        raise ConnectionError("Firestore client is not configured or available in the current app context.")
 
     alphabet = string.ascii_letters + string.digits # Define the character set for the short code
     for _ in range(MAX_GENERATE_ATTEMPTS):
@@ -82,11 +68,12 @@ def create_short_link(original_url, user_id=None, user_email=None):
         str: The generated unique shortCode for the link.
 
     Raises:
-        ConnectionError: If the Firestore client (db) is not initialized.
+        ConnectionError: If the Firestore client (db) is not configured or available.
         ValueError: If original_url is empty, or if Firestore operation fails.
     """
+    db = current_app.config.get('FIRESTORE_DB')
     if not db:
-        raise ConnectionError("Firestore client not initialized. Cannot create short link.")
+        raise ConnectionError("Firestore client is not configured or available in the current app context.")
 
     if not original_url or not original_url.strip():
         raise ValueError("Original URL cannot be empty.")
@@ -134,11 +121,12 @@ def get_link_details(short_code):
         dict: The link data as a dictionary if found, otherwise None.
 
     Raises:
-        ConnectionError: If the Firestore client (db) is not initialized.
+        ConnectionError: If the Firestore client (db) is not configured or available.
         Exception: Re-raises Firestore exceptions if the fetch operation fails for other reasons.
     """
+    db = current_app.config.get('FIRESTORE_DB')
     if not db:
-        raise ConnectionError("Firestore client not initialized. Cannot get link details.")
+        raise ConnectionError("Firestore client is not configured or available in the current app context.")
     try:
         link_ref = db.collection('links').document(short_code)
         link_doc = link_ref.get() # Retrieve the document
@@ -199,8 +187,8 @@ def _update_link_and_log_click_transaction(transaction, link_ref, click_data_for
     Args:
         transaction (google.cloud.firestore.Transaction): The Firestore transaction object.
         link_ref (google.cloud.firestore.DocumentReference): Reference to the link document.
-        click_data_for_subcollection (dict): Data for the click subcollection (unused in this function,
-                                             but kept for potential future use within transaction if requirements change).
+        click_data_for_subcollection (dict): Data for the click subcollection (unused in this function).
+        db (google.cloud.firestore.Client): The Firestore client instance.
 
     Returns:
         dict: The link document's data (as a dictionary) after the transaction attempts to read it.
@@ -209,6 +197,9 @@ def _update_link_and_log_click_transaction(transaction, link_ref, click_data_for
     Raises:
         ValueError: If the link document does not exist.
     """
+    # db parameter is added but not explicitly used here as @firestore.transactional
+    # relies on the transaction object which is created using a db instance.
+    # The calling function log_click_event ensures db is available for db.transaction().
     link_doc = link_ref.get(transaction=transaction) # Read the document within the transaction
     if not link_doc.exists:
         raise ValueError(f"Link {link_ref.id} not found during transaction.")
@@ -258,8 +249,9 @@ def log_click_event(short_code, ip_address, user_agent, referrer_url):
                - is_expired (bool): True if the link is expired or not found, False otherwise.
                Returns (None, True) if the link is not found, or if any critical error occurs.
     """
+    db = current_app.config.get('FIRESTORE_DB')
     if not db:
-        raise ConnectionError("Firestore client not initialized. Cannot log click event.")
+        raise ConnectionError("Firestore client is not configured or available in the current app context.")
 
     link_ref = db.collection('links').document(short_code) # Reference to the main link document
     
@@ -280,9 +272,10 @@ def log_click_event(short_code, ip_address, user_agent, referrer_url):
 
         # 3. Execute Firestore Transaction to update the parent link document
         # The _update_link_and_log_click_transaction function handles the atomic increment and timestamp update.
-        transaction = db.transaction()
-        # Pass None for click_data_for_subcollection as it's not used within the transaction itself.
-        updated_link_data = _update_link_and_log_click_transaction(transaction, link_ref, None) 
+        transaction = db.transaction() 
+        # Pass db instance to the transactional function, though it's not directly used by it,
+        # it's good practice if it were to perform direct db operations not via transaction object.
+        updated_link_data = _update_link_and_log_click_transaction(transaction, link_ref, None, db=db)
         
         # 4. If the transaction was successful, create the click log in the subcollection.
         # This is done outside the transaction to allow for auto-generated document IDs in the subcollection.

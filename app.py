@@ -19,6 +19,7 @@ from config.settings import (
 # Import Firebase Admin SDK
 import firebase_admin
 from firebase_admin import credentials
+from google.cloud import firestore # Added for Firestore client
 
 # Import API routes
 from api.chat_routes import chat_bp
@@ -85,10 +86,24 @@ def create_app():
             
             firebase_admin.initialize_app(cred)
             app.logger.info("Firebase Admin SDK initialized successfully.")
+
+            # Create and store Firestore client after successful Firebase Admin initialization
+            try:
+                firestore_db = firestore.client() # Uses ADC or service account from Admin SDK
+                app.config['FIRESTORE_DB'] = firestore_db
+                app.logger.info("Firestore client created and configured successfully.")
+            except Exception as e:
+                app.logger.error(f"Failed to create Firestore client after Firebase Admin init: {e}")
+                # If Firestore client creation fails, set it to None in config.
+                # Services relying on Firestore should handle this appropriately.
+                app.config['FIRESTORE_DB'] = None
+        
         except Exception as e:
             app.logger.error(f"Firebase Admin SDK initialization error: {e}")
+            # If Firebase Admin SDK itself fails to initialize, Firestore client won't be created.
+            app.config['FIRESTORE_DB'] = None 
             # Depending on the application's needs, you might want to raise the exception
-            # or exit if Firebase is critical for all operations. For now, just log the error.
+            # or exit if Firebase is critical for all operations.
 
     # Register blueprints
     app.register_blueprint(chat_bp)
