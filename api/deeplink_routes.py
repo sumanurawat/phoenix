@@ -14,7 +14,7 @@ from services.deeplink_service import (
 )
 from functools import wraps
 from datetime import datetime # Added import
-from google.cloud.firestore_v1.types import Timestamp as FirestoreTimestamp # Added import
+# Removed incorrect FirestoreTimestamp import
 
 # Placeholder login_required decorator (ensure this is correctly implemented in your auth system)
 def login_required(f):
@@ -127,14 +127,19 @@ def my_links_page():
         for link_data in fetched_links:
             link_data['short_url_display'] = url_for('deeplink.redirect_to_original', short_code=link_data['short_code'], _external=True)
             created_at_val = link_data.get('created_at')
-            if isinstance(created_at_val, FirestoreTimestamp):
-                dt_obj = created_at_val.to_datetime()
-                # Format datetime with timezone if available, otherwise assume UTC
-                link_data['created_at_display'] = dt_obj.strftime('%Y-%m-%d %H:%M') + (f" {dt_obj.tzname()}" if dt_obj.tzinfo else " UTC")
-            elif isinstance(created_at_val, datetime): # Handle if it's already a Python datetime
-                link_data['created_at_display'] = created_at_val.strftime('%Y-%m-%d %H:%M') + (f" {created_at_val.tzname()}" if created_at_val.tzinfo else " UTC")
+            if isinstance(created_at_val, datetime):
+                # Format the datetime object. Firestore timestamps are usually UTC.
+                # strftime('%Z') might be empty on naive datetimes or just show UTC.
+                timezone_str = created_at_val.tzname()
+                if timezone_str and timezone_str != "UTC": # Check if tzname is meaningful
+                    link_data['created_at_display'] = created_at_val.strftime('%Y-%m-%d %H:%M %Z')
+                else:
+                    # If tzinfo is not set or tzname is empty or UTC, assume UTC as Firestore stores in UTC.
+                    link_data['created_at_display'] = created_at_val.strftime('%Y-%m-%d %H:%M') + " UTC"
+            elif created_at_val: # If it's not datetime but exists (e.g., already a string due to some other processing)
+                link_data['created_at_display'] = str(created_at_val)
             else:
-                link_data['created_at_display'] = str(created_at_val) if created_at_val else 'N/A'
+                link_data['created_at_display'] = 'N/A'
             user_links.append(link_data)
     except Exception as e:
         # In a real app, log this error: logger.error(f"Error fetching links for user {user_id}: {e}")
