@@ -32,13 +32,20 @@
 
     <form method="POST" action="{{ url_for('deeplink.user_deeplink_converter_page') }}" class="mb-4">
       <div class="mb-3">
-        <label for="youtube_url" class="form-label">YouTube URL</label>
-        <input type="url" class="form-control" id="youtube_url" name="youtube_url" value="{{ original_url or '' }}" required>
+        <label for="original_url" class="form-label">URL to Shorten</label>
+        <input type="url" class="form-control" id="original_url" name="original_url" value="{{ original_url or '' }}" required placeholder="e.g., https://www.example.com/my-long-article-url">
       </div>
       <button type="submit" class="btn btn-primary">
-        <i class="fas fa-sync-alt me-2"></i>Convert
+        <i class="fas fa-link me-2"></i>Create Short Link
+        <i class="fas fa-link me-2"></i>Create Short Link
       </button>
     </form>
+
+    {% if error %}
+      {# This error is already handled above the form, so this specific block might be redundant
+         or intended for a different type of error (e.g., post-submission error not related to form validation)
+         Keeping it for now as per original structure unless specified otherwise. #}
+    {% endif %}
 
     {% if deep_url %}
       <div class="results">
@@ -46,15 +53,14 @@
           <div class="alert alert-success">{{ success_message }}</div>
         {% endif %}
         <div class="mb-3">
-            <label class="form-label">Original URL:</label>
-            <input type="text" class="form-control" value="{{ original_url }}" readonly>
-            <!-- Or just display as text: <p><a href="{{ original_url }}" target="_blank">{{ original_url }}</a></p> -->
+            <label class="form-label">Original URL Submitted:</label>
+            <input type="text" class="form-control" value="{{ original_url }}" readonly title="{{ original_url }}">
         </div>
         <div class="mb-3">
-          <label for="deep_link_output" class="form-label">Your Deep Link:</label>
+          <label for="deep_link_output" class="form-label">Your Short Link:</label>
           <div class="input-group">
             <input type="text" id="deep_link_output" class="form-control" value="{{ deep_url }}" readonly>
-            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(this)">
+            <button class="btn btn-outline-secondary copy-btn" type="button" data-clipboard-text="{{ deep_url }}">
               <i class="far fa-copy me-2"></i>Copy
             </button>
           </div>
@@ -65,39 +71,25 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    function copyToClipboard(button) {
-      const inputElement = document.getElementById("deep_link_output"); // More direct selection
-      if (!inputElement) return;
-
-      inputElement.select();
-      inputElement.setSelectionRange(0, 99999); // For mobile devices
-
-      navigator.clipboard.writeText(inputElement.value).then(() => {
-        const originalText = button.innerHTML;
-        const originalIcon = button.querySelector('i') ? button.querySelector('i').outerHTML : '<i class="far fa-copy me-2"></i>'; // Save original icon
-
-        button.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
-        button.classList.remove('btn-outline-secondary');
-        button.classList.add('btn-success'); // Change to success style
-        button.disabled = true;
-
-        setTimeout(() => {
-          button.innerHTML = originalIcon + 'Copy'; // Restore original text/icon
-          button.classList.remove('btn-success');
-          button.classList.add('btn-outline-secondary');
-          button.disabled = false;
-        }, 2000);
-      }).catch(err => {
-        console.error('Failed to copy text: ', err);
-        // Fallback for older browsers (less common now)
-        try {
-          document.execCommand("copy");
-          alert("Copied the deep link: " + inputElement.value); // Simple feedback for fallback
-        } catch (e) {
-          alert("Failed to copy. Please select and copy manually.");
-        }
+    // Consolidate copy script if it's similar to my_links.html, or keep specific if different.
+    // This version is slightly adapted from the original to use dataset for the value to copy.
+    document.querySelectorAll('.copy-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const linkToCopy = this.dataset.clipboardText || document.getElementById("deep_link_output").value;
+        navigator.clipboard.writeText(linkToCopy).then(() => {
+          const originalIconHTML = this.innerHTML; // Save full original HTML of button
+          this.innerHTML = '<i class="fas fa-check text-success me-2"></i>Copied!';
+          this.disabled = true;
+          setTimeout(() => {
+            this.innerHTML = originalIconHTML;
+            this.disabled = false;
+          }, 1500);
+        }).catch(err => {
+          console.error('Failed to copy: ', err);
+          alert('Failed to copy link. Please copy manually.');
+        });
       });
-    }
+    });
   </script>
 </body>
 </html>

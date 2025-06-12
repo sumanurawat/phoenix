@@ -39,9 +39,23 @@
             
             <h2 class="mb-1">Welcome{% if user_name %}, {{ user_name }}{% elif user_email %}, {{ user_email }}{% endif %}</h2>
             <p class="text-muted mb-3">User ID: <span class="fw-bold">{{ user_id }}</span></p>
-            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-secondary btn-sm">Logout</a>
-            <a href="{{ url_for('deeplink.user_deeplink_converter_page') }}" class="btn btn-primary mt-3">Create Deep Link</a>
+
+            <div class="d-grid gap-2 mt-4">
+                <a href="{{ url_for('deeplink.my_links_page') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-link me-2"></i>My Shortened Links
+                </a>
+                <a href="{{ url_for('deeplink.user_deeplink_converter_page') }}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle me-2"></i>Create New Short Link
+                </a>
+            </div>
+
+            <hr class="my-4">
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-danger">
+                <i class="fas fa-sign-out-alt me-2"></i>Logout
+            </a>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Font Awesome is already linked in the head, so no need to add it again here -->
 </body>
 </html>
