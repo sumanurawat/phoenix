@@ -1,6 +1,7 @@
 """Routes for user authentication, including Google and Instagram OAuth."""
 import os
 from functools import wraps
+from urllib.parse import urlparse, urljoin
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 import requests
 
@@ -10,11 +11,18 @@ auth_bp = Blueprint('auth', __name__)
 auth_service = AuthService()
 
 
+def is_safe_url(target):
+    """Ensure redirect URL is safe and belongs to our domain"""
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
+
+
 def login_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if 'id_token' not in session:
-            return redirect(url_for('auth.login'))
+            return redirect(url_for('auth.login', next=request.url))
         return func(*args, **kwargs)
     return wrapper
 
@@ -22,6 +30,8 @@ def login_required(func):
 @auth_bp.route('/signup', methods=['GET', 'POST'])
 def signup():
     error = None
+    next_url = request.args.get('next') or request.form.get('next')
+    
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
@@ -30,15 +40,22 @@ def signup():
             session['id_token'] = data.get('idToken')
             session['user_email'] = data.get('email')
             session['user_id'] = data.get('localId')
-            return redirect(url_for('auth.profile'))
+            
+            # Redirect to intended page or default
+            if next_url and is_safe_url(next_url):
+                return redirect(next_url)
+            else:
+                return redirect(url_for('deeplink.manage_short_links_page'))
         except Exception as e:
             error = str(e)
-    return render_template('signup.html', title='Sign Up', error=error)
+    return render_template('signup.html', title='Sign Up', error=error, next=next_url)
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
+    next_url = request.args.get('next') or request.form.get('next')
+    
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
@@ -47,15 +64,25 @@ def login():
             session['id_token'] = data.get('idToken')
             session['user_email'] = data.get('email')
             session['user_id'] = data.get('localId')
-            return redirect(url_for('auth.profile'))
+            
+            # Redirect to intended page or default
+            if next_url and is_safe_url(next_url):
+                return redirect(next_url)
+            else:
+                return redirect(url_for('deeplink.manage_short_links_page'))
         except Exception as e:
             error = str(e)
-    return render_template('login.html', title='Login', error=error)
+    return render_template('login.html', title='Login', error=error, next=next_url)
 
 
 @auth_bp.route('/login/google')
 def google_login():
     """Start Google OAuth flow for sign-in/sign-up."""
+    # Store the next URL in session for after OAuth
+    next_url = request.args.get('next')
+    if next_url:
+        session['oauth_next_url'] = next_url
+    
     prod_url_base = os.getenv('PRODUCTION_URL')
     if prod_url_base:
         # Ensure no trailing slash in prod_url_base and leading slash in callback path
@@ -131,7 +158,12 @@ def google_callback():
         session['user_name'] = userinfo.get('name')
         session['user_picture'] = userinfo.get('picture')
 
-        return redirect(url_for('auth.profile'))
+        # Handle redirect after OAuth
+        next_url = session.pop('oauth_next_url', None)
+        if next_url and is_safe_url(next_url):
+            return redirect(next_url)
+        else:
+            return redirect(url_for('deeplink.manage_short_links_page'))
     except Exception as e:
         flash(f'Authentication failed: {str(e)}', 'danger')
         return redirect(url_for('auth.login'))

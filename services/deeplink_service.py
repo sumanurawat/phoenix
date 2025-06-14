@@ -1,13 +1,11 @@
 """
 Deep Link Service
 
-Service for handling YouTube URL conversion to deep links and URL shortening.
+Service for handling URL shortening and management.
 """
 import logging
 from firebase_admin import firestore
 import uuid
-import re
-from urllib.parse import urlparse, parse_qs
 
 # Firestore Collection Name
 SHORTENED_LINKS_COLLECTION = "shortened_links"
@@ -132,28 +130,3 @@ def delete_short_link(short_code, user_id):
     except Exception as e:
         logging.error(f"Error deleting short_code {short_code} for user_id {user_id}: {e}")
         return False
-
-# Existing YouTube-specific functions
-def extract_video_id(youtube_url):
-    """Extract the video ID from a YouTube URL.
-    Supports formats:
-    - https://youtube.com/watch?v=VIDEO_ID
-    - https://youtu.be/VIDEO_ID
-    - https://www.youtube.com/watch?v=VIDEO_ID
-    """
-    try:
-        url = urlparse(youtube_url)
-        if url.hostname in ('youtu.be', 'www.youtu.be'):
-            return url.path[1:]
-        if url.hostname in ('youtube.com', 'www.youtube.com'):
-            query_params = parse_qs(url.query)
-            return query_params['v'][0]
-        return None
-    except Exception:
-        return None
-
-def validate_video_id(video_id):
-    """Validate that a video ID matches YouTube's format."""
-    if not video_id:
-        return False
-    return bool(re.match(r'^[A-Za-z0-9_-]{11}$', video_id))
