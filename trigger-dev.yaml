@@ -1,0 +1,9 @@
+name: phoenix-dev-deploy
+description: Deploy Phoenix staging environment from dev branch
+github:
+  owner: sumanurawat
+  name: phoenix
+  push:
+    branch: ^dev$
+filename: cloudbuild-dev.yaml
+serviceAccount: projects/phoenix-project-386/serviceAccounts/234619602247-compute@developer.gserviceaccount.com
