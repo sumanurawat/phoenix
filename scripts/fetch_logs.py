@@ -25,10 +25,11 @@ from pathlib import Path
 class CloudRunLogFetcher:
     """Fetches and analyzes Cloud Run logs from GCP."""
     
-    def __init__(self):
+    def __init__(self, environment="production"):
         self.project_id = "phoenix-project-386"
         self.project_number = "234619602247"
-        self.service_name = "phoenix"
+        self.environment = environment
+        self.service_name = "phoenix-dev" if environment == "staging" else "phoenix"
         self.region = "us-central1"
         self.service_url = "https://phoenix-234619602247.us-central1.run.app"
         
@@ -401,6 +402,13 @@ Examples:
     )
     
     parser.add_argument(
+        '--environment',
+        choices=['production', 'staging'],
+        default='production',
+        help='Environment to fetch logs from (default: production)'
+    )
+    
+    parser.add_argument(
         '--save-json',
         action='store_true',
         help='Also save logs in JSON format'
@@ -418,14 +426,15 @@ Examples:
     if not args.severity:
         args.severity = ['ERROR', 'WARNING']
     
-    # Initialize log fetcher
-    fetcher = CloudRunLogFetcher()
+    # Initialize log fetcher with environment
+    fetcher = CloudRunLogFetcher(environment=args.environment)
     
     # Check authentication
     if not fetcher.check_gcloud_auth():
         sys.exit(1)
     
     print(f"🚀 Phoenix GCP Log Fetcher")
+    print(f"Environment: {args.environment.title()}")
     print(f"Project: {fetcher.project_id}")
     print(f"Service: {fetcher.service_name}")
     print(f"Region: {fetcher.region}")
