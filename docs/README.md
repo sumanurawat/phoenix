@@ -1,49 +1,19 @@
-# 📚 Phoenix Documentation Index
+# 📚 Phoenix Documentation
 
-This directory contains comprehensive documentation for the Phoenix application development workflow and staging environment setup.
+## Essential Documentation
 
-## 📖 Documentation Overview
+### 🚀 Start Here
+- **[Consolidated Workflow](CONSOLIDATED_WORKFLOW.md)** - Complete development workflow and commands
+- **[Quick Reference](QUICK_REFERENCE.md)** - Daily commands cheat sheet
+- **[Daily Workflow Checklist](DAILY_WORKFLOW_CHECKLIST.md)** - Development checklist
 
-### 🚀 Getting Started
-- **[Quick Reference](QUICK_REFERENCE.md)** - Essential commands and URLs for daily use
-- **[Daily Workflow Checklist](DAILY_WORKFLOW_CHECKLIST.md)** - Step-by-step checklist for daily development tasks
+### 🏗️ System Design
+- **[Development Workflow Guide](DEVELOPMENT_WORKFLOW_GUIDE.md)** - Detailed workflow documentation
+- **[Deeplink System Design](DEEPLINK_SYSTEM_DESIGN.md)** - URL shortening architecture
 
-### 🏗️ Comprehensive Guides
-- **[Development Workflow Guide](DEVELOPMENT_WORKFLOW_GUIDE.md)** - Complete guide to development workflow, staging setup, and best practices
-- **[Staging Technical Configuration](STAGING_TECHNICAL_CONFIG.md)** - Detailed technical configuration of staging environment
-
-### 📋 Setup Documentation
-- **[Staging Setup Complete](STAGING_SETUP_COMPLETE.md)** - Summary of completed staging environment setup
-- **[Staging Environment Guide](STAGING_ENVIRONMENT_GUIDE.md)** - Original staging environment setup guide
-
-### 🔧 Tool-Specific Guides
-- **[Log Fetching Usage](LOG_FETCHING_USAGE.md)** - How to use the enhanced log fetching tools
-- **[Log Fetching Guide](LOG_FETCHING_GUIDE.md)** - Original log fetching setup guide
-
-### 🎯 Feature Documentation
-- **[Deeplink Implementation Plan](DEEPLINK_IMPLEMENTATION_PLAN.md)** - URL shortening feature implementation
-- **[Deeplink PRD](DEEPLINK_PRD.md)** - Product requirements for URL shortening
-- **[Deeplink System Design](DEEPLINK_SYSTEM_DESIGN.md)** - Technical design for URL shortening
-- **[Manual Testing Plan](MANUAL_TESTING_PLAN.md)** - Testing procedures for features
-
-## 🗂️ Documentation Categories
-
-### For Daily Development
-1. [Quick Reference](QUICK_REFERENCE.md) - Your daily commands cheat sheet
-2. [Daily Workflow Checklist](DAILY_WORKFLOW_CHECKLIST.md) - Ensure you don't miss important steps
-
-### For Understanding the System
-1. [Development Workflow Guide](DEVELOPMENT_WORKFLOW_GUIDE.md) - Complete workflow and best practices
-2. [Staging Technical Configuration](STAGING_TECHNICAL_CONFIG.md) - Technical details of the setup
-
-### For Troubleshooting
-1. [Development Workflow Guide](DEVELOPMENT_WORKFLOW_GUIDE.md#troubleshooting) - Common issues and solutions
-2. [Log Fetching Usage](LOG_FETCHING_USAGE.md) - How to investigate issues with logs
-
-### For New Team Members
-1. [Staging Setup Complete](STAGING_SETUP_COMPLETE.md) - Overview of the current setup
-2. [Development Workflow Guide](DEVELOPMENT_WORKFLOW_GUIDE.md) - Complete onboarding guide
-3. [Quick Reference](QUICK_REFERENCE.md) - Essential commands to get started
+### 🔧 Operations
+- **[Log Fetching Usage](LOG_FETCHING_USAGE.md)** - Enhanced log monitoring tools
+- **[Manual Testing Plan](MANUAL_TESTING_PLAN.md)** - Testing procedures
 
 ## 🔗 Key Resources
 
