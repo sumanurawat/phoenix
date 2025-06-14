@@ -30,7 +30,12 @@ def signup():
             session['id_token'] = data.get('idToken')
             session['user_email'] = data.get('email')
             session['user_id'] = data.get('localId')
-            return redirect(url_for('auth.profile'))
+
+            next_url = request.args.get('next')
+            if next_url and next_url.startswith('/'):
+                return redirect(next_url)
+            else:
+                return redirect(url_for('deeplink.manage_short_links_page'))
         except Exception as e:
             error = str(e)
     return render_template('signup.html', title='Sign Up', error=error)
@@ -47,7 +52,12 @@ def login():
             session['id_token'] = data.get('idToken')
             session['user_email'] = data.get('email')
             session['user_id'] = data.get('localId')
-            return redirect(url_for('auth.profile'))
+
+            next_url = request.args.get('next')
+            if next_url and next_url.startswith('/'):
+                return redirect(next_url)
+            else:
+                return redirect(url_for('deeplink.manage_short_links_page'))
         except Exception as e:
             error = str(e)
     return render_template('login.html', title='Login', error=error)
@@ -65,6 +75,14 @@ def google_login():
     
     auth_url, state = auth_service.get_google_auth_url(redirect_uri)
     session['oauth_state'] = state
+
+    next_url = request.args.get('next')
+    if next_url and next_url.startswith('/'):
+        session['post_login_redirect'] = next_url
+    else:
+        # Clear any previous value if next_url is not valid or not present
+        session.pop('post_login_redirect', None)
+
     return redirect(auth_url)
 
 
@@ -131,7 +149,11 @@ def google_callback():
         session['user_name'] = userinfo.get('name')
         session['user_picture'] = userinfo.get('picture')
 
-        return redirect(url_for('auth.profile'))
+        post_login_redirect_url = session.pop('post_login_redirect', None)
+        if post_login_redirect_url and post_login_redirect_url.startswith('/'):
+            return redirect(post_login_redirect_url)
+        else:
+            return redirect(url_for('deeplink.manage_short_links_page'))
     except Exception as e:
         flash(f'Authentication failed: {str(e)}', 'danger')
         return redirect(url_for('auth.login'))

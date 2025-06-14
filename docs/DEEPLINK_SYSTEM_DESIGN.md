@@ -125,32 +125,36 @@ Stores detailed information for each click event.
 Base URL: `https://yourphoenixapp.com`
 
 ### 3.1. Public Access
-*   **`GET /` (or `/deeplink-generator`)**
-    *   **Purpose:** Displays the deep link generator page for all users.
-    *   **Auth:** None required.
-    *   **Response:** HTML page with a form for `original_url` and `guest_email` (if not logged in). Displays terms (10-click limit for guests).
+*(Note: The system has been updated. Direct, unauthenticated link creation is not currently supported. The functionality described below for guest creation is for future consideration or reflects a previous design iteration. All current link creation requires user authentication.)*
 
-*   **`POST /deeplink/create`**
-    *   **Purpose:** Handles creation of a new short link.
+*   **`GET /apps/deeplink/youtube-converter` (Formerly a public generator page)**
+    *   **Current Purpose:** This URL now redirects users. If not logged in, it redirects to the login page. After login, it directs to the authenticated user's link management page (`/apps/deeplink/profile/links`).
+    *   **Auth:** Authentication is effectively required due to the redirect to login.
+    *   **Response:** HTTP Redirect. It no longer serves a direct form for unauthenticated users.
+
+*   **`POST /deeplink/create` (or similar public creation endpoint)**
+    *   **Current Status:** Not available for unauthenticated users.
+    *   **Note:** Any previous unauthenticated POST endpoint for link creation is deprecated. All link creation is now handled via authenticated routes (e.g., `POST` to `/apps/deeplink/profile/links`).
+    *   **(The following describes the behavior if a guest system were active):**
     *   **Auth:**
         *   If guest: No token needed. `guest_email` is required in payload.
         *   If authenticated: Firebase ID token required. `guest_email` ignored.
     *   **Request Body (form-data or JSON):**
         *   `original_url` (string, required)
         *   `guest_email` (string, optional, required for guests)
-    *   **Behavior:**
+    *   **Behavior (if guest system were active):**
         1.  Validate `original_url`.
         2.  If guest, validate `guest_email`.
         3.  Generate unique `short_code`.
         4.  If guest: Create `deeplinks` entry with `max_clicks=10`, `guest_email`.
         5.  If authenticated: Check subscription status via `user_subscriptions`.
             *   If premium: Create `deeplinks` entry with `firebase_uid`, `max_clicks=NULL`.
-            *   If not premium (authenticated but not subscribed): Potentially treat as guest (10 clicks, but tied to `firebase_uid`), or disallow/prompt to upgrade. (Decision: For simplicity, authenticated non-subscribed users attempting to create via this public endpoint could be redirected to the subscription page or informed it's a premium feature beyond a very limited trial if any. Or, treat them like guests using their account email). For now, assume this endpoint is primarily for guests or new users; premium users use dashboard.
-    *   **Response:**
+            *   If not premium (authenticated but not subscribed): Potentially treat as guest (10 clicks, but tied to `firebase_uid`), or disallow/prompt to upgrade.
+    *   **Response (if guest system were active):**
         *   Success: HTML page displaying the `short_link`, or JSON `{"short_link": "...", "original_url": "..."}`.
         *   Error: HTML error page or JSON error message.
 
-*   **`GET /<short_code>`** (e.g., `/aB1xYz`)
+*   **`GET /r/<short_code>`** (e.g., `/apps/deeplink/r/aB1xYz`) - Changed from `/<short_code>` to reflect actual path.
     *   **Purpose:** Redirects a short link to its original URL and logs the click.
     *   **Auth:** None required.
     *   **Behavior:**

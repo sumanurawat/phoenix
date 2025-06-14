@@ -1,5 +1,11 @@
 # Implementation Plan: URL Shortener / Deep Linking Feature (Firestore Based)
 
+> **Note on Recent Changes (October 2023):**
+> *   All URL shortening and deep linking functionalities now require user authentication.
+> *   The previous public YouTube-specific converter page at `/apps/deeplink/youtube-converter` has been removed. This URL now redirects authenticated users directly to their main links management page (`/apps/deeplink/profile/links`). Non-authenticated users attempting to access this URL will be redirected to the login page.
+> *   The primary interface for creating and managing all short links is now exclusively the authenticated page located at `/apps/deeplink/profile/links`.
+> *   Any unauthenticated or "guest" access for link creation mentioned in this document under "Future" sections would represent a new feature, not a restoration of removed functionality.
+
 This document outlines the step-by-step plan for the Firestore-based URL Shortening feature.
 Items marked [x] are considered implemented by the recent updates.
 Items marked [F] are considered Future, or out of scope for the current Firestore-based MVP.
@@ -60,6 +66,7 @@ Items marked [F] are considered Future, or out of scope for the current Firestor
 ## Phase 2: Backend - User Flows & External Integrations
 
 1.  **[F] Guest User Flow Implementation:** (Future)
+    *   Note: The previous public access point (`/apps/deeplink/youtube-converter`) has been removed and now redirects authenticated users to the link management page (after login if needed). Any future guest user access would be a new implementation, not a restoration.
     *   [ ] Implement `POST /deeplink/create_guest` (or similar) for guest users if desired.
         *   May require `guest_email`.
         *   May create `DeepLink` with `max_clicks` (e.g., 10 or 25).
@@ -70,11 +77,11 @@ Items marked [F] are considered Future, or out of scope for the current Firestor
     *   [ ] Implement webhook for Stripe events (`checkout.session.completed`, etc.).
     *   [ ] Create route for Stripe Checkout session.
 3.  **Authenticated User Flow - Link Creation:**
-    *   [x] Implement `POST /apps/deeplink/profile/converter` for authenticated users.
+    *   [x] Implemented via `POST` to `/apps/deeplink/profile/links` (handled by `manage_short_links_page`) for authenticated users.
         *   Requires login (uses `user_id` and `user_email` from session).
         *   Creates document in `shortened_links` collection. `click_count` defaults to 0. No `max_clicks` (effectively unlimited for authenticated users for now).
 4.  **Authenticated User Flow - Link Management & Basic Analytics:**
-    *   [x] `GET /apps/deeplink/profile/my-links` page displays a table of user's created links.
+    *   [x] `GET /apps/deeplink/profile/links` (handled by `manage_short_links_page`) displays a table of user's created links and the form to create new ones.
     *   [x] Data fetched from `shortened_links` collection, filtered by `user_id`, ordered by `created_at`.
     *   [x] Displays `original_url`, `short_url_display` (full short URL), `created_at_display`, and `click_count`.
     *   [F] Time-series data for charts (Future).
@@ -95,13 +102,14 @@ Items marked [F] are considered Future, or out of scope for the current Firestor
 3.  **Authenticated User - "My Links" Page (`GET /apps/deeplink/profile/my-links`):**
     *   [x] Created Jinja2 template (`my_links.html`).
     *   [x] Protected route: requires login.
-    *   [x] Displays a table of the user's links with `original_url`, `short_url_display`, `created_at_display`, `click_count`.
+    *   [x] Displays a table of the user's links with `original_url`, `short_url_display`, `created_at_display`, `click_count`, and the creation form.
     *   [x] "Copy to clipboard" button for each short URL.
     *   [F] Integrate Chart.js for visualizing analytics (Future).
-4.  **Authenticated User - "Create New Short Link" Page (`GET & POST /apps/deeplink/profile/converter`):**
-    *   [x] Created Jinja2 template (`user_deeplink_converter.html`).
-    *   [x] Form for `original_url`.
-    *   [x] Displays generated short link and "copy" button upon successful submission.
+4.  **Authenticated User - Combined "Manage & Create New Short Link" Page (`GET & POST /apps/deeplink/profile/links`):**
+    *   [x] The old `/apps/deeplink/youtube-converter` URL now redirects (via login if necessary) to this page.
+    *   [x] Uses Jinja2 template (`manage_links.html`).
+    *   [x] Form for `original_url` is part of this combined page.
+    *   [x] Displays generated short link and "copy" button upon successful submission within the same page.
     *   [x] Shows error/success messages.
 5.  **[F] Subscription UI:** (Future)
     *   [ ] UI elements for "Upgrade to Premium" linking to Stripe Checkout.
@@ -162,7 +170,7 @@ Items marked [F] are considered Future, or out of scope for the current Firestor
 
 ## Phase 6: Future Iterations (Roadmap from PRD & This Plan)
 
-*   [ ] **Guest User Access:** Limited free tier for creating short links.
+*   [ ] **Guest User Access:** Consideration for a *new* limited free tier for creating short links (distinct from any previous unauthenticated access which has been removed).
 *   [ ] **Detailed Analytics:** Geo-location, referrer tracking, device information, time-series charts.
 *   [ ] **Premium Subscriptions (Stripe Integration):** For unlocking advanced features or higher limits.
 *   [ ] **Custom Short Codes:** Allow users to suggest their own short codes.
