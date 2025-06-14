@@ -3,6 +3,7 @@ Deep Link Service
 
 Service for handling YouTube URL conversion to deep links and URL shortening.
 """
+import logging # Add logging import
 from firebase_admin import firestore
 import uuid # For generating initial short codes
 import re
@@ -57,19 +58,26 @@ def increment_click_count(short_code):
 
 def get_links_for_user(user_id):
     """Retrieve all short links created by a specific user."""
+    logging.info(f"Fetching links for user_id: {user_id}")
     db = firestore.client()
     links_list = []
-    links_query = db.collection(SHORTENED_LINKS_COLLECTION) \
-                    .where('user_id', '==', user_id) \
-                    .order_by('created_at', direction=firestore.Query.DESCENDING) \
-                    .stream()
-    for doc in links_query:
-        link_data = doc.to_dict()
-        link_data['short_code'] = doc.id # Add the document ID as short_code
-        # Convert timestamp to a readable string or keep as is, depending on frontend needs
-        # For simplicity, we'll keep it as a Firestore timestamp for now.
-        links_list.append(link_data)
-    return links_list
+    try:
+        links_query = db.collection(SHORTENED_LINKS_COLLECTION) \
+                        .where('user_id', '==', user_id) \
+                        .order_by('created_at', direction=firestore.Query.DESCENDING) \
+                        .stream()
+        for doc in links_query:
+            link_data = doc.to_dict()
+            link_data['short_code'] = doc.id # Add the document ID as short_code
+            # Convert timestamp to a readable string or keep as is, depending on frontend needs
+            # For simplicity, we'll keep it as a Firestore timestamp for now.
+            links_list.append(link_data)
+
+        logging.info(f"Retrieved {len(links_list)} links for user_id: {user_id}")
+        return links_list
+    except Exception as e:
+        logging.error(f"Error fetching links for user_id {user_id}: {e}")
+        raise # Re-raise the exception to be handled by the caller
 
 # Existing YouTube-specific functions
 def extract_video_id(youtube_url):
