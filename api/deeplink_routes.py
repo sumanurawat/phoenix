@@ -3,6 +3,7 @@ Deep Link Routes
 
 Routes for handling YouTube deep link conversion and generic URL shortening.
 """
+import logging # Moved import logging to the top
 from flask import Blueprint, render_template, request, url_for, abort, session, redirect
 from services.deeplink_service import (
     create_short_link,
@@ -122,6 +123,7 @@ def my_links_page():
         return redirect(url_for('auth.login', next=request.url)) # Fixed: auth_bp.login -> auth.login
 
     user_links = []
+    error_message = None  # Initialize error_message to None
     try:
         fetched_links = get_links_for_user(user_id)
         for link_data in fetched_links:
@@ -142,12 +144,12 @@ def my_links_page():
                 link_data['created_at_display'] = 'N/A'
             user_links.append(link_data)
     except Exception as e:
-        # In a real app, log this error: logger.error(f"Error fetching links for user {user_id}: {e}")
-        # For now, we can set an error message for the template if needed
-        # error_message = "Could not load your links at this time. Please try again later."
-        pass # Silently fail for now, or pass an error to the template
+        logging.exception(f"Error fetching links for user {user_id}: {e}")
+        error_message = "Could not load your links at this time. Please try again later."
+        # user_links remains empty or partially filled if error occurs mid-loop
 
     return render_template('my_links.html',
                            user_email=user_email,
                            links=user_links,
+                           error_message=error_message,  # Pass error_message to the template
                            title="My Shortened Links")

@@ -40,6 +40,12 @@
       </a>
     </header>
 
+    {% if error_message %}
+      <div class="alert alert-danger" role="alert">
+        {{ error_message }}
+      </div>
+    {% endif %}
+
     {% if links %}
       <div class="table-responsive">
         <table class="table table-striped table-hover">
