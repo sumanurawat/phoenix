@@ -27,6 +27,9 @@ from api.auth_routes import auth_bp
 from services.chat_service import ChatService
 from services.search_service import SearchService
 
+import firebase_admin
+from firebase_admin import credentials
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -40,6 +43,17 @@ search_service = SearchService()
 
 def create_app():
     """Create and configure the Flask application."""
+    # Initialize Firebase Admin SDK
+    # Ensure the GOOGLE_APPLICATION_CREDENTIALS environment variable is set.
+    try:
+        cred = credentials.ApplicationDefault()
+        firebase_admin.initialize_app(cred)
+        logger.info("Firebase Admin SDK initialized successfully.")
+    except Exception as e:
+        logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
+        # Depending on the application's needs, you might want to handle this more gracefully
+        # or even prevent the app from starting if Firebase is critical.
+
     # Initialize Flask app
     app = Flask(__name__)
     
