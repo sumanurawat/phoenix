@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title | default('Short Links') }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-link me-2"></i>Short Links</h2>
+        <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Profile
+        </a>
+    </div>
+    
+    <p class="text-muted">Welcome, {{ user_email }}! Create and manage your shortened links below.</p>
+
+    <!-- CREATE NEW LINK SECTION -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-plus-circle me-2"></i>Create a New Short Link
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('deeplink.manage_short_links_page') }}">
+                <div class="form-group mb-3">
+                    <label for="original_url" class="form-label">Enter URL to shorten:</label>
+                    <input type="url" class="form-control" id="original_url" name="original_url" 
+                           value="{{ original_url if original_url else '' }}" 
+                           placeholder="https://www.example.com/very/long/url" required>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-compress-alt me-2"></i>Shorten URL
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SUCCESS/ERROR MESSAGES -->
+    {% if success_message %}
+        <div class="alert alert-success d-flex align-items-center" role="alert">
+            <i class="fas fa-check-circle me-3"></i>
+            <div class="flex-grow-1">
+                <strong>{{ success_message }}</strong>
+                {% if short_link_generated %}
+                    <br>
+                    <div class="mt-2">
+                        <strong>Your short link:</strong>
+                        <div class="input-group mt-1" style="max-width: 400px;">
+                            <input type="text" class="form-control" value="{{ short_link_generated }}" readonly id="shortLinkInput">
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('{{ short_link_generated }}')">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    {% if error_message %}
+        <div class="alert alert-danger d-flex align-items-center" role="alert">
+            <i class="fas fa-exclamation-triangle me-3"></i>
+            <div>{{ error_message }}</div>
+        </div>
+    {% endif %}
+
+    <!-- EXISTING LINKS SECTION -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-list me-2"></i>Your Existing Links ({{ links|length }})
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if links %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Original URL</th>
+                        <th>Short URL</th>
+                        <th>Created At</th>
+                        <th>Clicks</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for link in links %}
+                    <tr id="link-row-{{ link.short_code }}">
+                        <td>
+                            <a href="{{ link.original_url }}" target="_blank" title="{{ link.original_url }}">
+                                {{ link.original_url | truncate(60) }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{{ link.short_url_display }}" target="_blank">{{ link.short_url_display }}</a>
+                        </td>
+                        <td>{{ link.created_at_display }}</td>
+                        <td><span class="badge bg-info">{{ link.click_count }}</span></td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('{{ link.short_url_display }}')" title="Copy to clipboard">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteLink('{{ link.short_code }}', '{{ link.original_url | truncate(30) }}')" title="Delete link">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-link text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="text-muted mt-3">No short links yet</h5>
+                    <p class="text-muted">Use the form above to create your first shortened link!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        // Create a temporary success message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+        alertDiv.style = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+        alertDiv.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>Short URL copied to clipboard!
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 3000);
+    }, function(err) {
+        alert('Failed to copy URL. Please copy it manually.');
+        console.error('Could not copy text: ', err);
+    });
+}
+
+function deleteLink(shortCode, originalUrl) {
+    // Confirm deletion with user
+    if (!confirm(`Are you sure you want to delete this short link?\n\nOriginal URL: ${originalUrl}\n\nThis action cannot be undone.`)) {
+        return;
+    }
+
+    // Show loading state
+    const deleteButton = event.target.closest('button');
+    const originalHTML = deleteButton.innerHTML;
+    deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    deleteButton.disabled = true;
+
+    // Make AJAX request to delete
+    fetch(`/apps/deeplink/profile/links/delete/${shortCode}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the row from the table with animation
+            const row = document.getElementById(`link-row-${shortCode}`);
+            if (row) {
+                row.style.transition = 'opacity 0.3s ease-out';
+                row.style.opacity = '0';
+                setTimeout(() => {
+                    row.remove();
+                    
+                    // Update the count in the header
+                    updateLinkCount();
+                    
+                    // Show success message
+                    showAlert('success', 'Link deleted successfully!', 'fas fa-check-circle');
+                }, 300);
+            }
+        } else {
+            // Show error message
+            showAlert('danger', data.error || 'Failed to delete link', 'fas fa-exclamation-triangle');
+            
+            // Restore button state
+            deleteButton.innerHTML = originalHTML;
+            deleteButton.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'An error occurred while deleting the link', 'fas fa-exclamation-triangle');
+        
+        // Restore button state
+        deleteButton.innerHTML = originalHTML;
+        deleteButton.disabled = false;
+    });
+}
+
+function showAlert(type, message, icon) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style = 'top: 20px; right: 20px; z-index: 9999; max-width: 350px;';
+    alertDiv.innerHTML = `
+        <i class="${icon} me-2"></i>${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 4000);
+}
+
+function updateLinkCount() {
+    const tableBody = document.querySelector('tbody');
+    const rows = tableBody ? tableBody.querySelectorAll('tr').length : 0;
+    const headerElement = document.querySelector('.card-header h5');
+    
+    if (headerElement) {
+        headerElement.innerHTML = `<i class="fas fa-list me-2"></i>Your Existing Links (${rows})`;
+    }
+    
+    // If no links left, show the empty state
+    if (rows === 0) {
+        const tableContainer = document.querySelector('.table-responsive');
+        if (tableContainer) {
+            tableContainer.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-link text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="text-muted mt-3">No short links yet</h5>
+                    <p class="text-muted">Use the form above to create your first shortened link!</p>
+                </div>
+            `;
+        }
+    }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
