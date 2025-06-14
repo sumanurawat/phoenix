@@ -1,0 +1,44 @@
+steps:
+  # Build the container image for staging
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/phoenix-dev', '.']
+  
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/phoenix-dev']
+  
+  # Deploy container image to Cloud Run (staging)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+    - 'run'
+    - 'deploy'
+    - 'phoenix-dev'
+    - '--image'
+    - 'gcr.io/$PROJECT_ID/phoenix-dev'
+    - '--region'
+    - 'us-central1'
+    - '--platform'
+    - 'managed'
+    - '--allow-unauthenticated'
+    - '--cpu'
+    - '500m'
+    - '--memory'
+    - '256Mi'
+    - '--max-instances'
+    - '3'
+    - '--timeout'
+    - '300'
+    - '--concurrency'
+    - '1'
+    - '--update-secrets'
+    - 'GEMINI_API_KEY=phoenix-gemini-api-key:latest,SECRET_KEY=phoenix-secret-key:latest,GOOGLE_API_KEY=phoenix-google-api-key:latest,GOOGLE_SEARCH_ENGINE_ID=phoenix-search-engine-id:latest,NEWSDATA_API_KEY=phoenix-newsdata-api-key:latest,FIREBASE_API_KEY=phoenix-firebase-api-key:latest,GOOGLE_CLIENT_ID=phoenix-google-client-id:latest,GOOGLE_CLIENT_SECRET=phoenix-google-client-secret:latest'
+    - '--update-env-vars'
+    - 'PRODUCTION_URL=https://phoenix-dev-234619602247.us-central1.run.app'
+
+images:
+  - 'gcr.io/$PROJECT_ID/phoenix-dev'
+
+# Add options for logging when using a service account
+options:
+  logging: CLOUD_LOGGING_ONLY
