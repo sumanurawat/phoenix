@@ -3,9 +3,9 @@ Deep Link Service
 
 Service for handling YouTube URL conversion to deep links and URL shortening.
 """
-import logging # Add logging import
+import logging
 from firebase_admin import firestore
-import uuid # For generating initial short codes
+import uuid
 import re
 from urllib.parse import urlparse, parse_qs
 
@@ -23,18 +23,45 @@ def generate_short_code():
             return short_code
 
 def create_short_link(original_url, user_id, user_email):
-    """Create a short link and store it in Firestore."""
+    """
+    Create a short link and store it in Firestore.
+    If the user has already shortened this exact URL, return information about the existing short link.
+    Returns a dictionary: {'short_code': str, 'is_new': bool, 'original_url': str}
+    """
     db = firestore.client()
+
+    # Check if this user has already shortened this original_url
+    existing_links_query = db.collection(SHORTENED_LINKS_COLLECTION)         .where('user_id', '==', user_id)         .where('original_url', '==', original_url)         .limit(1)         .stream()
+
+    existing_link_doc = None
+    for doc in existing_links_query:
+        existing_link_doc = doc
+        break
+
+    if existing_link_doc and existing_link_doc.exists:
+        logging.info(f"User {user_id} already shortened URL {original_url}. Returning existing short_code: {existing_link_doc.id}")
+        return {
+            'short_code': existing_link_doc.id,
+            'is_new': False,
+            'original_url': original_url
+        }
+
+    # If no existing link, create a new one
     short_code = generate_short_code()
     doc_data = {
         'original_url': original_url,
         'user_id': user_id,
         'user_email': user_email,
-        'created_at': firestore.SERVER_TIMESTAMP, # Use server timestamp
+        'created_at': firestore.SERVER_TIMESTAMP,
         'click_count': 0
     }
     db.collection(SHORTENED_LINKS_COLLECTION).document(short_code).set(doc_data)
-    return short_code
+    logging.info(f"Created new short_code {short_code} for URL {original_url} by user {user_id}")
+    return {
+        'short_code': short_code,
+        'is_new': True,
+        'original_url': original_url
+    }
 
 def get_original_url(short_code):
     """Retrieve the original URL from a short code."""
@@ -50,11 +77,10 @@ def increment_click_count(short_code):
     """Increment the click count for a short link."""
     db = firestore.client()
     doc_ref = db.collection(SHORTENED_LINKS_COLLECTION).document(short_code)
-    # Check if document exists before trying to increment
     if doc_ref.get().exists:
         doc_ref.update({'click_count': firestore.Increment(1)})
         return True
-    return False # Indicate if short_code was not found
+    return False
 
 def get_links_for_user(user_id):
     """Retrieve all short links created by a specific user."""
@@ -62,27 +88,54 @@ def get_links_for_user(user_id):
     db = firestore.client()
     links_list = []
     try:
-        links_query = db.collection(SHORTENED_LINKS_COLLECTION) \
-                        .where('user_id', '==', user_id) \
-                        .order_by('created_at', direction=firestore.Query.DESCENDING) \
-                        .stream()
+        links_query = db.collection(SHORTENED_LINKS_COLLECTION)                         .where('user_id', '==', user_id)                         .order_by('created_at', direction=firestore.Query.DESCENDING)                         .stream()
         for doc in links_query:
             link_data = doc.to_dict()
-            link_data['short_code'] = doc.id # Add the document ID as short_code
-            # Convert timestamp to a readable string or keep as is, depending on frontend needs
-            # For simplicity, we'll keep it as a Firestore timestamp for now.
+            link_data['short_code'] = doc.id
             links_list.append(link_data)
-
         logging.info(f"Retrieved {len(links_list)} links for user_id: {user_id}")
         return links_list
     except Exception as e:
         logging.error(f"Error fetching links for user_id {user_id}: {e}")
-        raise # Re-raise the exception to be handled by the caller
+        raise
+
+def delete_short_link(short_code, user_id):
+    """
+    Delete a short link from Firestore.
+    Only allows deletion if the link belongs to the specified user.
+    Returns True if deleted successfully, False if not found or not owned by user.
+    """
+    logging.info(f"Attempting to delete short_code: {short_code} for user_id: {user_id}")
+    db = firestore.client()
+    
+    try:
+        # Get the document first to verify ownership
+        doc_ref = db.collection(SHORTENED_LINKS_COLLECTION).document(short_code)
+        doc = doc_ref.get()
+        
+        if not doc.exists:
+            logging.warning(f"Short code {short_code} not found")
+            return False
+            
+        doc_data = doc.to_dict()
+        
+        # Verify the link belongs to this user
+        if doc_data.get('user_id') != user_id:
+            logging.warning(f"User {user_id} attempted to delete link {short_code} owned by {doc_data.get('user_id')}")
+            return False
+            
+        # Delete the document
+        doc_ref.delete()
+        logging.info(f"Successfully deleted short_code: {short_code} for user_id: {user_id}")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Error deleting short_code {short_code} for user_id {user_id}: {e}")
+        return False
 
 # Existing YouTube-specific functions
 def extract_video_id(youtube_url):
     """Extract the video ID from a YouTube URL.
-    
     Supports formats:
     - https://youtube.com/watch?v=VIDEO_ID
     - https://youtu.be/VIDEO_ID
@@ -90,16 +143,11 @@ def extract_video_id(youtube_url):
     """
     try:
         url = urlparse(youtube_url)
-        
         if url.hostname in ('youtu.be', 'www.youtu.be'):
-            # youtu.be format
-            return url.path[1:]  # Remove leading '/'
-        
+            return url.path[1:]
         if url.hostname in ('youtube.com', 'www.youtube.com'):
-            # youtube.com format
             query_params = parse_qs(url.query)
             return query_params['v'][0]
-            
         return None
     except Exception:
         return None
@@ -108,5 +156,4 @@ def validate_video_id(video_id):
     """Validate that a video ID matches YouTube's format."""
     if not video_id:
         return False
-    # YouTube video IDs are typically 11 characters of alphanumeric and underscore/dash
     return bool(re.match(r'^[A-Za-z0-9_-]{11}$', video_id))
