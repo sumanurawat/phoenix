@@ -2,7 +2,48 @@
 
 ## 1. Architectural Overview
 
+**Note: This document originally described a planned PostgreSQL + Stripe architecture. The current implementation uses Firebase Firestore with authentication-required access. See Section 1.1 for current implementation details.**
+
 The Deep Linking feature will be integrated into the existing Phoenix Flask web application, hosted on Google Cloud Run. It leverages Firebase for authentication and Google Cloud SQL (PostgreSQL) for persistent storage. Stripe handles subscriptions, SendGrid manages email delivery, and IPinfo (or a similar service) enriches click data with geolocation. Chart.js will be used for client-side rendering of analytics visualizations.
+
+## 1.1 Current Implementation Architecture (Updated June 2025)
+
+**Current Tech Stack:**
+- **Flask Web Application**: Deployed on Google Cloud Run
+- **Firebase Firestore**: Primary database for link storage (not PostgreSQL)
+- **Firebase Authentication**: User authentication (email/password + Google OAuth)
+- **Bootstrap 5**: Frontend UI framework
+- **No Premium Subscriptions**: All features free for authenticated users
+
+**Current Components:**
+
+1. **Flask Application:**
+   - Single unified dashboard at `/apps/deeplink/profile/links`
+   - Authentication-required access for all URL shortening
+   - Real-time click tracking with Firestore updates
+
+2. **Firebase Firestore Database:**
+   - Collection: `shortened_links`
+   - Document structure: `{user_id, user_email, original_url, click_count, created_at}`
+   - User data isolation via `user_id` field
+
+3. **Authentication Flow:**
+   - Homepage → Login check → Redirect to login if needed
+   - Post-auth redirect to link management dashboard
+   - Support for `next` parameter in login/signup flows
+
+4. **Removed Features:**
+   - Guest user access (authentication now required)
+   - YouTube-specific converter (consolidated to general URL shortener)
+   - Separate creator/management interfaces (unified dashboard)
+
+**Current Data Flow (Redirect):**
+1. User clicks short link (`/apps/deeplink/r/<short_code>`)
+2. Flask app queries Firestore for `short_code`
+3. If found: increment click count, redirect to original URL
+4. If not found: return 404 error
+
+## 1.2 Planned Architecture (Future Implementation)
 
 **Core Components:**
 

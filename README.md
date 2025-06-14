@@ -18,13 +18,32 @@ An intelligent search engine that leverages AI to deliver precise, contextually 
 A smart news aggregator that curates personalized real-time updates on topics that matter to you. Robin scans thousands of news sources to deliver the most relevant and timely information, all presented in a clean, distraction-free interface. Stay informed without the noise.
 
 ### URL Shortener / Deep Linking
-A robust URL shortening service that allows authenticated users to create, manage, and track short links. This feature is ideal for sharing cleaner URLs and gaining insights into link performance.
-- **Technology**: Utilizes Firebase Firestore for scalable and reliable data persistence of shortened links and their click counts.
-- **Usage**:
-    - **Create Links**: Authenticated users can generate new short links via the `/apps/deeplink/profile/converter` page.
-    - **Manage Links**: View and manage all created short links, including their click counts, on the `/apps/deeplink/profile/my-links` page.
-    - **Redirection**: Short links follow the format `yourdomain.com/apps/deeplink/r/<short_code>` and redirect to the original URL, incrementing a click counter.
-- **Authentication**: This feature requires users to be logged in.
+A robust URL shortening service that allows authenticated users to create, manage, and track short links for any URL.
+
+**Current Implementation Status:**
+- ✅ **Authentication Required**: All users must log in to create/manage links
+- ✅ **Universal URL Support**: Supports any valid HTTP/HTTPS URL (not just YouTube)
+- ✅ **Link Management Dashboard**: View, copy, and delete your links at `/apps/deeplink/profile/links`
+- ✅ **Click Tracking**: Real-time click counting for all short links
+- ✅ **Firestore Storage**: Scalable data persistence
+- ✅ **Mobile-Friendly**: Responsive design for all devices
+
+**Technology**: 
+- Backend: Flask with Firebase Firestore
+- Frontend: Bootstrap 5 with responsive design
+- Authentication: Firebase Authentication integration
+
+**Usage**:
+- **Access**: Click "URL Shortener" on homepage → Login/Signup → Create & manage links
+- **Create Links**: Enter any URL in the dashboard to generate a short link
+- **Manage Links**: View all your links with click counts and creation dates
+- **Share**: Copy short links in format `yourdomain.com/apps/deeplink/r/<short_code>`
+
+**User Flow**:
+1. User clicks "URL Shortener" on homepage
+2. If not logged in → redirected to login/signup
+3. After authentication → redirected to link management dashboard
+4. Create, view, and manage all short links in one place
 
 ## Technology Stack
 
