@@ -10,14 +10,12 @@ from services.deeplink_service import (
     get_original_url,
     increment_click_count,
     get_links_for_user,
-    delete_short_link,
-    extract_video_id,
-    validate_video_id
+    delete_short_link
 )
 from functools import wraps
 from datetime import datetime
 
-# Placeholder login_required decorator
+# Login required decorator
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -150,22 +148,3 @@ def redirect_to_original(short_code):
         return redirect(original_url)
     else:
         abort(404, description="Short link not found or expired.")
-
-@deeplink_bp.route('/youtube-converter', methods=['GET', 'POST'])
-def show_deeplink_youtube():
-    deep_url = None
-    error = None
-    if request.method == 'POST':
-        youtube_url = request.form.get('youtube_url', '')
-        video_id = extract_video_id(youtube_url)
-        if not video_id or not validate_video_id(video_id):
-            error = "Invalid YouTube URL. Please enter a valid URL."
-        else:
-            deep_url = url_for('deeplink.dl_redirect_youtube', video_id=video_id, _external=True)
-    return render_template('deeplink.html', deep_url=deep_url, error=error)
-
-@deeplink_bp.route('/dl-yt/<video_id>')
-def dl_redirect_youtube(video_id):
-    if not validate_video_id(video_id):
-        abort(404)
-    return render_template('redirect.html', video_id=video_id)

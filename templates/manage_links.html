@@ -19,6 +19,21 @@
     
     <p class="text-muted">Welcome, {{ user_email }}! Create and manage your shortened links below.</p>
 
+    <!-- Welcome message for new users -->
+    {% if links|length == 0 %}
+    <div class="welcome-section mb-4">
+        <div class="alert alert-info border-0 shadow-sm">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-info-circle me-3 text-primary" style="font-size: 1.5rem;"></i>
+                <div>
+                    <h5 class="alert-heading mb-1">Welcome to URL Shortener!</h5>
+                    <p class="mb-0">Create your first short link below. You can shorten any URL - websites, social media posts, documents, and more! Track clicks and manage all your links in one place.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- CREATE NEW LINK SECTION -->
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -27,6 +42,7 @@
             </h5>
         </div>
         <div class="card-body">
+            <p class="text-muted mb-3">Enter any URL you want to shorten. Perfect for sharing on social media, emails, or anywhere you need a clean, trackable link.</p>
             <form method="POST" action="{{ url_for('deeplink.manage_short_links_page') }}">
                 <div class="form-group mb-3">
                     <label for="original_url" class="form-label">Enter URL to shorten:</label>
