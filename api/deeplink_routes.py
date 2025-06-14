@@ -124,6 +124,10 @@ def delete_short_link_route(short_code):
     if not user_id:
         return {'success': False, 'error': 'User not authenticated'}, 401
     
+    # Basic CSRF protection - check for required headers
+    if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return {'success': False, 'error': 'Invalid request'}, 403
+    
     try:
         success = delete_short_link(short_code, user_id)
         

@@ -106,13 +106,33 @@ fetch_logs() {
 # Function to open environment in browser
 open_environment() {
     local env=$1
+    local url=""
     
     if [ "$env" = "staging" ]; then
-        open "https://phoenix-dev-234619602247.us-central1.run.app"
+        url="https://phoenix-dev-234619602247.us-central1.run.app"
     elif [ "$env" = "production" ]; then
-        open "https://phoenix-234619602247.us-central1.run.app"
+        url="https://phoenix-234619602247.us-central1.run.app"
     else
         print_error "Unknown environment: $env"
+        return 1
+    fi
+    
+    # Cross-platform browser opening
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        open "$url"
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        # Linux
+        xdg-open "$url" 2>/dev/null || {
+            print_error "xdg-open not available. Please visit: $url"
+        }
+    elif [[ "$OSTYPE" == "cygwin" || "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+        # Windows
+        start "$url" 2>/dev/null || {
+            print_error "start command not available. Please visit: $url"
+        }
+    else
+        print_info "Please open this URL in your browser: $url"
     fi
 }
 

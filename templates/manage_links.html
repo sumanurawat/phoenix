@@ -108,7 +108,7 @@
                                 <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('{{ link.short_url_display }}')" title="Copy to clipboard">
                                     <i class="fas fa-copy"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteLink('{{ link.short_code }}', '{{ link.original_url | truncate(30) }}')" title="Delete link">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteLink(event, '{{ link.short_code }}', '{{ link.original_url | truncate(30) }}')" title="Delete link">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -154,7 +154,7 @@ function copyToClipboard(text) {
     });
 }
 
-function deleteLink(shortCode, originalUrl) {
+function deleteLink(event, shortCode, originalUrl) {
     // Confirm deletion with user
     if (!confirm(`Are you sure you want to delete this short link?\n\nOriginal URL: ${originalUrl}\n\nThis action cannot be undone.`)) {
         return;
@@ -166,12 +166,20 @@ function deleteLink(shortCode, originalUrl) {
     deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     deleteButton.disabled = true;
 
+    // Generate a simple timestamp-based token for basic CSRF protection
+    const csrfToken = btoa(Date.now().toString());
+
     // Make AJAX request to delete
     fetch(`/apps/deeplink/profile/links/delete/${shortCode}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-        }
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify({
+            csrf_token: csrfToken
+        })
     })
     .then(response => response.json())
     .then(data => {
