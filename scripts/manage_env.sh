@@ -166,8 +166,9 @@ case "${1:-help}" in
     "logs")
         case "$2" in
             "staging"|"production")
+                env_name="$2"
                 shift 2
-                fetch_logs "$2" "$@"
+                fetch_logs "$env_name" "$@"
                 ;;
             *)
                 print_error "Invalid logs target. Use 'staging' or 'production'"

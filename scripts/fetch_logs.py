@@ -29,9 +29,15 @@ class CloudRunLogFetcher:
         self.project_id = "phoenix-project-386"
         self.project_number = "234619602247"
         self.environment = environment
-        self.service_name = "phoenix-dev" if environment == "staging" else "phoenix"
         self.region = "us-central1"
-        self.service_url = "https://phoenix-234619602247.us-central1.run.app"
+        
+        # Environment-specific configuration
+        if environment == "staging":
+            self.service_name = "phoenix-dev"
+            self.service_url = "https://phoenix-dev-234619602247.us-central1.run.app"
+        else:  # production
+            self.service_name = "phoenix"
+            self.service_url = "https://phoenix-234619602247.us-central1.run.app"
         
         # Base directory for saving logs
         self.base_dir = Path(__file__).parent.parent
