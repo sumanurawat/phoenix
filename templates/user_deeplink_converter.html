@@ -40,12 +40,6 @@
       </button>
     </form>
 
-    {% if error %}
-      {# This error is already handled above the form, so this specific block might be redundant
-         or intended for a different type of error (e.g., post-submission error not related to form validation)
-         Keeping it for now as per original structure unless specified otherwise. #}
-    {% endif %}
-
     {% if deep_url %}
       <div class="results">
         {% if success_message %}
