@@ -5,7 +5,6 @@ Service for handling YouTube URL conversion to deep links and URL shortening.
 """
 from firebase_admin import firestore
 import uuid # For generating initial short codes
-import time # For created_at timestamp
 import re
 from urllib.parse import urlparse, parse_qs
 
