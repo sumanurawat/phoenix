@@ -75,14 +75,33 @@ Comparing staging vs production configurations revealed missing critical secrets
 3. **Verify secrets** and environment variables
 4. **Test incremental changes**
 
+## ✅ **FINAL SOLUTION - IAM Policy Issue**
+
+### **Real Root Cause**
+The staging environment was **rejecting all requests** due to missing IAM policy for unauthenticated access, despite having `--allow-unauthenticated` in the build config.
+
+### **Warning Logs Revealed the Truth**
+```
+WARNING 403 https://phoenix-dev-234619602247.us-central1.run.app/
+The request was not authenticated. Either allow unauthenticated invocations or set the proper Authorization header.
+```
+
+### **Final Fix Applied**
+```bash
+gcloud run services add-iam-policy-binding phoenix-dev \
+  --region=us-central1 \
+  --member="allUsers" \
+  --role="roles/run.invoker"
+```
+
 ## ✅ **Current Status**
 
 Both environments are now operational:
 
-| Environment | Status | URL | Logs |
-|-------------|--------|-----|------|
-| **Staging** | ✅ Running | https://phoenix-dev-hpbuj2rr6q-uc.a.run.app | WARNING only |
-| **Production** | ✅ Running | https://phoenix-hpbuj2rr6q-uc.a.run.app | Clean |
+| Environment | Status | URL | Resources | Logs |
+|-------------|--------|-----|-----------|------|
+| **Staging** | ✅ Running | https://phoenix-dev-234619602247.us-central1.run.app | 256Mi RAM, 500m CPU, 3 max instances | Clean |
+| **Production** | ✅ Running | https://phoenix-hpbuj2rr6q-uc.a.run.app | 512Mi RAM, 1000m CPU, 100 max instances | Clean |
 
 ## 🚀 **Next Steps**
 
