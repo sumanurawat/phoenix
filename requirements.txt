@@ -11,3 +11,4 @@ google-api-python-client==2.70.0  # For Google API client
 beautifulsoup4==4.12.2
 firebase-admin==6.2.0  # For Firebase Authentication
 requests==2.31.0  # For HTTP requests
+google-cloud-logging==3.8.0  # For GCP Cloud Logging API (log fetching script)
