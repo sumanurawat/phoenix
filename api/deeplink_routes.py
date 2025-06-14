@@ -22,7 +22,7 @@ def login_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session: # Assumes 'user_id' is set in session upon login
             # Redirect to login, preserving the originally requested page
-            return redirect(url_for('auth_bp.login', next=request.url)) # Assuming 'auth_bp.login' is your login route
+            return redirect(url_for('auth.login', next=request.url)) # Fixed: auth_bp.login -> auth.login
         return f(*args, **kwargs)
     return decorated_function
 
@@ -119,7 +119,7 @@ def my_links_page():
     user_email = session.get('user_email')
 
     if not user_id: # Should be caught by @login_required, but good for defense
-        return redirect(url_for('auth_bp.login', next=request.url)) # Corrected to auth_bp.login
+        return redirect(url_for('auth.login', next=request.url)) # Fixed: auth_bp.login -> auth.login
 
     user_links = []
     try:
