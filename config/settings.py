@@ -33,3 +33,15 @@ SESSION_PERMANENT = False
 SESSION_USE_SIGNER = False
 SESSION_FILE_DIR = "./flask_session"
 SESSION_FILE_THRESHOLD = 500
+
+# Stripe configuration
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+if not STRIPE_PUBLISHABLE_KEY:
+    raise ValueError("Missing STRIPE_PUBLISHABLE_KEY. Please set it in your environment variables (e.g., .env file).")
+if not STRIPE_SECRET_KEY:
+    raise ValueError("Missing STRIPE_SECRET_KEY. Please set it in your environment variables (e.g., .env file).")
+if not STRIPE_WEBHOOK_SECRET:
+    raise ValueError("Missing STRIPE_WEBHOOK_SECRET. Please set it in your environment variables (e.g., .env file).")
