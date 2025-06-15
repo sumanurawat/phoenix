@@ -5,15 +5,17 @@ Routes for handling YouTube deep link conversion and generic URL shortening.
 """
 import logging
 from flask import Blueprint, render_template, request, url_for, abort, session, redirect
-from services.deeplink_service import (
-    create_short_link,
-    get_original_url,
-    increment_click_count,
-    get_links_for_user,
-    delete_short_link
-)
+# Import the DeeplinkService class instead of individual functions
+from services.deeplink_service import DeeplinkService
 from functools import wraps
 from datetime import datetime
+
+# Instantiate the service
+# This can be done globally if the service is stateless or state is managed per request.
+# For services that might hold state or require request-specific context,
+# instantiation might happen within routes or via a factory.
+# For DeeplinkService as refactored, global instantiation should be fine.
+deeplink_service = DeeplinkService()
 
 # Login required decorator
 def login_required(f):
@@ -62,7 +64,8 @@ def manage_short_links_page():
             error_message = "Invalid URL. Please ensure it starts with http:// or https://"
         else:
             try:
-                link_info = create_short_link(original_url_submitted, user_id, user_email)
+                # Use the service method
+                link_info = deeplink_service.create_short_link(original_url_submitted, user_id, user_email)
                 # link_info is {'short_code': str, 'is_new': bool, 'original_url': str}
                 
                 short_url_display = url_for('deeplink.redirect_to_original', short_code=link_info['short_code'], _external=True)
@@ -72,7 +75,10 @@ def manage_short_links_page():
                 else:
                     success_message = "📎 This URL was already shortened by you. Here's your existing short link:"
                 # original_url_submitted is already set from form
-                
+
+            except ValueError as ve: # Catch specific error from service for tier limits
+                logging.warning(f"Link creation denied for user {user_id} due to ValueError: {ve}")
+                error_message = str(ve) # Display the message from the service (e.g., limit reached)
             except Exception as e:
                 logging.exception(f"Error creating short link for user {user_id} with URL {original_url_submitted}: {e}")
                 error_message = "Could not process your link. Please try again later."
@@ -81,7 +87,8 @@ def manage_short_links_page():
 
     # Fetch user links for display, for both GET and after POST
     try:
-        fetched_links = get_links_for_user(user_id)
+        # Use the service method
+        fetched_links = deeplink_service.get_links_for_user(user_id)
         for link_data in fetched_links:
             link_data['short_url_display'] = url_for('deeplink.redirect_to_original', short_code=link_data['short_code'], _external=True)
             created_at_val = link_data.get('created_at')
@@ -127,7 +134,8 @@ def delete_short_link_route(short_code):
         return {'success': False, 'error': 'Invalid request'}, 403
     
     try:
-        success = delete_short_link(short_code, user_id)
+        # Use the service method
+        success = deeplink_service.delete_short_link(short_code, user_id)
         
         if success:
             logging.info(f"User {user_id} successfully deleted link {short_code}")
@@ -142,9 +150,11 @@ def delete_short_link_route(short_code):
 
 @deeplink_bp.route('/r/<string:short_code>')
 def redirect_to_original(short_code):
-    original_url = get_original_url(short_code)
+    # Use the service method
+    original_url = deeplink_service.get_original_url(short_code)
     if original_url:
-        increment_click_count(short_code)
+        # Use the service method
+        deeplink_service.increment_click_count(short_code)
         return redirect(original_url)
     else:
         abort(404, description="Short link not found or expired.")
