@@ -65,9 +65,7 @@ def create_app():
     
     # Security check after ENV is set
     if app.config["ENV"] != "development" and app.config["SECRET_KEY"] == "default-secret-key":
-        logger.error("SECURITY WARNING: Using default SECRET_KEY in a non-development environment. Please set a strong, unique SECRET_KEY.")
-        # Optionally, you could raise an exception here to prevent the app from starting
-        # raise RuntimeError("SECURITY CRITICAL: Default SECRET_KEY is not allowed in production/staging.")
+        raise RuntimeError("SECURITY CRITICAL: Default SECRET_KEY is not allowed in production/staging. Please set a strong, unique SECRET_KEY in the environment configuration.")
     
     # Configure session
     app.config["SESSION_TYPE"] = SESSION_TYPE
