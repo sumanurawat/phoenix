@@ -2,6 +2,7 @@
 API endpoints for chat functionality.
 """
 from flask import Blueprint, jsonify, request, session
+from api.auth_routes import login_required
 
 from services.chat_service import ChatService
 from services.document_service import DocumentService, SUPPORTED_FILE_TYPES
@@ -14,6 +15,7 @@ document_service = DocumentService()
 chat_bp = Blueprint('chat', __name__, url_prefix='/api/chat')
 
 @chat_bp.route('/message', methods=['POST'])
+@login_required
 def chat_message():
     """Process a new chat message and return a response."""
     if "chat" not in session:
@@ -34,6 +36,7 @@ def chat_message():
     return jsonify({"chat": updated_chat})
 
 @chat_bp.route('/upload-document', methods=['POST'])
+@login_required
 def upload_document():
     """Upload a document to be used as context in the chat."""
     if "chat" not in session:
@@ -79,6 +82,7 @@ def upload_document():
         return jsonify({"error": str(e)}), 500
 
 @chat_bp.route('/clear', methods=['POST'])
+@login_required
 def clear_chat():
     """Clear the current chat history."""
     if "chat" in session:
@@ -89,6 +93,7 @@ def clear_chat():
     return jsonify({"chat": session["chat"]})
 
 @chat_bp.route('/models', methods=['GET'])
+@login_required
 def get_models():
     """Get information about available models."""
     if "chat" not in session:
