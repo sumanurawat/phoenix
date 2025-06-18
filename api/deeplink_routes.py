@@ -14,15 +14,7 @@ from services.deeplink_service import (
 )
 from functools import wraps
 from datetime import datetime
-
-# Login required decorator
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            return redirect(url_for('auth.login', next=request.url))
-        return f(*args, **kwargs)
-    return decorated_function
+from api.auth_routes import login_required
 
 deeplink_bp = Blueprint('deeplink', __name__, url_prefix='/apps/deeplink')
 

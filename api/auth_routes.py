@@ -45,7 +45,7 @@ def signup():
             if next_url and is_safe_url(next_url):
                 return redirect(next_url)
             else:
-                return redirect(url_for('deeplink.manage_short_links_page'))
+                return redirect(url_for('auth.profile'))
         except Exception as e:
             error = str(e)
     return render_template('signup.html', title='Sign Up', error=error, next=next_url)
@@ -69,7 +69,7 @@ def login():
             if next_url and is_safe_url(next_url):
                 return redirect(next_url)
             else:
-                return redirect(url_for('deeplink.manage_short_links_page'))
+                return redirect(url_for('auth.profile'))
         except Exception as e:
             error = str(e)
     return render_template('login.html', title='Login', error=error, next=next_url)
@@ -163,7 +163,7 @@ def google_callback():
         if next_url and is_safe_url(next_url):
             return redirect(next_url)
         else:
-            return redirect(url_for('deeplink.manage_short_links_page'))
+            return redirect(url_for('auth.profile'))
     except Exception as e:
         flash(f'Authentication failed: {str(e)}', 'danger')
         return redirect(url_for('auth.login'))
