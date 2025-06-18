@@ -37,30 +37,35 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Initialize Firebase Admin SDK (only once, globally)
+try:
+    # Check if Firebase app is already initialized
+    if not firebase_admin._apps:
+        cred = credentials.ApplicationDefault()
+        firebase_admin.initialize_app(cred)
+        logger.info("Firebase Admin SDK initialized successfully.")
+    else:
+        logger.info("Firebase Admin SDK already initialized.")
+except Exception as e:
+    logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
+
 # Initialize services
 chat_service = ChatService()
 search_service = SearchService()
 
 def create_app():
     """Create and configure the Flask application."""
-    # Initialize Firebase Admin SDK
-    # Ensure the GOOGLE_APPLICATION_CREDENTIALS environment variable is set.
-    try:
-        cred = credentials.ApplicationDefault()
-        firebase_admin.initialize_app(cred)
-        logger.info("Firebase Admin SDK initialized successfully.")
-    except Exception as e:
-        logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
-        # Depending on the application's needs, you might want to handle this more gracefully
-        # or even prevent the app from starting if Firebase is critical.
-
     # Initialize Flask app
     app = Flask(__name__)
     
-    # Configure application
-    app.config["SECRET_KEY"] = SECRET_KEY
+    # Configure application - Set ENV first
     app.config["ENV"] = FLASK_ENV
     app.config["DEBUG"] = FLASK_DEBUG
+    app.config["SECRET_KEY"] = SECRET_KEY
+    
+    # Security check after ENV is set
+    if app.config["ENV"] != "development" and app.config["SECRET_KEY"] == "default-secret-key":
+        raise RuntimeError("SECURITY CRITICAL: Default SECRET_KEY is not allowed in production/staging. Please set a strong, unique SECRET_KEY in the environment configuration.")
     
     # Configure session
     app.config["SESSION_TYPE"] = SESSION_TYPE

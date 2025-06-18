@@ -30,6 +30,6 @@ RETRY_DELAY = 1  # seconds
 # Session configuration
 SESSION_TYPE = "filesystem"
 SESSION_PERMANENT = False
-SESSION_USE_SIGNER = False
+SESSION_USE_SIGNER = True
 SESSION_FILE_DIR = "./flask_session"
 SESSION_FILE_THRESHOLD = 500
