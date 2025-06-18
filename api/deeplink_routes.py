@@ -10,13 +10,18 @@ from services.deeplink_service import (
     get_original_url,
     increment_click_count,
     get_links_for_user,
-    delete_short_link
+    delete_short_link,
+    get_link_by_short_code
 )
+from services.click_tracking_service import ClickTrackingService
 from functools import wraps
 from datetime import datetime
 from api.auth_routes import login_required
 
 deeplink_bp = Blueprint('deeplink', __name__, url_prefix='/apps/deeplink')
+
+# Initialize click tracking service
+click_tracking_service = ClickTrackingService()
 
 # NEW COMBINED PAGE ROUTE
 @deeplink_bp.route('/profile/links', methods=['GET', 'POST'])
@@ -134,9 +139,50 @@ def delete_short_link_route(short_code):
 
 @deeplink_bp.route('/r/<string:short_code>')
 def redirect_to_original(short_code):
-    original_url = get_original_url(short_code)
-    if original_url:
-        increment_click_count(short_code)
-        return redirect(original_url)
-    else:
-        abort(404, description="Short link not found or expired.")
+    """Redirect to the original URL and increment click count with detailed tracking."""
+    try:
+        original_url = get_original_url(short_code)
+        if original_url:
+            # Prepare request data for click tracking
+            request_data = {
+                'user_agent': request.headers.get('User-Agent', ''),
+                'referrer': request.headers.get('Referer', ''),
+                'X-Forwarded-For': request.headers.get('X-Forwarded-For'),
+                'X-Real-IP': request.headers.get('X-Real-IP'),
+                'remote_addr': request.remote_addr
+            }
+            
+            # Increment click count with detailed tracking
+            increment_click_count(short_code, request_data)
+            
+            return redirect(original_url, code=302)
+        else:
+            abort(404, description="Short link not found or expired.")
+    except Exception as e:
+        logging.exception(f"Error redirecting short code {short_code}: {e}")
+        abort(500, description="An error occurred while processing your request.")
+
+@deeplink_bp.route('/profile/links/<short_code>/analytics')
+@login_required
+def link_analytics(short_code):
+    """Display detailed analytics for a specific link."""
+    try:
+        user_id = session.get('user_id')
+        
+        # Verify user owns this link
+        link_data = get_link_by_short_code(short_code)
+        if not link_data or link_data.get('user_id') != user_id:
+            abort(404, description='Link not found or you do not have permission to view it.')
+        
+        # Get analytics data
+        analytics = click_tracking_service.get_click_analytics(short_code)
+        
+        return render_template('link_analytics.html', 
+                             link_data=link_data,
+                             analytics=analytics,
+                             short_code=short_code,
+                             title='Link Analytics')
+        
+    except Exception as e:
+        logging.error(f"Error getting analytics for {short_code}: {e}")
+        abort(500, description='Error loading analytics data.')

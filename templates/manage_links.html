@@ -124,6 +124,9 @@
                                 <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('{{ link.short_url_display }}')" title="Copy to clipboard">
                                     <i class="fas fa-copy"></i>
                                 </button>
+                                <a href="/apps/deeplink/profile/links/{{ link.short_code }}/analytics" class="btn btn-sm btn-outline-info" title="View analytics">
+                                    <i class="fas fa-chart-bar"></i>
+                                </a>
                                 <button class="btn btn-sm btn-outline-danger" onclick="deleteLink(event, '{{ link.short_code }}', '{{ link.original_url | truncate(30) }}')" title="Delete link">
                                     <i class="fas fa-trash"></i>
                                 </button>
