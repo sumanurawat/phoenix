@@ -6,9 +6,15 @@ Service for handling URL shortening and management.
 import logging
 from firebase_admin import firestore
 import uuid
+from .website_stats_service import WebsiteStatsService
+from .click_tracking_service import ClickTrackingService
 
 # Firestore Collection Name
 SHORTENED_LINKS_COLLECTION = "shortened_links"
+
+# Initialize services
+website_stats_service = WebsiteStatsService()
+click_tracking_service = ClickTrackingService()
 
 def generate_short_code():
     """Generate a unique short code for a URL."""
@@ -54,6 +60,10 @@ def create_short_link(original_url, user_id, user_email):
         'click_count': 0
     }
     db.collection(SHORTENED_LINKS_COLLECTION).document(short_code).set(doc_data)
+    
+    # Update website stats for new link creation
+    website_stats_service.increment_links_created()
+    
     logging.info(f"Created new short_code {short_code} for URL {original_url} by user {user_id}")
     return {
         'short_code': short_code,
@@ -71,14 +81,37 @@ def get_original_url(short_code):
     else:
         return None
 
-def increment_click_count(short_code):
-    """Increment the click count for a short link."""
+def increment_click_count(short_code, request_data=None):
+    """
+    Increment the click count for a short link and record detailed click data.
+    """
     db = firestore.client()
     doc_ref = db.collection(SHORTENED_LINKS_COLLECTION).document(short_code)
-    if doc_ref.get().exists:
+    
+    try:
+        doc_snapshot = doc_ref.get()
+        if not doc_snapshot.exists:
+            return False
+        
+        # Get link data for click tracking
+        link_data = doc_snapshot.to_dict()
+        user_id = link_data.get('user_id', '')
+        
+        # Update click count in shortened_links
         doc_ref.update({'click_count': firestore.Increment(1)})
+        
+        # Update global website stats
+        website_stats_service.increment_total_clicks()
+        
+        # Record detailed click data if request_data provided
+        if request_data:
+            click_tracking_service.record_click(short_code, user_id, request_data)
+        
         return True
-    return False
+        
+    except Exception as e:
+        logging.error(f"Error incrementing click count for {short_code}: {e}")
+        return False
 
 def get_links_for_user(user_id):
     """Retrieve all short links created by a specific user."""
@@ -130,3 +163,17 @@ def delete_short_link(short_code, user_id):
     except Exception as e:
         logging.error(f"Error deleting short_code {short_code} for user_id {user_id}: {e}")
         return False
+
+def get_link_by_short_code(short_code):
+    """Get link data by short code."""
+    try:
+        db = firestore.client()
+        doc = db.collection(SHORTENED_LINKS_COLLECTION).document(short_code).get()
+        if doc.exists:
+            data = doc.to_dict()
+            data['short_code'] = short_code
+            return data
+        return None
+    except Exception as e:
+        logging.error(f"Error fetching link {short_code}: {e}")
+        return None

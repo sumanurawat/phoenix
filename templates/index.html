@@ -118,6 +118,42 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Website Statistics Section -->
+            <section class="stats-section py-4">
+                <div class="container">
+                    <div class="row text-center mb-4">
+                        <div class="col-12">
+                            <h3 class="section-title">Platform Statistics</h3>
+                            <p class="section-subtitle">One click at a time</p>
+                        </div>
+                    </div>
+                    <div class="row justify-content-center">
+                        <div class="col-md-5 col-lg-4 mb-3">
+                            <div class="stats-card">
+                                <div class="stats-icon">
+                                    <i class="fas fa-link"></i>
+                                </div>
+                                <div class="stats-content">
+                                    <div class="stats-number" id="total-links">-</div>
+                                    <div class="stats-label">Links Created</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-5 col-lg-4 mb-3">
+                            <div class="stats-card">
+                                <div class="stats-icon">
+                                    <i class="fas fa-mouse-pointer"></i>
+                                </div>
+                                <div class="stats-content">
+                                    <div class="stats-number" id="total-clicks">-</div>
+                                    <div class="stats-label">Clicks Served</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     </main>
     
@@ -135,6 +171,19 @@
             document.querySelector('.sidebar').classList.toggle('active');
             this.classList.toggle('active');
         });
+
+        // Fetch and display website stats
+        fetch('/api/website-stats')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('total-links').textContent = data.total_links || '0';
+                document.getElementById('total-clicks').textContent = data.total_clicks || '0';
+            })
+            .catch(error => {
+                console.error('Error fetching stats:', error);
+                document.getElementById('total-links').textContent = '0';
+                document.getElementById('total-clicks').textContent = '0';
+            });
     </script>
 </body>
 </html>

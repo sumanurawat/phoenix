@@ -22,6 +22,7 @@ from api.search_routes import search_bp
 from api.robin_routes import robin_bp
 from api.deeplink_routes import deeplink_bp
 from api.auth_routes import auth_bp
+from api.stats_routes import stats_bp
 
 # Import services
 from services.chat_service import ChatService
@@ -81,6 +82,7 @@ def create_app():
     app.register_blueprint(robin_bp)
     app.register_blueprint(deeplink_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(stats_bp)
     
     # Define routes
     @app.route('/')

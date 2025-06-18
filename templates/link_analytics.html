@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .analytics-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .analytics-card:hover {
+            transform: translateY(-2px);
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1><i class="fas fa-chart-bar me-2"></i>Link Analytics</h1>
+                        <p class="text-muted mb-0">Detailed analytics for: <strong>{{ short_code }}</strong></p>
+                    </div>
+                    <a href="/apps/deeplink/profile/links" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Links
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Link Information -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card analytics-card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-link me-2"></i>Link Information</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Short URL:</strong><br>
+                                <a href="/apps/deeplink/r/{{ short_code }}" target="_blank" class="text-primary">
+                                    {{ request.host_url }}apps/deeplink/r/{{ short_code }}
+                                </a></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Original URL:</strong><br>
+                                <a href="{{ link_data.original_url }}" target="_blank" class="text-break">
+                                    {{ link_data.original_url }}
+                                </a></p>
+                            </div>
+                        </div>
+                        <p class="mb-0"><strong>Created:</strong> {{ link_data.created_at.strftime('%B %d, %Y at %I:%M %p') if link_data.created_at else 'Unknown' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card analytics-card text-center">
+                    <div class="card-body">
+                        <div class="stat-number">{{ analytics.total_clicks }}</div>
+                        <p class="card-text text-muted">Total Clicks</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card analytics-card text-center">
+                    <div class="card-body">
+                        <div class="stat-number">{{ analytics.unique_visitors }}</div>
+                        <p class="card-text text-muted">Unique Visitors</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card analytics-card text-center">
+                    <div class="card-body">
+                        <div class="stat-number">{{ link_data.click_count or 0 }}</div>
+                        <p class="card-text text-muted">Total Redirects</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card analytics-card text-center">
+                    <div class="card-body">
+                        <div class="stat-number">
+                            {{ "%.1f"|format((analytics.unique_visitors / analytics.total_clicks * 100) if analytics.total_clicks > 0 else 0) }}%
+                        </div>
+                        <p class="card-text text-muted">Unique Rate</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mb-4">
+            <!-- Device Breakdown -->
+            <div class="col-md-6 mb-3">
+                <div class="card analytics-card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-mobile-alt me-2"></i>Device Types</h5>
+                        <div class="chart-container">
+                            <canvas id="deviceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Browser Breakdown -->
+            <div class="col-md-6 mb-3">
+                <div class="card analytics-card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-globe me-2"></i>Browsers</h5>
+                        <div class="chart-container">
+                            <canvas id="browserChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Countries -->
+        {% if analytics.top_countries %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card analytics-card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-map-marker-alt me-2"></i>Top Countries</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Country</th>
+                                        <th>Clicks</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for country, count in analytics.top_countries %}
+                                    <tr>
+                                        <td>{{ country }}</td>
+                                        <td>{{ count }}</td>
+                                        <td>{{ "%.1f"|format((count / analytics.total_clicks * 100) if analytics.total_clicks > 0 else 0) }}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recent Clicks -->
+        {% if analytics.recent_clicks %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card analytics-card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-clock me-2"></i>Recent Clicks</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Device</th>
+                                        <th>Browser</th>
+                                        <th>OS</th>
+                                        <th>Country</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for click in analytics.recent_clicks %}
+                                    <tr>
+                                        <td>{{ click.clicked_at.strftime('%m/%d %I:%M %p') if click.clicked_at else 'Unknown' }}</td>
+                                        <td>{{ click.device_type or 'Unknown' }}</td>
+                                        <td>{{ click.browser or 'Unknown' }}</td>
+                                        <td>{{ click.os or 'Unknown' }}</td>
+                                        <td>{{ click.country or 'Unknown' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- No Data Message -->
+        {% if analytics.total_clicks == 0 %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card analytics-card text-center">
+                    <div class="card-body py-5">
+                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                        <h4>No Click Data Yet</h4>
+                        <p class="text-muted">This link hasn't been clicked yet. Share it to start collecting analytics!</p>
+                        <button class="btn btn-primary" onclick="copyToClipboard()">
+                            <i class="fas fa-copy me-2"></i>Copy Link
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Device Chart
+        const deviceData = {{ analytics.device_breakdown | tojson }};
+        const deviceLabels = Object.keys(deviceData);
+        const deviceValues = Object.values(deviceData);
+
+        if (deviceLabels.length > 0) {
+            const deviceCtx = document.getElementById('deviceChart').getContext('2d');
+            new Chart(deviceCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: deviceLabels,
+                    datasets: [{
+                        data: deviceValues,
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Browser Chart
+        const browserData = {{ analytics.browser_breakdown | tojson }};
+        const browserLabels = Object.keys(browserData);
+        const browserValues = Object.values(browserData);
+
+        if (browserLabels.length > 0) {
+            const browserCtx = document.getElementById('browserChart').getContext('2d');
+            new Chart(browserCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: browserLabels,
+                    datasets: [{
+                        data: browserValues,
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF',
+                            '#FF9F40'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Copy link function
+        function copyToClipboard() {
+            const shortUrl = '{{ request.host_url }}apps/deeplink/r/{{ short_code }}';
+            navigator.clipboard.writeText(shortUrl).then(function() {
+                // Show success message
+                const btn = event.target.closest('button');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
+                btn.classList.add('btn-success');
+                btn.classList.remove('btn-primary');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.add('btn-primary');
+                    btn.classList.remove('btn-success');
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
