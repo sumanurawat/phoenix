@@ -46,7 +46,8 @@ class TestChatRoutes(unittest.TestCase):
 
     def test_upload_document_requires_login(self):
         with self.client:
-            response = self.client.post('/api/chat/upload-document', content_type='multipart/form-data', data={'document': (open(__file__, 'rb'), 'test.txt')}, follow_redirects=False) # Using __file__ as a dummy file
+            with open(__file__, 'rb') as f:
+                response = self.client.post('/api/chat/upload-document', content_type='multipart/form-data', data={'document': (f, 'test.txt')}, follow_redirects=False) # Using __file__ as a dummy file
             self.assertEqual(response.status_code, 302)
             self.assertTrue(response.location.startswith(url_for('auth.login', _external=False)))
 
