@@ -59,6 +59,10 @@ def create_app():
     
     # Configure application
     app.config["SECRET_KEY"] = SECRET_KEY
+    if app.config["ENV"] != "development" and app.config["SECRET_KEY"] == "default-secret-key":
+        logger.error("SECURITY WARNING: Using default SECRET_KEY in a non-development environment. Please set a strong, unique SECRET_KEY.")
+        # Optionally, you could raise an exception here to prevent the app from starting
+        # raise RuntimeError("SECURITY CRITICAL: Default SECRET_KEY is not allowed in production/staging.")
     app.config["ENV"] = FLASK_ENV
     app.config["DEBUG"] = FLASK_DEBUG
     
