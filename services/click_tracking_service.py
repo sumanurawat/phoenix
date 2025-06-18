@@ -215,3 +215,22 @@ class ClickTrackingService:
         except Exception as e:
             logger.error(f"Error getting analytics for {short_code}: {e}")
             return {}
+    
+    def get_recent_clicks_for_user(self, user_id: str, limit: int = 50) -> list:
+        """Get recent clicks for all links belonging to a user."""
+        try:
+            # Query clicks for this user, ordered by clicked_at descending
+            clicks_ref = self.db.collection(self.clicks_collection)
+            query = clicks_ref.where('user_id', '==', user_id).order_by('clicked_at', direction=firestore.Query.DESCENDING).limit(limit)
+            
+            clicks = []
+            for doc in query.stream():
+                click_data = doc.to_dict()
+                click_data['id'] = doc.id
+                clicks.append(click_data)
+            
+            return clicks
+            
+        except Exception as e:
+            logger.error(f"Error fetching recent clicks for user {user_id}: {e}")
+            return []

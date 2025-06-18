@@ -76,16 +76,18 @@
             <div class="col-md-3 mb-3">
                 <div class="card analytics-card text-center">
                     <div class="card-body">
-                        <div class="stat-number">{{ analytics.total_clicks }}</div>
-                        <p class="card-text text-muted">Total Clicks</p>
+                        <div class="stat-number">{{ analytics.total_clicks or 0 }}</div>
+                        <p class="card-text text-muted">Detailed Clicks</p>
+                        <small class="text-muted">New analytics system</small>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 mb-3">
                 <div class="card analytics-card text-center">
                     <div class="card-body">
-                        <div class="stat-number">{{ analytics.unique_visitors }}</div>
+                        <div class="stat-number">{{ analytics.unique_visitors or 0 }}</div>
                         <p class="card-text text-muted">Unique Visitors</p>
+                        <small class="text-muted">Based on IP tracking</small>
                     </div>
                 </div>
             </div>
@@ -93,7 +95,8 @@
                 <div class="card analytics-card text-center">
                     <div class="card-body">
                         <div class="stat-number">{{ link_data.click_count or 0 }}</div>
-                        <p class="card-text text-muted">Total Redirects</p>
+                        <p class="card-text text-muted">Legacy Clicks</p>
+                        <small class="text-muted">Before detailed tracking</small>
                     </div>
                 </div>
             </div>
@@ -104,6 +107,7 @@
                             {{ "%.1f"|format((analytics.unique_visitors / analytics.total_clicks * 100) if analytics.total_clicks > 0 else 0) }}%
                         </div>
                         <p class="card-text text-muted">Unique Rate</p>
+                        <small class="text-muted">Of detailed clicks</small>
                     </div>
                 </div>
             </div>

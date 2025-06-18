@@ -100,9 +100,41 @@ def manage_short_links_page():
         if not error_message:
             error_message = "Could not load your existing links at this time. Please try again later."
 
+    # Fetch recent clicks for this user
+    recent_clicks = []
+    try:
+        # Get recent clicks for all user's links (limit to last 50 for performance)
+        user_clicks = click_tracking_service.get_recent_clicks_for_user(user_id, limit=50)
+        
+        for click_data in user_clicks:
+            # Format click data for display
+            clicked_at = click_data.get('clicked_at')
+            if isinstance(clicked_at, datetime):
+                timezone_str = clicked_at.tzname()
+                if timezone_str and timezone_str != "UTC":
+                    click_data['clicked_at_display'] = clicked_at.strftime('%Y-%m-%d %H:%M %Z')
+                else:
+                    click_data['clicked_at_display'] = clicked_at.strftime('%Y-%m-%d %H:%M') + " UTC"
+            elif clicked_at:
+                click_data['clicked_at_display'] = str(clicked_at)
+            else:
+                click_data['clicked_at_display'] = 'N/A'
+            
+            # Add display URL for the short link
+            short_code = click_data.get('short_code')
+            if short_code:
+                click_data['short_url_display'] = url_for('deeplink.redirect_to_original', short_code=short_code, _external=True)
+            
+            recent_clicks.append(click_data)
+            
+    except Exception as e:
+        logging.exception(f"Error fetching recent clicks for user {user_id}: {e}")
+        # Don't fail the page load if clicks can't be fetched
+
     return render_template('manage_links.html',
                            user_email=user_email,
                            links=user_links,
+                           recent_clicks=recent_clicks,
                            original_url=original_url_submitted, # For repopulating form
                            short_link_generated=short_url_display, # The generated/retrieved short URL
                            success_message=success_message,
