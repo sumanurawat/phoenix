@@ -21,6 +21,8 @@ steps:
     - '--platform'
     - 'managed'
     - '--allow-unauthenticated'
+    - '--service-account'
+    - 'phoenix-service-account@phoenix-project-386.iam.gserviceaccount.com'
     - '--cpu'
     - '500m'
     - '--memory'
