@@ -148,66 +148,123 @@
     </div>
 
     <!-- RECENT CLICKS SECTION -->
-    {% if recent_clicks %}
+    {% if recent_clicks or clicks_pagination %}
     <div class="card">
-        <div class="card-header bg-info text-white">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">
-                <i class="fas fa-mouse-pointer me-2"></i>Recent Clicks ({{ recent_clicks|length }})
+                <i class="fas fa-mouse-pointer me-2"></i>
+                Recent Clicks 
+                {% if clicks_pagination %}
+                    ({{ clicks_pagination.total_count }} total)
+                {% else %}
+                    ({{ recent_clicks|length }})
+                {% endif %}
             </h5>
+            <div class="d-flex align-items-center">
+                <!-- Page Size Selector -->
+                <div class="me-3">
+                    <label for="pageSizeSelector" class="form-label text-white mb-0 me-2">Show:</label>
+                    <select id="pageSizeSelector" class="form-select form-select-sm" style="width: auto;" onchange="changePageSize()">
+                        <option value="10" {{ 'selected' if (clicks_pagination.limit or 20) == 10 else '' }}>10</option>
+                        <option value="20" {{ 'selected' if (clicks_pagination.limit or 20) == 20 else '' }}>20</option>
+                        <option value="50" {{ 'selected' if (clicks_pagination.limit or 20) == 50 else '' }}>50</option>
+                        <option value="100" {{ 'selected' if (clicks_pagination.limit or 20) == 100 else '' }}>100</option>
+                    </select>
+                </div>
+                <!-- Collapse Toggle -->
+                <button class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#clicksTable" aria-expanded="true" aria-controls="clicksTable">
+                    <i class="fas fa-chevron-up" id="collapseIcon"></i>
+                </button>
+            </div>
         </div>
-        <div class="card-body">
-            <p class="text-muted mb-3">Recent activity on your shortened links. See detailed analytics by clicking the chart icon next to each link above.</p>
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Short Link</th>
-                            <th>Clicked At</th>
-                            <th>Device</th>
-                            <th>Browser</th>
-                            <th>Location</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for click in recent_clicks %}
-                        <tr>
-                            <td>
-                                <a href="{{ click.short_url_display }}" target="_blank" class="text-decoration-none">
-                                    <code class="bg-light px-2 py-1 rounded">{{ click.short_code }}</code>
+        
+        <div class="collapse show" id="clicksTable">
+            <div class="card-body">
+                {% if recent_clicks %}
+                    <p class="text-muted mb-3">Recent activity on your shortened links. See detailed analytics by clicking the chart icon next to each link above.</p>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Short Link</th>
+                                    <th>Clicked At</th>
+                                    <th>Device</th>
+                                    <th>Browser</th>
+                                    <th>Location</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for click in recent_clicks %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ click.short_url_display }}" target="_blank" class="text-decoration-none">
+                                            <code class="bg-light px-2 py-1 rounded">{{ click.short_code }}</code>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ click.clicked_at_display }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            <i class="fas {% if click.device_type == 'Mobile' %}fa-mobile-alt{% elif click.device_type == 'Tablet' %}fa-tablet-alt{% else %}fa-desktop{% endif %} me-1"></i>
+                                            {{ click.device_type }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ click.browser }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ click.location_display or 'Unknown' }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination Controls -->
+                    {% if clicks_pagination and (clicks_pagination.total_count > clicks_pagination.limit or clicks_pagination.offset > 0) %}
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="text-muted">
+                            Showing {{ clicks_pagination.offset + 1 }} to {{ clicks_pagination.offset + clicks_pagination.current_page_count }} 
+                            of {{ clicks_pagination.total_count }} clicks
+                        </div>
+                        <div class="btn-group" role="group">
+                            <!-- Previous Button -->
+                            {% if clicks_pagination.offset > 0 %}
+                                <a href="?offset={{ clicks_pagination.offset - clicks_pagination.limit }}&page_size={{ clicks_pagination.limit }}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-chevron-left me-1"></i>Previous
                                 </a>
-                            </td>
-                            <td>
-                                <small class="text-muted">{{ click.clicked_at_display }}</small>
-                            </td>
-                            <td>
-                                <span class="badge bg-secondary">
-                                    <i class="fas {% if click.device_type == 'Mobile' %}fa-mobile-alt{% elif click.device_type == 'Tablet' %}fa-tablet-alt{% else %}fa-desktop{% endif %} me-1"></i>
-                                    {{ click.device_type }}
-                                </span>
-                            </td>
-                            <td>
-                                <span class="text-muted">{{ click.browser }}</span>
-                            </td>
-                            <td>
-                                {% if click.country and click.country != 'Unknown' %}
-                                    <span class="text-muted">{{ click.country }}{% if click.city and click.city != 'Unknown' %}, {{ click.city }}{% endif %}</span>
-                                {% else %}
-                                    <span class="text-muted">Unknown</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                            {% else %}
+                                <button class="btn btn-outline-secondary btn-sm" disabled>
+                                    <i class="fas fa-chevron-left me-1"></i>Previous
+                                </button>
+                            {% endif %}
+                            
+                            <!-- Next Button -->
+                            {% if clicks_pagination.has_more %}
+                                <a href="?offset={{ clicks_pagination.next_offset }}&page_size={{ clicks_pagination.limit }}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    Next<i class="fas fa-chevron-right ms-1"></i>
+                                </a>
+                            {% else %}
+                                <button class="btn btn-outline-secondary btn-sm" disabled>
+                                    Next<i class="fas fa-chevron-right ms-1"></i>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-mouse-pointer text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No clicks yet</h5>
+                        <p class="text-muted">Share your links to start seeing click activity here!</p>
+                    </div>
+                {% endif %}
             </div>
-            {% if recent_clicks|length >= 50 %}
-            <div class="text-center mt-3">
-                <small class="text-muted">
-                    <i class="fas fa-info-circle me-1"></i>
-                    Showing most recent 50 clicks. For detailed analytics, use the chart icon next to each link.
-                </small>
-            </div>
-            {% endif %}
         </div>
     </div>
     {% endif %}
@@ -344,6 +401,35 @@ function updateLinkCount() {
         }
     }
 }
+
+function changePageSize() {
+    const select = document.getElementById('pageSizeSelector');
+    const pageSize = select.value;
+    const currentUrl = new URL(window.location);
+    
+    // Update page size parameter and reset offset
+    currentUrl.searchParams.set('page_size', pageSize);
+    currentUrl.searchParams.delete('offset');
+    
+    // Navigate to new URL
+    window.location.href = currentUrl.toString();
+}
+
+// Handle collapse icon rotation
+document.addEventListener('DOMContentLoaded', function() {
+    const clicksTable = document.getElementById('clicksTable');
+    const collapseIcon = document.getElementById('collapseIcon');
+    
+    if (clicksTable && collapseIcon) {
+        clicksTable.addEventListener('shown.bs.collapse', function() {
+            collapseIcon.className = 'fas fa-chevron-up';
+        });
+        
+        clicksTable.addEventListener('hidden.bs.collapse', function() {
+            collapseIcon.className = 'fas fa-chevron-down';
+        });
+    }
+});
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>

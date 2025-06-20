@@ -102,11 +102,32 @@ def manage_short_links_page():
 
     # Fetch recent clicks for this user
     recent_clicks = []
+    clicks_pagination = None
     try:
-        # Get recent clicks for all user's links (limit to last 50 for performance)
-        user_clicks = click_tracking_service.get_recent_clicks_for_user(user_id, limit=50)
+        # Get pagination parameters from request
+        page_size = int(request.args.get('page_size', 20))  # Default 20 clicks per page
+        offset = int(request.args.get('offset', 0))
         
-        for click_data in user_clicks:
+        # Limit page size to prevent abuse
+        page_size = min(page_size, 100)
+        
+        # Get recent clicks for all user's links
+        clicks_result = click_tracking_service.get_recent_clicks_for_user(
+            user_id, 
+            limit=page_size, 
+            offset=offset
+        )
+        
+        clicks_pagination = {
+            'total_count': clicks_result.get('total_count', 0),
+            'current_page_count': clicks_result.get('current_page_count', 0),
+            'has_more': clicks_result.get('has_more', False),
+            'offset': clicks_result.get('offset', 0),
+            'limit': clicks_result.get('limit', page_size),
+            'next_offset': offset + page_size if clicks_result.get('has_more', False) else None
+        }
+        
+        for click_data in clicks_result.get('clicks', []):
             # Format click data for display
             clicked_at = click_data.get('clicked_at')
             if isinstance(clicked_at, datetime):
@@ -125,6 +146,24 @@ def manage_short_links_page():
             if short_code:
                 click_data['short_url_display'] = url_for('deeplink.redirect_to_original', short_code=short_code, _external=True)
             
+            # Format location using geolocation service if available
+            if hasattr(click_tracking_service, 'geo_service'):
+                location_dict = {
+                    'country': click_data.get('country', 'Unknown'),
+                    'city': click_data.get('city', 'Unknown'),
+                    'region': click_data.get('region', 'Unknown')
+                }
+                click_data['location_display'] = click_tracking_service.geo_service.get_location_display(location_dict)
+            else:
+                # Fallback to simple location display
+                if click_data.get('country') and click_data.get('country') != 'Unknown':
+                    location_parts = [click_data['country']]
+                    if click_data.get('city') and click_data['city'] != 'Unknown':
+                        location_parts.insert(0, click_data['city'])
+                    click_data['location_display'] = ', '.join(location_parts)
+                else:
+                    click_data['location_display'] = 'Unknown'
+            
             recent_clicks.append(click_data)
             
     except Exception as e:
@@ -135,6 +174,7 @@ def manage_short_links_page():
                            user_email=user_email,
                            links=user_links,
                            recent_clicks=recent_clicks,
+                           clicks_pagination=clicks_pagination,
                            original_url=original_url_submitted, # For repopulating form
                            short_link_generated=short_url_display, # The generated/retrieved short URL
                            success_message=success_message,
@@ -194,6 +234,32 @@ def redirect_to_original(short_code):
         logging.exception(f"Error redirecting short code {short_code}: {e}")
         abort(500, description="An error occurred while processing your request.")
 
+@deeplink_bp.route('/debug/analytics/<short_code>')
+def debug_analytics(short_code):
+    """Debug analytics without authentication for testing."""
+    try:
+        # Get analytics data directly
+        analytics = click_tracking_service.get_click_analytics(short_code)
+        
+        # Return JSON for easy debugging
+        from flask import jsonify
+        return jsonify({
+            'short_code': short_code,
+            'analytics': analytics,
+            'analytics_type': type(analytics).__name__,
+            'total_clicks': analytics.get('total_clicks', 'KEY_MISSING'),
+            'keys': list(analytics.keys()) if isinstance(analytics, dict) else 'NOT_DICT'
+        })
+        
+    except Exception as e:
+        from flask import jsonify
+        import traceback
+        return jsonify({
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
+
+
 @deeplink_bp.route('/profile/links/<short_code>/analytics')
 @login_required
 def link_analytics(short_code):
@@ -208,6 +274,17 @@ def link_analytics(short_code):
         
         # Get analytics data
         analytics = click_tracking_service.get_click_analytics(short_code)
+        
+        # Debug logging
+        logging.info(f"Analytics route for {short_code}: analytics={analytics}")
+        logging.info(f"Analytics total_clicks: {analytics.get('total_clicks', 'KEY_MISSING')}")
+        logging.info(f"Analytics type: {type(analytics)}")
+        logging.info(f"Analytics keys: {list(analytics.keys()) if isinstance(analytics, dict) else 'NOT_DICT'}")
+        
+        # Test the exact condition that the template uses
+        total_clicks = analytics.get('total_clicks', 0)
+        logging.info(f"Template condition test: analytics.total_clicks == 0 -> {total_clicks == 0}")
+        logging.info(f"Actual total_clicks value: {total_clicks} (type: {type(total_clicks)})")
         
         return render_template('link_analytics.html', 
                              link_data=link_data,
