@@ -10,12 +10,15 @@ from datetime import datetime
 from typing import Dict, Optional
 import os
 
+from .geolocation_service import GeolocationService
+
 logger = logging.getLogger(__name__)
 
 class ClickTrackingService:
     def __init__(self):
         self.db = firestore.client()
         self.clicks_collection = "link_clicks"
+        self.geo_service = GeolocationService()
     
     def record_click(self, short_code: str, user_id: str, request_data: Dict) -> bool:
         """Record a detailed click event."""
@@ -47,9 +50,15 @@ class ClickTrackingService:
             
             # Add geolocation if available (optional)
             if ip_address:
+                logger.info(f"Attempting geolocation lookup for IP: {ip_address}")
                 geo_info = self._get_geolocation(ip_address)
                 if geo_info:
                     click_data.update(geo_info)
+                    logger.info(f"Added geolocation data: {geo_info}")
+                else:
+                    logger.info(f"No geolocation data found for IP: {ip_address}")
+            else:
+                logger.info("No IP address available for geolocation lookup")
             
             # Store click record
             self.db.collection(self.clicks_collection).add(click_data)
@@ -139,11 +148,32 @@ class ClickTrackingService:
     def _get_geolocation(self, ip_address: str) -> Optional[Dict]:
         """Get geolocation data from IP address."""
         try:
-            # For now, we'll skip geolocation to avoid external dependencies
-            # This can be added later with proper API integration
-            return None
+            location = self.geo_service.get_location_from_ip(ip_address)
+            if location and location.get('country') != 'Unknown':
+                return {
+                    'country': location.get('country', 'Unknown'),
+                    'country_code': location.get('country_code', 'XX'),
+                    'city': location.get('city', 'Unknown'),
+                    'region': location.get('region', 'Unknown'),
+                    'latitude': location.get('latitude'),
+                    'longitude': location.get('longitude'),
+                }
+            else:
+                # For development/testing with localhost IPs, add a development flag
+                if ip_address in ['127.0.0.1', 'localhost', '::1']:
+                    # Enable for development testing with environment variable
+                    if os.getenv('ENABLE_DEV_GEOLOCATION', 'false').lower() == 'true':
+                        return {
+                            'country': 'Development',
+                            'country_code': 'DEV', 
+                            'city': 'Local',
+                            'region': 'Testing',
+                            'latitude': None,
+                            'longitude': None,
+                        }
+                return None
         except Exception as e:
-            logger.error(f"Error getting geolocation: {e}")
+            logger.error(f"Error getting geolocation for IP {ip_address}: {e}")
             return None
     
     def get_clicks_for_link(self, short_code: str) -> list:
@@ -215,3 +245,56 @@ class ClickTrackingService:
         except Exception as e:
             logger.error(f"Error getting analytics for {short_code}: {e}")
             return {}
+    
+    def get_recent_clicks_for_user(self, user_id: str, limit: int = 50, offset: int = 0) -> dict:
+        """Get recent clicks for all links belonging to a user with pagination."""
+        try:
+            # Query clicks for this user, ordered by clicked_at descending
+            clicks_ref = self.db.collection(self.clicks_collection)
+            query = clicks_ref.where('user_id', '==', user_id).order_by('clicked_at', direction=firestore.Query.DESCENDING)
+            
+            # Get total count for pagination info
+            all_docs = list(query.stream())
+            total_clicks = len(all_docs)
+            
+            # Apply pagination
+            paginated_docs = all_docs[offset:offset + limit]
+            
+            clicks = []
+            for doc in paginated_docs:
+                click_data = doc.to_dict()
+                click_data['id'] = doc.id
+                
+                # Format clicked_at for display
+                if 'clicked_at' in click_data:
+                    click_data['clicked_at_display'] = click_data['clicked_at'].strftime('%Y-%m-%d %H:%M UTC')
+                
+                # Create short URL display
+                click_data['short_url_display'] = f"{self._get_base_url()}/{click_data.get('short_code', '')}"
+                
+                clicks.append(click_data)
+            
+            return {
+                'clicks': clicks,
+                'total_count': total_clicks,
+                'current_page_count': len(clicks),
+                'has_more': offset + limit < total_clicks,
+                'offset': offset,
+                'limit': limit
+            }
+            
+        except Exception as e:
+            logger.error(f"Error fetching recent clicks for user {user_id}: {e}")
+            return {
+                'clicks': [],
+                'total_count': 0,
+                'current_page_count': 0,
+                'has_more': False,
+                'offset': 0,
+                'limit': limit
+            }
+    
+    def _get_base_url(self) -> str:
+        """Get the base URL for short links."""
+        # This should match your domain configuration
+        return "https://your-domain.com"  # TODO: Make this configurable

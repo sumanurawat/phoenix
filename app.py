@@ -9,6 +9,10 @@ import logging
 from flask import Flask, render_template, session, request
 from flask_session import Session
 
+# Set up logging first
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Import configurations
 from config.settings import (
     SECRET_KEY, FLASK_ENV, FLASK_DEBUG,
@@ -16,7 +20,29 @@ from config.settings import (
     SESSION_FILE_DIR, SESSION_FILE_THRESHOLD
 )
 
-# Import API routes
+# Initialize Firebase Admin SDK FIRST (before importing services)
+import firebase_admin
+from firebase_admin import credentials
+
+try:
+    # Check if Firebase app is already initialized
+    if not firebase_admin._apps:
+        # Try service account file first (for development)
+        try:
+            cred = credentials.Certificate('firebase-credentials.json')
+            firebase_admin.initialize_app(cred)
+            logger.info("Firebase Admin SDK initialized with service account.")
+        except FileNotFoundError:
+            # Fallback to Application Default Credentials (for production)
+            cred = credentials.ApplicationDefault()
+            firebase_admin.initialize_app(cred)
+            logger.info("Firebase Admin SDK initialized with Application Default Credentials.")
+    else:
+        logger.info("Firebase Admin SDK already initialized.")
+except Exception as e:
+    logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
+
+# Import API routes (AFTER Firebase initialization)
 from api.chat_routes import chat_bp
 from api.search_routes import search_bp
 from api.robin_routes import robin_bp
@@ -24,12 +50,9 @@ from api.deeplink_routes import deeplink_bp
 from api.auth_routes import auth_bp
 from api.stats_routes import stats_bp
 
-# Import services
+# Import services (AFTER Firebase initialization)
 from services.chat_service import ChatService
 from services.search_service import SearchService
-
-import firebase_admin
-from firebase_admin import credentials
 
 # Configure logging
 logging.basicConfig(
