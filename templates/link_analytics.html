@@ -76,16 +76,18 @@
             <div class="col-md-3 mb-3">
                 <div class="card analytics-card text-center">
                     <div class="card-body">
-                        <div class="stat-number">{{ analytics.total_clicks }}</div>
-                        <p class="card-text text-muted">Total Clicks</p>
+                        <div class="stat-number">{{ analytics.total_clicks or 0 }}</div>
+                        <p class="card-text text-muted">Detailed Clicks</p>
+                        <small class="text-muted">New analytics system</small>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 mb-3">
                 <div class="card analytics-card text-center">
                     <div class="card-body">
-                        <div class="stat-number">{{ analytics.unique_visitors }}</div>
+                        <div class="stat-number">{{ analytics.unique_visitors or 0 }}</div>
                         <p class="card-text text-muted">Unique Visitors</p>
+                        <small class="text-muted">Based on IP tracking</small>
                     </div>
                 </div>
             </div>
@@ -93,7 +95,8 @@
                 <div class="card analytics-card text-center">
                     <div class="card-body">
                         <div class="stat-number">{{ link_data.click_count or 0 }}</div>
-                        <p class="card-text text-muted">Total Redirects</p>
+                        <p class="card-text text-muted">Legacy Clicks</p>
+                        <small class="text-muted">Before detailed tracking</small>
                     </div>
                 </div>
             </div>
@@ -104,7 +107,21 @@
                             {{ "%.1f"|format((analytics.unique_visitors / analytics.total_clicks * 100) if analytics.total_clicks > 0 else 0) }}%
                         </div>
                         <p class="card-text text-muted">Unique Rate</p>
+                        <small class="text-muted">Of detailed clicks</small>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h6>Debug Information:</h6>
+                    <strong>Analytics Object:</strong> {{ analytics }}<br>
+                    <strong>Total Clicks:</strong> {{ analytics.total_clicks }}<br>
+                    <strong>Analytics Keys:</strong> {{ analytics.keys() if analytics else 'None' }}<br>
+                    <strong>Type:</strong> {{ analytics.__class__.__name__ if analytics else 'None' }}
                 </div>
             </div>
         </div>
@@ -215,6 +232,14 @@
                         <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
                         <h4>No Click Data Yet</h4>
                         <p class="text-muted">This link hasn't been clicked yet. Share it to start collecting analytics!</p>
+                        <!-- Debug info -->
+                        <div class="mt-3 text-start" style="background: #f8f9fa; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.8rem;">
+                            <strong>Debug Info:</strong><br>
+                            analytics object: {{ analytics }}<br>
+                            analytics.total_clicks: {{ analytics.total_clicks }}<br>
+                            analytics keys: {{ analytics.keys() if analytics else 'None' }}<br>
+                            Type of analytics: {{ analytics.__class__.__name__ if analytics else 'None' }}
+                        </div>
                         <button class="btn btn-primary" onclick="copyToClipboard()">
                             <i class="fas fa-copy me-2"></i>Copy Link
                         </button>
