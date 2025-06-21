@@ -44,6 +44,21 @@
                 <a href="{{ url_for('deeplink.manage_short_links_page') }}" class="btn btn-primary">
                     <i class="fas fa-link me-2"></i>Short Links
                 </a>
+                
+                <!-- Subscription Status -->
+                <div id="subscription-status" class="mt-3">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body text-center p-3">
+                            <h6 class="card-title mb-2">Subscription Status</h6>
+                            <div id="current-plan" class="mb-2">
+                                <span class="badge bg-secondary">Loading...</span>
+                            </div>
+                            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#subscriptionModal">
+                                <i class="fas fa-crown me-1"></i>Upgrade Plan
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <hr class="my-4">
@@ -52,7 +67,175 @@
             </a>
         </div>
     </div>
+
+    <!-- Subscription Modal -->
+    <div class="modal fade" id="subscriptionModal" tabindex="-1" aria-labelledby="subscriptionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="subscriptionModalLabel">
+                        <i class="fas fa-crown me-2 text-warning"></i>Choose Your Plan
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <!-- Basic Plan -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-primary">
+                                <div class="card-header bg-primary text-white text-center">
+                                    <h5 class="mb-0">Basic Plan</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    <div class="display-4 fw-bold text-primary mb-2">$5</div>
+                                    <p class="text-muted mb-3">per month</p>
+                                    <ul class="list-unstyled mb-4">
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Unlimited URL shortening</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Enhanced analytics</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Email support</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Custom aliases</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>90-day analytics retention</li>
+                                    </ul>
+                                    <button class="btn btn-outline-primary w-100" onclick="subscribe('price_1RcFAyGgo4tk9CEitD4wp0W')">
+                                        Choose Basic
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Pro Plan -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-warning">
+                                <div class="card-header bg-warning text-dark text-center">
+                                    <h5 class="mb-0">Pro Plan</h5>
+                                    <small class="badge bg-dark">Most Popular</small>
+                                </div>
+                                <div class="card-body text-center">
+                                    <div class="display-4 fw-bold text-warning mb-2">$20</div>
+                                    <p class="text-muted mb-3">per month</p>
+                                    <ul class="list-unstyled mb-4">
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Everything in Basic</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Advanced analytics</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Priority support</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Custom domains</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>API access</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>1-year analytics retention</li>
+                                    </ul>
+                                    <button class="btn btn-warning w-100" onclick="subscribe('price_1RcFBNGgo4tk9CEiho0eTpaJ')">
+                                        Choose Pro
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <small class="text-muted">
+                            <i class="fas fa-lock me-1"></i>Secure payment processed by Stripe
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Font Awesome is already linked in the head, so no need to add it again here -->
+    
+    <script>
+        // Load subscription status when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSubscriptionStatus();
+        });
+        
+        // Function to load current subscription status
+        function loadSubscriptionStatus() {
+            fetch('/api/subscription/status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusDiv = document.getElementById('current-plan');
+                    if (data.subscription_tier) {
+                        const tierName = data.subscription_tier.charAt(0).toUpperCase() + data.subscription_tier.slice(1);
+                        const badgeClass = data.is_premium ? 'bg-success' : 'bg-secondary';
+                        const statusText = data.status === 'active' ? 'Active' : 'Inactive';
+                        
+                        statusDiv.innerHTML = `
+                            <span class="badge ${badgeClass}">${tierName} Plan - ${statusText}</span>
+                        `;
+                        
+                        // Show cancel option for premium users
+                        if (data.is_premium && data.status === 'active') {
+                            statusDiv.innerHTML += `
+                                <br><small class="text-muted mt-1 d-block">
+                                    Current period ends: ${data.current_period_end ? new Date(data.current_period_end).toLocaleDateString() : 'N/A'}
+                                </small>
+                            `;
+                        }
+                    } else {
+                        statusDiv.innerHTML = '<span class="badge bg-secondary">Free Plan</span>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading subscription status:', error);
+                    document.getElementById('current-plan').innerHTML = '<span class="badge bg-secondary">Free Plan</span>';
+                });
+        }
+        
+        // Function to handle subscription selection
+        function subscribe(priceId) {
+            // Show loading state
+            const modal = bootstrap.Modal.getInstance(document.getElementById('subscriptionModal'));
+            
+            // Create checkout session
+            fetch('/api/subscription/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    price_id: priceId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.checkout_url) {
+                    // Redirect to Stripe Checkout
+                    window.location.href = data.checkout_url;
+                } else {
+                    alert('Error creating checkout session: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error creating checkout session. Please try again.');
+            });
+        }
+        
+        // Handle success/cancel URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('success') === 'true') {
+            // Show success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Success!</strong> Your subscription has been activated.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.container').prepend(alertDiv);
+            
+            // Reload subscription status
+            setTimeout(loadSubscriptionStatus, 1000);
+        } else if (urlParams.get('canceled') === 'true') {
+            // Show cancel message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-warning alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Canceled</strong> Your subscription was not activated.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.container').prepend(alertDiv);
+        }
+    </script>
 </body>
 </html>
