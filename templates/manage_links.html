@@ -189,6 +189,7 @@
                                     <th>Short Link</th>
                                     <th>Clicked At</th>
                                     <th>Device</th>
+                                    <th>Model</th>
                                     <th>Browser</th>
                                     <th>Location</th>
                                 </tr>
@@ -209,12 +210,30 @@
                                             <i class="fas {% if click.device_type == 'Mobile' %}fa-mobile-alt{% elif click.device_type == 'Tablet' %}fa-tablet-alt{% else %}fa-desktop{% endif %} me-1"></i>
                                             {{ click.device_type }}
                                         </span>
+                                        {% if click.os and click.os != 'Unknown' %}
+                                            <br><small class="text-muted">{{ click.os }}{% if click.os_version and click.os_version != 'Unknown' %} {{ click.os_version }}{% endif %}</small>
+                                        {% endif %}
                                     </td>
                                     <td>
-                                        <span class="text-muted">{{ click.browser }}</span>
+                                        <small class="text-primary">
+                                            {% if click.device_model and click.device_model != 'Unknown' %}
+                                                {{ click.device_model }}
+                                                {% if click.device_brand and click.device_brand != 'Unknown' and click.device_brand not in click.device_model %}
+                                                    <br><span class="text-secondary">({{ click.device_brand }})</span>
+                                                {% endif %}
+                                            {% else %}
+                                                Unknown
+                                            {% endif %}
+                                        </small>
                                     </td>
                                     <td>
-                                        <span class="text-muted">{{ click.location_display or 'Unknown' }}</span>
+                                        <span class="text-success">{{ click.browser or 'Unknown' }}</span>
+                                        {% if click.browser_version and click.browser_version != 'Unknown' %}
+                                            <br><small class="text-muted">v{{ click.browser_version }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="text-info">{{ click.location_display or 'Unknown' }}</span>
                                     </td>
                                 </tr>
                                 {% endfor %}

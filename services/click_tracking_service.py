@@ -34,7 +34,7 @@ class ClickTrackingService:
             # Hash IP for privacy
             ip_hash = self._hash_ip(ip_address) if ip_address else None
             
-            # Create click record
+            # Create click record with enhanced device information
             click_data = {
                 'short_code': short_code,
                 'user_id': user_id,
@@ -42,9 +42,15 @@ class ClickTrackingService:
                 'ip_hash': ip_hash,
                 'user_agent': user_agent,
                 'referrer': referrer,
+                # Basic device info (backward compatibility)
                 'device_type': device_info.get('device_type', 'Unknown'),
                 'browser': device_info.get('browser', 'Unknown'),
                 'os': device_info.get('os', 'Unknown'),
+                # Enhanced device info (new fields)
+                'device_model': device_info.get('device_model', 'Unknown'),
+                'device_brand': device_info.get('device_brand', 'Unknown'),
+                'browser_version': device_info.get('browser_version', 'Unknown'),
+                'os_version': device_info.get('os_version', 'Unknown'),
                 'created_at': firestore.SERVER_TIMESTAMP
             }
             
@@ -93,56 +99,234 @@ class ClickTrackingService:
         return hashlib.sha256(ip_address.encode()).hexdigest()[:16]
     
     def _parse_user_agent(self, user_agent: str) -> Dict:
-        """Parse user agent string for device information."""
+        """Parse user agent string for comprehensive device information."""
         try:
-            # Simple user agent parsing without external dependencies
+            import re
             ua_lower = user_agent.lower()
             
-            # Determine device type
-            if 'mobile' in ua_lower or 'android' in ua_lower or 'iphone' in ua_lower:
-                device_type = 'Mobile'
-            elif 'tablet' in ua_lower or 'ipad' in ua_lower:
-                device_type = 'Tablet'
-            else:
-                device_type = 'Desktop'
-            
-            # Determine browser
-            browser = 'Unknown'
-            if 'chrome' in ua_lower and 'edge' not in ua_lower:
-                browser = 'Chrome'
-            elif 'firefox' in ua_lower:
-                browser = 'Firefox'
-            elif 'safari' in ua_lower and 'chrome' not in ua_lower:
-                browser = 'Safari'
-            elif 'edge' in ua_lower:
-                browser = 'Edge'
-            elif 'opera' in ua_lower:
-                browser = 'Opera'
-            
-            # Determine OS
-            os_name = 'Unknown'
-            if 'windows' in ua_lower:
-                os_name = 'Windows'
-            elif 'mac' in ua_lower:
-                os_name = 'macOS'
-            elif 'linux' in ua_lower:
-                os_name = 'Linux'
-            elif 'android' in ua_lower:
-                os_name = 'Android'
-            elif 'ios' in ua_lower or 'iphone' in ua_lower or 'ipad' in ua_lower:
-                os_name = 'iOS'
-            
-            return {
-                'device_type': device_type,
-                'browser': browser,
-                'os': os_name
+            # Initialize result dictionary
+            result = {
+                'device_type': 'Unknown',
+                'device_model': 'Unknown',
+                'device_brand': 'Unknown',
+                'browser': 'Unknown',
+                'browser_version': 'Unknown',
+                'os': 'Unknown',
+                'os_version': 'Unknown'
             }
+            
+            # ===== DEVICE TYPE & MODEL DETECTION =====
+            
+            # iPhone Detection
+            iphone_match = re.search(r'iphone.*?os (\d+)_(\d+)', ua_lower)
+            if iphone_match or 'iphone' in ua_lower:
+                result['device_type'] = 'Mobile'
+                result['device_brand'] = 'Apple'
+                result['os'] = 'iOS'
+                
+                # Detect specific iPhone model
+                if 'iphone15' in ua_lower or 'iphone 15' in ua_lower:
+                    result['device_model'] = 'iPhone 15'
+                elif 'iphone14' in ua_lower or 'iphone 14' in ua_lower:
+                    result['device_model'] = 'iPhone 14'
+                elif 'iphone13' in ua_lower or 'iphone 13' in ua_lower:
+                    result['device_model'] = 'iPhone 13'
+                elif 'iphone12' in ua_lower or 'iphone 12' in ua_lower:
+                    result['device_model'] = 'iPhone 12'
+                elif 'iphone11' in ua_lower or 'iphone 11' in ua_lower:
+                    result['device_model'] = 'iPhone 11'
+                elif 'iphonex' in ua_lower or 'iphone x' in ua_lower:
+                    result['device_model'] = 'iPhone X'
+                elif 'iphone se' in ua_lower:
+                    result['device_model'] = 'iPhone SE'
+                else:
+                    result['device_model'] = 'iPhone'
+                
+                if iphone_match:
+                    result['os_version'] = f"{iphone_match.group(1)}.{iphone_match.group(2)}"
+            
+            # iPad Detection
+            elif 'ipad' in ua_lower:
+                result['device_type'] = 'Tablet'
+                result['device_brand'] = 'Apple'
+                result['device_model'] = 'iPad'
+                result['os'] = 'iPadOS'
+                
+                # Detect specific iPad model
+                if 'ipad pro' in ua_lower:
+                    result['device_model'] = 'iPad Pro'
+                elif 'ipad air' in ua_lower:
+                    result['device_model'] = 'iPad Air'
+                elif 'ipad mini' in ua_lower:
+                    result['device_model'] = 'iPad Mini'
+            
+            # Android Device Detection
+            elif 'android' in ua_lower:
+                result['device_type'] = 'Mobile' if 'mobile' in ua_lower else 'Tablet'
+                result['os'] = 'Android'
+                
+                # Extract Android version
+                android_match = re.search(r'android (\d+(?:\.\d+)?)', ua_lower)
+                if android_match:
+                    result['os_version'] = android_match.group(1)
+                
+                # Detect device brand and model
+                if 'samsung' in ua_lower:
+                    result['device_brand'] = 'Samsung'
+                    # Samsung Galaxy models
+                    if 'galaxy s24' in ua_lower:
+                        result['device_model'] = 'Galaxy S24'
+                    elif 'galaxy s23' in ua_lower:
+                        result['device_model'] = 'Galaxy S23'
+                    elif 'galaxy s22' in ua_lower:
+                        result['device_model'] = 'Galaxy S22'
+                    elif 'galaxy s21' in ua_lower:
+                        result['device_model'] = 'Galaxy S21'
+                    elif 'galaxy note' in ua_lower:
+                        result['device_model'] = 'Galaxy Note'
+                    elif 'galaxy a' in ua_lower:
+                        result['device_model'] = 'Galaxy A Series'
+                    else:
+                        result['device_model'] = 'Samsung Galaxy'
+                
+                elif 'pixel' in ua_lower:
+                    result['device_brand'] = 'Google'
+                    if 'pixel 8' in ua_lower:
+                        result['device_model'] = 'Pixel 8'
+                    elif 'pixel 7' in ua_lower:
+                        result['device_model'] = 'Pixel 7'
+                    elif 'pixel 6' in ua_lower:
+                        result['device_model'] = 'Pixel 6'
+                    else:
+                        result['device_model'] = 'Google Pixel'
+                
+                elif 'oneplus' in ua_lower:
+                    result['device_brand'] = 'OnePlus'
+                    result['device_model'] = 'OnePlus'
+                
+                elif 'xiaomi' in ua_lower or 'mi ' in ua_lower:
+                    result['device_brand'] = 'Xiaomi'
+                    result['device_model'] = 'Xiaomi'
+                
+                elif 'huawei' in ua_lower:
+                    result['device_brand'] = 'Huawei'
+                    result['device_model'] = 'Huawei'
+                
+                else:
+                    result['device_brand'] = 'Android'
+                    result['device_model'] = 'Android Device'
+            
+            # Desktop/Laptop Detection
+            elif any(os_name in ua_lower for os_name in ['windows', 'mac', 'linux']):
+                result['device_type'] = 'Desktop'
+                
+                if 'windows' in ua_lower:
+                    result['os'] = 'Windows'
+                    result['device_brand'] = 'PC'
+                    result['device_model'] = 'Windows PC'
+                    
+                    # Windows version detection
+                    if 'windows nt 10.0' in ua_lower:
+                        result['os_version'] = '10/11'
+                    elif 'windows nt 6.3' in ua_lower:
+                        result['os_version'] = '8.1'
+                    elif 'windows nt 6.1' in ua_lower:
+                        result['os_version'] = '7'
+                
+                elif 'mac' in ua_lower:
+                    result['os'] = 'macOS'
+                    result['device_brand'] = 'Apple'
+                    
+                    # Detect Mac model
+                    if 'macbook pro' in ua_lower:
+                        result['device_model'] = 'MacBook Pro'
+                    elif 'macbook air' in ua_lower:
+                        result['device_model'] = 'MacBook Air'
+                    elif 'imac' in ua_lower:
+                        result['device_model'] = 'iMac'
+                    elif 'mac pro' in ua_lower:
+                        result['device_model'] = 'Mac Pro'
+                    elif 'mac studio' in ua_lower:
+                        result['device_model'] = 'Mac Studio'
+                    else:
+                        result['device_model'] = 'Mac'
+                    
+                    # macOS version detection
+                    macos_match = re.search(r'mac os x (\d+)_(\d+)', ua_lower)
+                    if macos_match:
+                        result['os_version'] = f"{macos_match.group(1)}.{macos_match.group(2)}"
+                
+                elif 'linux' in ua_lower:
+                    result['os'] = 'Linux'
+                    result['device_brand'] = 'PC'
+                    result['device_model'] = 'Linux PC'
+                    
+                    # Linux distribution detection
+                    if 'ubuntu' in ua_lower:
+                        result['os_version'] = 'Ubuntu'
+                    elif 'fedora' in ua_lower:
+                        result['os_version'] = 'Fedora'
+                    elif 'debian' in ua_lower:
+                        result['os_version'] = 'Debian'
+            
+            # ===== BROWSER DETECTION =====
+            
+            # Chrome detection (must be before Safari since Chrome contains "Safari")
+            if 'chrome' in ua_lower and 'edge' not in ua_lower:
+                result['browser'] = 'Chrome'
+                chrome_match = re.search(r'chrome/(\d+\.\d+)', ua_lower)
+                if chrome_match:
+                    result['browser_version'] = chrome_match.group(1)
+            
+            # Edge detection
+            elif 'edge' in ua_lower or 'edg/' in ua_lower:
+                result['browser'] = 'Edge'
+                edge_match = re.search(r'edg?/(\d+\.\d+)', ua_lower)
+                if edge_match:
+                    result['browser_version'] = edge_match.group(1)
+            
+            # Firefox detection
+            elif 'firefox' in ua_lower:
+                result['browser'] = 'Firefox'
+                firefox_match = re.search(r'firefox/(\d+\.\d+)', ua_lower)
+                if firefox_match:
+                    result['browser_version'] = firefox_match.group(1)
+            
+            # Safari detection (must be after Chrome/Edge)
+            elif 'safari' in ua_lower:
+                result['browser'] = 'Safari'
+                safari_match = re.search(r'version/(\d+\.\d+)', ua_lower)
+                if safari_match:
+                    result['browser_version'] = safari_match.group(1)
+            
+            # Opera detection
+            elif 'opera' in ua_lower or 'opr/' in ua_lower:
+                result['browser'] = 'Opera'
+                opera_match = re.search(r'(?:opera|opr)/(\d+\.\d+)', ua_lower)
+                if opera_match:
+                    result['browser_version'] = opera_match.group(1)
+            
+            # ===== FALLBACK FOR MOBILE/TABLET =====
+            if result['device_type'] == 'Unknown':
+                if 'mobile' in ua_lower:
+                    result['device_type'] = 'Mobile'
+                elif 'tablet' in ua_lower:
+                    result['device_type'] = 'Tablet'
+                else:
+                    result['device_type'] = 'Desktop'
+            
+            return result
+            
         except Exception as e:
             logger.error(f"Error parsing user agent: {e}")
             return {
                 'device_type': 'Unknown',
+                'device_model': 'Unknown',
+                'device_brand': 'Unknown',
                 'browser': 'Unknown',
-                'os': 'Unknown'
+                'browser_version': 'Unknown',
+                'os': 'Unknown',
+                'os_version': 'Unknown'
             }
     
     def _get_geolocation(self, ip_address: str) -> Optional[Dict]:
@@ -206,7 +390,10 @@ class ClickTrackingService:
                     'unique_visitors': 0,
                     'top_countries': [],
                     'device_breakdown': {},
+                    'device_model_breakdown': {},
+                    'device_brand_breakdown': {},
                     'browser_breakdown': {},
+                    'os_breakdown': {},
                     'recent_clicks': []
                 }
             
@@ -214,7 +401,10 @@ class ClickTrackingService:
             unique_ips = set()
             countries = {}
             devices = {}
+            device_models = {}
+            device_brands = {}
             browsers = {}
+            operating_systems = {}
             
             for click in clicks:
                 # Unique visitors (based on IP hash)
@@ -229,16 +419,31 @@ class ClickTrackingService:
                 device = click.get('device_type', 'Unknown')
                 devices[device] = devices.get(device, 0) + 1
                 
+                # Device model stats
+                device_model = click.get('device_model', 'Unknown')
+                device_models[device_model] = device_models.get(device_model, 0) + 1
+                
+                # Device brand stats
+                device_brand = click.get('device_brand', 'Unknown')
+                device_brands[device_brand] = device_brands.get(device_brand, 0) + 1
+                
                 # Browser stats
-                browser = click.get('browser', 'Unknown').split()[0]  # Just browser name
+                browser = click.get('browser', 'Unknown')
                 browsers[browser] = browsers.get(browser, 0) + 1
+                
+                # OS stats
+                os_name = click.get('os', 'Unknown')
+                operating_systems[os_name] = operating_systems.get(os_name, 0) + 1
             
             return {
                 'total_clicks': len(clicks),
                 'unique_visitors': len(unique_ips),
                 'top_countries': sorted(countries.items(), key=lambda x: x[1], reverse=True)[:5],
                 'device_breakdown': devices,
+                'device_model_breakdown': sorted(device_models.items(), key=lambda x: x[1], reverse=True)[:10],
+                'device_brand_breakdown': sorted(device_brands.items(), key=lambda x: x[1], reverse=True)[:10],
                 'browser_breakdown': browsers,
+                'os_breakdown': operating_systems,
                 'recent_clicks': clicks[:10]  # Last 10 clicks
             }
             
