@@ -153,6 +153,86 @@
             </div>
         </div>
 
+        <!-- Enhanced Device Analytics -->
+        {% if analytics.device_model_breakdown or analytics.device_brand_breakdown %}
+        <div class="row mb-4">
+            <!-- Device Models -->
+            <div class="col-md-6 mb-3">
+                <div class="card analytics-card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-mobile-alt me-2"></i>Device Models</h5>
+                        {% if analytics.device_model_breakdown %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        {% for model, count in analytics.device_model_breakdown %}
+                                        {% if model != 'Unknown' %}
+                                        <tr>
+                                            <td>{{ model }}</td>
+                                            <td class="text-end">
+                                                <span class="badge bg-primary">{{ count }}</span>
+                                                <small class="text-muted ms-1">
+                                                    {{ "%.1f"|format((count / analytics.total_clicks * 100) if analytics.total_clicks > 0 else 0) }}%
+                                                </small>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No device model data available</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Device Brands -->
+            <div class="col-md-6 mb-3">
+                <div class="card analytics-card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-industry me-2"></i>Device Brands</h5>
+                        {% if analytics.device_brand_breakdown %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        {% for brand, count in analytics.device_brand_breakdown %}
+                                        {% if brand != 'Unknown' %}
+                                        <tr>
+                                            <td>
+                                                {% if brand == 'Apple' %}
+                                                    <i class="fab fa-apple me-2"></i>
+                                                {% elif brand == 'Samsung' %}
+                                                    <i class="fas fa-mobile-alt me-2"></i>
+                                                {% elif brand == 'Google' %}
+                                                    <i class="fab fa-google me-2"></i>
+                                                {% else %}
+                                                    <i class="fas fa-mobile-alt me-2"></i>
+                                                {% endif %}
+                                                {{ brand }}
+                                            </td>
+                                            <td class="text-end">
+                                                <span class="badge bg-success">{{ count }}</span>
+                                                <small class="text-muted ms-1">
+                                                    {{ "%.1f"|format((count / analytics.total_clicks * 100) if analytics.total_clicks > 0 else 0) }}%
+                                                </small>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No device brand data available</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Top Countries -->
         {% if analytics.top_countries %}
         <div class="row mb-4">
@@ -199,19 +279,52 @@
                                     <tr>
                                         <th>Time</th>
                                         <th>Device</th>
+                                        <th>Model</th>
                                         <th>Browser</th>
                                         <th>OS</th>
-                                        <th>Country</th>
+                                        <th>Location</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for click in analytics.recent_clicks %}
                                     <tr>
                                         <td>{{ click.clicked_at.strftime('%m/%d %I:%M %p') if click.clicked_at else 'Unknown' }}</td>
-                                        <td>{{ click.device_type or 'Unknown' }}</td>
-                                        <td>{{ click.browser or 'Unknown' }}</td>
-                                        <td>{{ click.os or 'Unknown' }}</td>
-                                        <td>{{ click.country or 'Unknown' }}</td>
+                                        <td>
+                                            <span class="badge bg-secondary">
+                                                <i class="fas {% if click.device_type == 'Mobile' %}fa-mobile-alt{% elif click.device_type == 'Tablet' %}fa-tablet-alt{% else %}fa-desktop{% endif %} me-1"></i>
+                                                {{ click.device_type or 'Unknown' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <small class="text-primary">
+                                                {% if click.device_model and click.device_model != 'Unknown' %}
+                                                    {{ click.device_model }}
+                                                    {% if click.device_brand and click.device_brand != 'Unknown' and click.device_brand not in click.device_model %}
+                                                        <br><span class="text-secondary">({{ click.device_brand }})</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    Unknown
+                                                {% endif %}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <span class="text-success">{{ click.browser or 'Unknown' }}</span>
+                                            {% if click.browser_version and click.browser_version != 'Unknown' %}
+                                                <br><small class="text-muted">v{{ click.browser_version }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="text-info">{{ click.os or 'Unknown' }}</span>
+                                            {% if click.os_version and click.os_version != 'Unknown' %}
+                                                <br><small class="text-muted">{{ click.os_version }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="text-warning">{{ click.country or 'Unknown' }}</span>
+                                            {% if click.city and click.city != 'Unknown' %}
+                                                <br><small class="text-muted">{{ click.city }}</small>
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
