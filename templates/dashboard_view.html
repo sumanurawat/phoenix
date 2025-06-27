@@ -400,7 +400,7 @@
         
         function refreshWidget(widgetId) {
             // Implement widget refresh
-            console.log('Refreshing widget:', widgetId);
+            // TODO: Add API call to refresh widget data
         }
         
         function editDashboard() {
@@ -413,24 +413,41 @@
             document.getElementById('shareLink').value = shareLink;
         }
         
-        function copyShareLink(event) {
+        async function copyShareLink(event) {
             const linkInput = document.getElementById('shareLink');
-            linkInput.select();
-            document.execCommand('copy');
             
-            // Show feedback
-            const button = event.target.closest('button');
-            const originalHTML = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-check"></i>';
-            setTimeout(() => {
-                button.innerHTML = originalHTML;
-            }, 2000);
+            try {
+                // Use modern clipboard API
+                await navigator.clipboard.writeText(linkInput.value);
+                
+                // Show feedback
+                const button = event.target.closest('button');
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                }, 2000);
+                
+            } catch (error) {
+                // Fallback to older method if clipboard API not available
+                console.warn('Clipboard API not available, using fallback');
+                linkInput.select();
+                document.execCommand('copy');
+                
+                // Show feedback
+                const button = event.target.closest('button');
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                }, 2000);
+            }
         }
         
         function togglePublic() {
             const isPublic = document.getElementById('publicToggle').checked;
-            // Implement API call to toggle public/private
-            console.log('Toggle public:', isPublic);
+            // TODO: Implement API call to toggle public/private
+            // Example: PUT /api/dashboards/${DASHBOARD_ID}/visibility
         }
     </script>
 </body>
