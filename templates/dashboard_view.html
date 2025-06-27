@@ -341,8 +341,8 @@
                     </div>
                 `;
                 
-                // Render chart after DOM update
-                setTimeout(() => renderChart(widget), 100);
+                // Render chart after DOM update using requestAnimationFrame for better performance
+                requestAnimationFrame(() => renderChart(widget));
             }
             
             return div;
