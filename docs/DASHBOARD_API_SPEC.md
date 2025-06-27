@@ -287,13 +287,106 @@ Generate or update share settings
 
 ## Error Handling
 
-All endpoints should return consistent error responses:
+All endpoints should return consistent error responses with appropriate HTTP status codes:
+
+### 400 Bad Request
+```json
+{
+  "error": {
+    "code": "INVALID_REQUEST",
+    "message": "Invalid request parameters",
+    "details": {
+      "field": "title",
+      "issue": "Title is required and must be between 1-100 characters"
+    }
+  }
+}
+```
+
+### 401 Unauthorized
+```json
+{
+  "error": {
+    "code": "AUTHENTICATION_REQUIRED",
+    "message": "Authentication required to access this resource",
+    "details": {}
+  }
+}
+```
+
+### 403 Forbidden
+```json
+{
+  "error": {
+    "code": "ACCESS_DENIED",
+    "message": "You don't have permission to access this dashboard",
+    "details": {
+      "dashboard_id": "dash_123",
+      "required_permission": "edit"
+    }
+  }
+}
+```
+
+### 404 Not Found
 ```json
 {
   "error": {
     "code": "DASHBOARD_NOT_FOUND",
     "message": "Dashboard not found or access denied",
-    "details": {}
+    "details": {
+      "dashboard_id": "dash_123"
+    }
+  }
+}
+```
+
+### 422 Unprocessable Entity
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Dashboard validation failed",
+    "details": {
+      "errors": [
+        {
+          "field": "widgets[0].chart_type",
+          "message": "Unsupported chart type 'invalid_type'"
+        },
+        {
+          "field": "dataset_id",
+          "message": "Dataset does not exist or is not accessible"
+        }
+      ]
+    }
+  }
+}
+```
+
+### 429 Too Many Requests
+```json
+{
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Rate limit exceeded. Please try again later.",
+    "details": {
+      "limit": 5,
+      "window": "1 hour",
+      "retry_after": 3600
+    }
+  }
+}
+```
+
+### 500 Internal Server Error
+```json
+{
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "An unexpected error occurred",
+    "details": {
+      "request_id": "req_abc123"
+    }
   }
 }
 ```
