@@ -6,7 +6,8 @@ registers routes, and initializes services.
 """
 import os
 import logging
-from flask import Flask, render_template, session, request
+from functools import wraps
+from flask import Flask, render_template, session, request, redirect, url_for, flash
 from flask_session import Session
 
 # Set up logging first
@@ -76,6 +77,16 @@ except Exception as e:
 # Initialize services
 chat_service = ChatService()
 search_service = SearchService()
+
+def require_auth(f):
+    """Decorator to require authentication for routes."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Please log in to access this page.', 'info')
+            return redirect(url_for('auth.login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 def create_app():
     """Create and configure the Flask application."""
@@ -151,6 +162,15 @@ def create_app():
         """Render the Technical Blogs page."""
         return render_template('blogs.html', 
                            title='Technical Blogs - Sumanu Rawat')
+    
+    @app.route('/dashboard')
+    @require_auth
+    def dashboard_page():
+        """Render the Dashboard page - requires authentication."""
+        return render_template('dashboard.html', 
+                           title='My Dashboards',
+                           user_name=session.get('user_name'),
+                           user_email=session.get('user_email'))
     
     return app
 
