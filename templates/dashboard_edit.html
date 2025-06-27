@@ -232,55 +232,57 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="widgetTitle" class="form-label">Widget Title</label>
-                                <input type="text" class="form-control" id="widgetTitle" placeholder="My Chart">
+                    <form id="addWidgetForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="widgetTitle" class="form-label">Widget Title</label>
+                                    <input type="text" class="form-control" id="widgetTitle" placeholder="My Chart">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="widgetType" class="form-label">Widget Type</label>
+                                    <select class="form-select" id="widgetType">
+                                        <option value="line">Line Chart</option>
+                                        <option value="bar">Bar Chart</option>
+                                        <option value="pie">Pie Chart</option>
+                                        <option value="scatter">Scatter Plot</option>
+                                        <option value="heatmap">Heatmap</option>
+                                        <option value="table">Data Table</option>
+                                        <option value="metric">Metric Card</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="widgetType" class="form-label">Widget Type</label>
-                                <select class="form-select" id="widgetType">
-                                    <option value="line">Line Chart</option>
-                                    <option value="bar">Bar Chart</option>
-                                    <option value="pie">Pie Chart</option>
-                                    <option value="scatter">Scatter Plot</option>
-                                    <option value="heatmap">Heatmap</option>
-                                    <option value="table">Data Table</option>
-                                    <option value="metric">Metric Card</option>
-                                </select>
+                        
+                        <div class="mb-3">
+                            <label for="widgetDataSource" class="form-label">Data Source</label>
+                            <select class="form-select" id="widgetDataSource">
+                                <option value="">Select a dataset...</option>
+                                <!-- Data sources will be populated from dashboard datasets -->
+                            </select>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="widgetXAxis" class="form-label">X-Axis Column</label>
+                                    <select class="form-select" id="widgetXAxis">
+                                        <option value="">Select column...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="widgetYAxis" class="form-label">Y-Axis Column</label>
+                                    <select class="form-select" id="widgetYAxis">
+                                        <option value="">Select column...</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="widgetDataSource" class="form-label">Data Source</label>
-                        <select class="form-select" id="widgetDataSource">
-                            <option value="">Select a dataset...</option>
-                            <!-- Data sources will be populated from dashboard datasets -->
-                        </select>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="widgetXAxis" class="form-label">X-Axis Column</label>
-                                <select class="form-select" id="widgetXAxis">
-                                    <option value="">Select column...</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="widgetYAxis" class="form-label">Y-Axis Column</label>
-                                <select class="form-select" id="widgetYAxis">
-                                    <option value="">Select column...</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+                    </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -399,7 +401,7 @@
             // Close modal and reset form
             const modal = bootstrap.Modal.getInstance(document.getElementById('addWidgetModal'));
             modal.hide();
-            document.getElementById('addWidgetModal').querySelector('form').reset();
+            document.getElementById('addWidgetForm').reset();
         }
         
         // Edit widget

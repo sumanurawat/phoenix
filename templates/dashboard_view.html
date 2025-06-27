@@ -197,7 +197,7 @@
                         <label for="shareLink" class="form-label">Dashboard Link</label>
                         <div class="input-group">
                             <input type="text" class="form-control share-link" id="shareLink" readonly>
-                            <button class="btn btn-outline-secondary" type="button" onclick="copyShareLink()">
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyShareLink(event)">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
@@ -413,7 +413,7 @@
             document.getElementById('shareLink').value = shareLink;
         }
         
-        function copyShareLink() {
+        function copyShareLink(event) {
             const linkInput = document.getElementById('shareLink');
             linkInput.select();
             document.execCommand('copy');
