@@ -152,6 +152,22 @@ def create_app():
         return render_template('blogs.html', 
                            title='Technical Blogs - Sumanu Rawat')
     
+    @app.route('/dashboard')
+    def dashboard_page():
+        """Render the Dashboard page - requires authentication."""
+        # Check if user is authenticated
+        if 'user_id' not in session:
+            # If not authenticated, redirect to login
+            from flask import redirect, url_for, flash
+            flash('Please log in to access your dashboards.', 'info')
+            return redirect(url_for('auth.login'))
+        
+        # User is authenticated, show dashboard
+        return render_template('dashboard.html', 
+                           title='My Dashboards',
+                           user_name=session.get('user_name'),
+                           user_email=session.get('user_email'))
+    
     return app
 
 # Create the application
