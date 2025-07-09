@@ -1,0 +1,731 @@
+{
+  "analysis_timestamp": "2025-07-09T01:28:50.481494",
+  "data_summary": {
+    "total_countries": 262,
+    "year_range": "1960-2023",
+    "total_records": 16930
+  },
+  "key_findings": [
+    "Current world population: 8,064,976,601",
+    "Average global population growth rate: 1.35%",
+    "Fastest growing region: Sub-Saharan Africa"
+  ],
+  "data_quality_score": 100.96612595419847,
+  "recommended_visualizations": [
+    "Time series line chart for world population growth",
+    "Animated bar chart race for top 10 countries over time",
+    "Geographic choropleth map for population density",
+    "Scatter plot: population size vs growth rate",
+    "Regional comparison pie charts for different decades"
+  ],
+  "basic_statistics": {
+    "world_population_latest": 8064976601.0,
+    "world_population_growth_2023": 0.9333304360898905,
+    "total_countries_with_data": 265,
+    "population_statistics": {
+      "mean": 328435584.6490566,
+      "median": 10644851.0,
+      "std": 1012519478.7721779,
+      "min": 9816.0,
+      "max": 8064976601.0,
+      "q25": 1827816.0,
+      "q75": 66617606.0
+    },
+    "population_distribution": {
+      "1M-10M": 68,
+      "10M-50M": 66,
+      "<1M": 57,
+      ">500M": 39,
+      "100M-500M": 21,
+      "50M-100M": 14
+    },
+    "outliers": {
+      "high_outliers": [
+        {
+          "country_name": "World",
+          "population": 8064976601.0
+        },
+        {
+          "country_name": "IDA & IBRD total",
+          "population": 6858864199.0
+        },
+        {
+          "country_name": "Low & middle income",
+          "population": 6499219471.0
+        },
+        {
+          "country_name": "Middle income",
+          "population": 5891444768.0
+        },
+        {
+          "country_name": "IBRD only",
+          "population": 4952554878.0
+        },
+        {
+          "country_name": "Early-demographic dividend",
+          "population": 3511607650.0
+        },
+        {
+          "country_name": "Lower middle income",
+          "population": 3082002881.0
+        },
+        {
+          "country_name": "Upper middle income",
+          "population": 2809441887.0
+        },
+        {
+          "country_name": "East Asia & Pacific",
+          "population": 2384479340.0
+        },
+        {
+          "country_name": "Late-demographic dividend",
+          "population": 2326636900.0
+        }
+      ],
+      "low_outliers": []
+    }
+  },
+  "growth_analysis": {
+    "fastest_growing": [
+      {
+        "country_name": "High income",
+        "growth_rate": 131.79059231098006,
+        "population": 1408764584.0
+      },
+      {
+        "country_name": "Lower middle income",
+        "growth_rate": 9.701606403079865,
+        "population": 3082002881.0
+      },
+      {
+        "country_name": "Oman",
+        "growth_rate": 6.744772871317362,
+        "population": 5049269.0
+      },
+      {
+        "country_name": "Kuwait",
+        "growth_rate": 5.7472226053311815,
+        "population": 4853420.0
+      },
+      {
+        "country_name": "Syrian Arab Republic",
+        "growth_rate": 5.041587027221284,
+        "population": 23594623.0
+      },
+      {
+        "country_name": "Singapore",
+        "growth_rate": 4.9782668934057694,
+        "population": 5917648.0
+      },
+      {
+        "country_name": "Saudi Arabia",
+        "growth_rate": 4.747463452002698,
+        "population": 33702731.0
+      },
+      {
+        "country_name": "Chad",
+        "growth_rate": 4.680212465611544,
+        "population": 19319064.0
+      },
+      {
+        "country_name": "South Sudan",
+        "growth_rate": 4.1937172409081125,
+        "population": 11483374.0
+      },
+      {
+        "country_name": "Malta",
+        "growth_rate": 4.073332793586304,
+        "population": 552747.0
+      }
+    ],
+    "declining_populations": [
+      {
+        "country_name": "Low income",
+        "growth_rate": -80.2798788168946,
+        "population": 607774703.0
+      },
+      {
+        "country_name": "Ukraine",
+        "growth_rate": -8.078026023973539,
+        "population": 37732836.0
+      },
+      {
+        "country_name": "Kosovo",
+        "growth_rate": -4.831638101098578,
+        "population": 1682668.0
+      },
+      {
+        "country_name": "St. Martin (French part)",
+        "growth_rate": -4.693453411846205,
+        "population": 27515.0
+      },
+      {
+        "country_name": "Marshall Islands",
+        "growth_rate": -3.118995932829305,
+        "population": 38827.0
+      },
+      {
+        "country_name": "Moldova",
+        "growth_rate": -2.8027163858716952,
+        "population": 2457783.0
+      },
+      {
+        "country_name": "Northern Mariana Islands",
+        "growth_rate": -2.029167932635967,
+        "population": 45143.0
+      },
+      {
+        "country_name": "Tuvalu",
+        "growth_rate": -1.7614091273018384,
+        "population": 9816.0
+      },
+      {
+        "country_name": "American Samoa",
+        "growth_rate": -1.6983161639981814,
+        "population": 47521.0
+      },
+      {
+        "country_name": "Albania",
+        "growth_rate": -1.1418484934778483,
+        "population": 2745972.0
+      }
+    ],
+    "most_volatile": [
+      {
+        "country_name": "Low income",
+        "growth_rate": 258.4551287076486,
+        "population": 1408764584.0
+      },
+      {
+        "country_name": "Kuwait",
+        "growth_rate": 5.928090407974389,
+        "population": 4853420.0
+      },
+      {
+        "country_name": "St. Martin (French part)",
+        "growth_rate": 5.4474083964704585,
+        "population": 27515.0
+      },
+      {
+        "country_name": "Qatar",
+        "growth_rate": 5.243275257879083,
+        "population": 2656032.0
+      },
+      {
+        "country_name": "Northern Mariana Islands",
+        "growth_rate": 4.801447333107564,
+        "population": 45143.0
+      },
+      {
+        "country_name": "United Arab Emirates",
+        "growth_rate": 4.342151406081932,
+        "population": 10483751.0
+      },
+      {
+        "country_name": "Rwanda",
+        "growth_rate": 4.225981485970113,
+        "population": 13954471.0
+      },
+      {
+        "country_name": "Macao SAR, China",
+        "growth_rate": 4.026062161603067,
+        "population": 678800.0
+      },
+      {
+        "country_name": "Sint Maarten (Dutch part)",
+        "growth_rate": 3.7094664582815793,
+        "population": 42749.0
+      },
+      {
+        "country_name": "Virgin Islands (U.S.)",
+        "growth_rate": 3.617347978554365,
+        "population": 104917.0
+      }
+    ],
+    "average_growth_by_decade": {
+      "1960": 4.85818785756149,
+      "1970": 4.445099309009377,
+      "1980": 3.9404865385291292,
+      "1990": 3.176140957496056,
+      "2000": 2.7101747837536636,
+      "2010": 2.6961855889498376,
+      "2020": 1.7691686065623264
+    },
+    "growth_rate_statistics": {
+      "mean": 1.3548646854952355,
+      "median": 1.0271915738364168,
+      "std": 9.608812157028536
+    }
+  },
+  "regional_analysis": {
+    "EAS": {
+      "name": "East Asia & Pacific",
+      "current_population": 2384479340.0,
+      "growth_rate_latest": 0.20301925335521886,
+      "average_growth": 1.3237063384517596,
+      "population_2000": 2050149617.0,
+      "cagr_since_2000": 0.6589792548129081,
+      "world_share_percent": 29.56585564928163
+    },
+    "ECS": {
+      "name": "Europe & Central Asia",
+      "current_population": 925640799.0,
+      "growth_rate_latest": 0.06264774230861914,
+      "average_growth": 0.5198364833824535,
+      "population_2000": 865392479.0,
+      "cagr_since_2000": 0.2930508018917699,
+      "world_share_percent": 11.477290571248863
+    },
+    "LCN": {
+      "name": "Latin America & Caribbean",
+      "current_population": 657617663.0,
+      "growth_rate_latest": 0.6909868116953488,
+      "average_growth": 1.765529108764019,
+      "population_2000": 520272118.0,
+      "cagr_since_2000": 1.0237778252602636,
+      "world_share_percent": 8.153993440209858
+    },
+    "MEA": {
+      "name": "Middle East, North Africa, Afghanistan & Pakistan",
+      "current_population": 797801454.0,
+      "growth_rate_latest": 1.9750879429996315,
+      "average_growth": 2.6053719080271716,
+      "population_2000": 494850317.0,
+      "cagr_since_2000": 2.098251147819097,
+      "world_share_percent": 9.892173201111063
+    },
+    "NAC": {
+      "name": "North America",
+      "current_population": 376954413.0,
+      "growth_rate_latest": 1.0552865968367575,
+      "average_growth": 1.0225055715635807,
+      "population_2000": 312909691.0,
+      "cagr_since_2000": 0.8128933024221574,
+      "world_share_percent": 4.673967844534854
+    },
+    "SAS": {
+      "name": "South Asia",
+      "current_population": 1662580579.0,
+      "growth_rate_latest": 0.8841583392144914,
+      "average_growth": 1.901326810977901,
+      "population_2000": 1237185482.0,
+      "cagr_since_2000": 1.2932120378712941,
+      "world_share_percent": 20.614822103685356
+    },
+    "SSF": {
+      "name": "Sub-Saharan Africa",
+      "current_population": 1259902353.0,
+      "growth_rate_latest": 2.4970359525795516,
+      "average_growth": 2.7527485122945787,
+      "population_2000": 681125107.0,
+      "cagr_since_2000": 2.7101771256277774,
+      "world_share_percent": 15.621897189928374
+    }
+  },
+  "ranking_analysis": {
+    "top_10_1970s": [
+      {
+        "country_name": "World",
+        "population": 4022228716.9
+      },
+      {
+        "country_name": "IDA & IBRD total",
+        "population": 3162875167.5
+      },
+      {
+        "country_name": "Low & middle income",
+        "population": 2922943238.2
+      },
+      {
+        "country_name": "Middle income",
+        "population": 2756547915.0
+      },
+      {
+        "country_name": "IBRD only",
+        "population": 2584653091.2
+      },
+      {
+        "country_name": "Late-demographic dividend",
+        "population": 1459959202.6
+      },
+      {
+        "country_name": "East Asia & Pacific",
+        "population": 1419502236.9
+      },
+      {
+        "country_name": "Early-demographic dividend",
+        "population": 1393764138.2
+      },
+      {
+        "country_name": "East Asia & Pacific (excluding high income)",
+        "population": 1234043801.5
+      },
+      {
+        "country_name": "East Asia & Pacific (IDA & IBRD countries)",
+        "population": 1217346062.6
+      }
+    ],
+    "top_10_1980s": [
+      {
+        "country_name": "World",
+        "population": 4814333765.9
+      },
+      {
+        "country_name": "IDA & IBRD total",
+        "population": 3884406374.4
+      },
+      {
+        "country_name": "Low & middle income",
+        "population": 3617926869.8
+      },
+      {
+        "country_name": "Middle income",
+        "population": 3403309465.1
+      },
+      {
+        "country_name": "IBRD only",
+        "population": 3127308695.2
+      },
+      {
+        "country_name": "Early-demographic dividend",
+        "population": 1789938657.7
+      },
+      {
+        "country_name": "Late-demographic dividend",
+        "population": 1702991984.1
+      },
+      {
+        "country_name": "East Asia & Pacific",
+        "population": 1669938404.2
+      },
+      {
+        "country_name": "East Asia & Pacific (excluding high income)",
+        "population": 1462160372.5
+      },
+      {
+        "country_name": "East Asia & Pacific (IDA & IBRD countries)",
+        "population": 1442687621.7
+      }
+    ],
+    "top_10_1990s": [
+      {
+        "country_name": "World",
+        "population": 5692052984.7
+      },
+      {
+        "country_name": "IDA & IBRD total",
+        "population": 4687601885.6
+      },
+      {
+        "country_name": "Low & middle income",
+        "population": 4396144489.2
+      },
+      {
+        "country_name": "Middle income",
+        "population": 4117999379.0
+      },
+      {
+        "country_name": "IBRD only",
+        "population": 3699634081.6
+      },
+      {
+        "country_name": "Early-demographic dividend",
+        "population": 2253141618.3
+      },
+      {
+        "country_name": "Late-demographic dividend",
+        "population": 1940273308.7
+      },
+      {
+        "country_name": "East Asia & Pacific",
+        "population": 1927708718.6
+      },
+      {
+        "country_name": "East Asia & Pacific (excluding high income)",
+        "population": 1703918577.0
+      },
+      {
+        "country_name": "East Asia & Pacific (IDA & IBRD countries)",
+        "population": 1681521276.2
+      }
+    ],
+    "top_10_2000s": [
+      {
+        "country_name": "World",
+        "population": 6536448595.9
+      },
+      {
+        "country_name": "IDA & IBRD total",
+        "population": 5455746995.4
+      },
+      {
+        "country_name": "Low & middle income",
+        "population": 5145224918.7
+      },
+      {
+        "country_name": "Middle income",
+        "population": 4777200836.5
+      },
+      {
+        "country_name": "IBRD only",
+        "population": 4189569084.3
+      },
+      {
+        "country_name": "Early-demographic dividend",
+        "population": 2715959185.9
+      },
+      {
+        "country_name": "East Asia & Pacific",
+        "population": 2126141555.9
+      },
+      {
+        "country_name": "Late-demographic dividend",
+        "population": 2106026201.0
+      },
+      {
+        "country_name": "East Asia & Pacific (excluding high income)",
+        "population": 1890538106.8
+      },
+      {
+        "country_name": "East Asia & Pacific (IDA & IBRD countries)",
+        "population": 1866269480.2
+      }
+    ],
+    "top_10_2010s": [
+      {
+        "country_name": "World",
+        "population": 7394694804.3
+      },
+      {
+        "country_name": "IDA & IBRD total",
+        "population": 6238912937.1
+      },
+      {
+        "country_name": "Low & middle income",
+        "population": 5901209363.4
+      },
+      {
+        "country_name": "Middle income",
+        "population": 5416685662.0
+      },
+      {
+        "country_name": "IBRD only",
+        "population": 4648204483.6
+      },
+      {
+        "country_name": "Early-demographic dividend",
+        "population": 3165660112.7
+      },
+      {
+        "country_name": "East Asia & Pacific",
+        "population": 2290472269.0
+      },
+      {
+        "country_name": "Late-demographic dividend",
+        "population": 2246959386.6
+      },
+      {
+        "country_name": "East Asia & Pacific (excluding high income)",
+        "population": 2046127349.9
+      },
+      {
+        "country_name": "East Asia & Pacific (IDA & IBRD countries)",
+        "population": 2020642251.4
+      }
+    ],
+    "top_10_2020s": [
+      {
+        "country_name": "World",
+        "population": 7957828329.25
+      },
+      {
+        "country_name": "IDA & IBRD total",
+        "population": 6763416825.5
+      },
+      {
+        "country_name": "Low & middle income",
+        "population": 6407590186.0
+      },
+      {
+        "country_name": "Middle income",
+        "population": 5823596213.5
+      },
+      {
+        "country_name": "IBRD only",
+        "population": 4916304436.75
+      },
+      {
+        "country_name": "Early-demographic dividend",
+        "population": 3452582440.75
+      },
+      {
+        "country_name": "East Asia & Pacific",
+        "population": 2377177658.5
+      },
+      {
+        "country_name": "Late-demographic dividend",
+        "population": 2321918476.5
+      },
+      {
+        "country_name": "East Asia & Pacific (excluding high income)",
+        "population": 2130377050.0
+      },
+      {
+        "country_name": "East Asia & Pacific (IDA & IBRD countries)",
+        "population": 2104127598.5
+      }
+    ],
+    "ranking_changes": {
+      "biggest_climbers": [
+        {
+          "country_name": "Low income",
+          "rank_2000": 39.0,
+          "rank_2020": 7.0,
+          "rank_change": 32.0
+        },
+        {
+          "country_name": "United Arab Emirates",
+          "rank_2000": 171.0,
+          "rank_2020": 139.0,
+          "rank_change": 32.0
+        },
+        {
+          "country_name": "Low income",
+          "rank_2000": 39.0,
+          "rank_2020": 8.0,
+          "rank_change": 31.0
+        },
+        {
+          "country_name": "Low income",
+          "rank_2000": 39.0,
+          "rank_2020": 17.0,
+          "rank_change": 22.0
+        },
+        {
+          "country_name": "Qatar",
+          "rank_2000": 207.0,
+          "rank_2020": 185.0,
+          "rank_change": 22.0
+        },
+        {
+          "country_name": "Burundi",
+          "rank_2000": 140.0,
+          "rank_2020": 120.0,
+          "rank_change": 20.0
+        },
+        {
+          "country_name": "Jordan",
+          "rank_2000": 148.0,
+          "rank_2020": 128.0,
+          "rank_change": 20.0
+        },
+        {
+          "country_name": "Benin",
+          "rank_2000": 136.0,
+          "rank_2020": 118.0,
+          "rank_change": 18.0
+        },
+        {
+          "country_name": "Kuwait",
+          "rank_2000": 190.0,
+          "rank_2020": 172.0,
+          "rank_change": 18.0
+        },
+        {
+          "country_name": "Congo, Rep.",
+          "rank_2000": 174.0,
+          "rank_2020": 157.0,
+          "rank_change": 17.0
+        }
+      ],
+      "biggest_fallers": [
+        {
+          "country_name": "Upper middle income",
+          "rank_2000": 7.0,
+          "rank_2020": 36.0,
+          "rank_change": -29.0
+        },
+        {
+          "country_name": "Lower middle income",
+          "rank_2000": 8.0,
+          "rank_2020": 36.0,
+          "rank_change": -28.0
+        },
+        {
+          "country_name": "High income",
+          "rank_2000": 14.0,
+          "rank_2020": 36.0,
+          "rank_change": -22.0
+        },
+        {
+          "country_name": "Bulgaria",
+          "rank_2000": 132.0,
+          "rank_2020": 154.0,
+          "rank_change": -22.0
+        },
+        {
+          "country_name": "Belarus",
+          "rank_2000": 120.0,
+          "rank_2020": 140.0,
+          "rank_change": -20.0
+        },
+        {
+          "country_name": "Hungary",
+          "rank_2000": 118.0,
+          "rank_2020": 138.0,
+          "rank_change": -20.0
+        },
+        {
+          "country_name": "Romania",
+          "rank_2000": 88.0,
+          "rank_2020": 107.0,
+          "rank_change": -19.0
+        },
+        {
+          "country_name": "Portugal",
+          "rank_2000": 115.0,
+          "rank_2020": 133.0,
+          "rank_change": -18.0
+        },
+        {
+          "country_name": "Bosnia and Herzegovina",
+          "rank_2000": 161.0,
+          "rank_2020": 178.0,
+          "rank_change": -17.0
+        },
+        {
+          "country_name": "Croatia",
+          "rank_2000": 158.0,
+          "rank_2020": 174.0,
+          "rank_change": -16.0
+        }
+      ]
+    },
+    "china_india_crossover": {
+      "crossover_occurred": true,
+      "crossover_year": 2021,
+      "latest_gap": 27359596.0,
+      "gap_direction": "India ahead"
+    }
+  },
+  "statistical_tests": {
+    "world_population_trends": {
+      "linear_fit": {
+        "r_squared": 0.9990181454127443,
+        "p_value": 5.7235057898097964e-95,
+        "slope": 82708057.30746336
+      },
+      "exponential_fit": {
+        "r_squared": 0.9896602356167803,
+        "p_value": 2.857650356537317e-63,
+        "growth_rate": 0.015812620345865055
+      },
+      "best_fit": "linear"
+    },
+    "size_growth_correlation": {
+      "correlation_coefficient": 0.1334184209150417,
+      "p_value": 0.029905185636098088,
+      "significant": "True"
+    }
+  }
+}
