@@ -36,8 +36,14 @@ pip install matplotlib pandas seaborn numpy
 
 ### Run Complete Showcase
 ```bash
-# Generate all visualizations with professional theming
-python main.py
+# Generate all visualizations (recommended)
+./generate_all.sh
+
+# Or generate individually:
+python main.py                                    # 2D visualizations
+python web3d/tensorboard_demographics.py          # 3D demographic clustering  
+python web3d/migration_flows_3d.py               # 3D migration globe
+python web3d/density_surface.py                  # 3D density surface
 
 # Use custom data directory
 python main.py --data-dir /path/to/data
@@ -75,6 +81,8 @@ insights = chart.get_insights()
 ```
 population_visualizations/
 ├── README.md                    # This file
+├── requirements.txt             # Dependencies
+├── .gitignore                  # Excludes large output files
 ├── main.py                     # Main orchestrator and showcase
 ├── core/                       # Core infrastructure
 │   ├── __init__.py
@@ -85,20 +93,24 @@ population_visualizations/
 │   ├── __init__.py
 │   ├── sample_charts.py        # Popular use case charts
 │   └── animated_charts.py      # Animation-capable charts
+├── web3d/                      # 3D TensorBoard-style visualizations
+│   ├── __init__.py
+│   ├── tensorboard_demographics.py  # 3D demographic clustering
+│   ├── migration_flows_3d.py        # 3D migration globe
+│   └── density_surface.py           # 3D population density terrain
 ├── dashboards/                 # Dashboard compositions (future)
 ├── tests/                      # Test modules (future)
-└── showcase_outputs/           # Generated visualization files
-    ├── population_growth_analysis.png
-    ├── china_india_demographic_transition.png
-    ├── population_race_preview.png
-    ├── theme_gallery.png
-    └── showcase_report.md
+└── output/                     # Generated files (gitignored)
+    ├── web_exports/            # Interactive 3D HTML files
+    ├── showcase_outputs/       # 2D visualization exports
+    └── tensorboard_exports/    # TensorBoard data exports
 ```
 
 ## 📊 Sample Outputs
 
-The system generates professional visualizations including:
+The system generates professional visualizations in the `output/` directory (excluded from Git):
 
+### 2D Visualizations (`output/showcase_outputs/`)
 1. **Population Growth Analysis** - Multi-panel dashboard showing:
    - Growth rate distributions
    - Top growing and declining countries
@@ -120,6 +132,12 @@ The system generates professional visualizations including:
    - Sequential and diverging schemes
    - Regional color mappings
    - WCAG accessibility compliance
+
+### 3D Interactive Visualizations (`output/web_exports/`)
+1. **TensorBoard-style Demographic Clustering** - Countries positioned in 3D space by similarity
+2. **3D Migration Globe** - Interactive Earth with animated migration flows
+3. **3D Population Density Surface** - Terrain where cities rise like mountains
+4. **Comprehensive Dashboards** - Multi-panel analysis with statistics
 
 ## 🎨 Theme System
 
@@ -147,20 +165,30 @@ All colors are WCAG AA compliant and colorblind-safe.
 - **Export Speed**: Multi-format export in <2 seconds
 - **Memory Efficient**: Optimized for large datasets
 
-## 🧪 Testing
+## 🌐 Viewing Visualizations
 
-Test individual components:
+After running the scripts, all generated files are saved to the `output/` directory:
 
+### 3D Interactive Visualizations
 ```bash
-# Test core components
-python -c "from core.data_loader import PopulationDataLoader; loader = PopulationDataLoader('../data'); data = loader.load_population_data(); print(f'✅ {len(data)} records loaded')"
+# Open the main showcase in your browser
+open output/web_exports/index.html
 
-# Test chart components
-python -c "from charts.sample_charts import PopulationGrowthAnalysisChart; print('✅ Chart imports successful')"
-
-# Run full showcase
-python main.py
+# Or view individual 3D visualizations
+open output/web_exports/demographic_clustering_tsne_3d.html
+open output/web_exports/migration_flows_3d_globe.html
 ```
+
+### 2D Static Charts
+```bash
+# View the comprehensive report
+open output/showcase_outputs/showcase_report.md
+
+# View individual charts
+open output/showcase_outputs/population_growth_analysis.png
+```
+
+**Note**: The `output/` directory is excluded from Git to avoid large file issues. Generate visualizations locally using the scripts above.
 
 ## 🔍 Key Insights Discovered
 

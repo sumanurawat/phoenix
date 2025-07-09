@@ -62,8 +62,8 @@ class PopulationVisualizationShowcase:
         self.total_render_time = 0
         
         # Create output directory
-        self.output_dir = Path("showcase_outputs")
-        self.output_dir.mkdir(exist_ok=True)
+        self.output_dir = Path("output/showcase_outputs")
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         
         print(f"📁 Output directory: {self.output_dir.absolute()}")
     
