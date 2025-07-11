@@ -265,6 +265,116 @@
             margin-bottom: 2rem;
         }
         
+        /* AI Summary Styles */
+        .doogle-main-content {
+            display: flex;
+            flex: 1;
+            gap: 2rem;
+            padding: 1rem;
+        }
+        
+        .search-results-column {
+            flex: 2;
+            max-width: 800px;
+        }
+        
+        .ai-summary-column {
+            flex: 1;
+            min-width: 350px;
+            max-width: 450px;
+        }
+        
+        .ai-summary-panel {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 1rem;
+        }
+        
+        .ai-summary-header {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #e0e0e0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+        }
+        
+        .ai-summary-header .ai-icon {
+            margin-right: 0.5rem;
+            font-size: 1.2rem;
+        }
+        
+        .ai-summary-header h4 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .ai-summary-content {
+            padding: 1rem;
+            min-height: 200px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .summary-placeholder {
+            text-align: center;
+            color: #666;
+            padding: 2rem 1rem;
+        }
+        
+        .summary-placeholder p {
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        
+        .summary-loading {
+            text-align: center;
+            padding: 2rem 1rem;
+        }
+        
+        .summary-loading .spinner-border {
+            width: 2rem;
+            height: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .summary-content {
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .summary-content h1, .summary-content h2, .summary-content h3 {
+            color: #4285f4;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .summary-content ul, .summary-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .summary-content p {
+            margin-bottom: 1rem;
+        }
+        
+        .ai-summary-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-top: 1px solid #e0e0e0;
+            font-size: 0.85rem;
+            color: #666;
+            background: #f8f9fa;
+            border-radius: 0 0 12px 12px;
+        }
+        
         @media (max-width: 768px) {
             .doogle-header {
                 flex-direction: column;
@@ -283,8 +393,20 @@
                 display: none;
             }
             
-            .search-results-container {
+            .doogle-main-content {
+                flex-direction: column;
+                gap: 1rem;
                 padding: 0.5rem;
+            }
+            
+            .ai-summary-column {
+                min-width: auto;
+                max-width: none;
+            }
+            
+            .ai-summary-panel {
+                position: relative;
+                top: auto;
             }
         }
     </style>
@@ -335,10 +457,12 @@
             </a>
         </div>
         
-        <div class="search-results-container">
-            <div class="search-results-info">
-                <span>About {{ results.total_results }} results ({{ results.search_time }} seconds)</span>
-            </div>
+        <div class="doogle-main-content">
+            <!-- Search Results Column -->
+            <div class="search-results-column">
+                <div class="search-results-info">
+                    <span>About {{ results.total_results }} results ({{ results.search_time }} seconds)</span>
+                </div>
             
             {% if results.results %}
                 {% for result in results.results %}
@@ -389,6 +513,30 @@
                     <p>Try different keywords or check your spelling.</p>
                 </div>
             {% endif %}
+            </div>
+            
+            <!-- AI Summary Column -->
+            <div class="ai-summary-column">
+                <div class="ai-summary-panel">
+                    <div class="ai-summary-header">
+                        <i class="fas fa-brain ai-icon"></i>
+                        <h4 id="summary-title">AI Search Summary</h4>
+                    </div>
+                    <div id="ai-summary-content" class="ai-summary-content">
+                        <div class="summary-placeholder">
+                            <p>Get an AI-powered summary of your search results to quickly understand the key information and insights.</p>
+                            <button id="generate-summary-btn" class="btn btn-primary mt-3" 
+                                    data-query="{{ query }}" data-category="{{ category }}">
+                                <i class="fas fa-magic me-2"></i>Generate AI Summary
+                            </button>
+                        </div>
+                    </div>
+                    <div class="ai-summary-footer">
+                        <span id="summary-model">Model: Gemini AI</span>
+                        <span id="summary-timestamp"></span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     {% else %}
@@ -420,6 +568,11 @@
     </div>
     {% endif %}
     
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
     <script>
         // Add event listeners to search form
         const searchForm = document.getElementById('search-form');
@@ -428,6 +581,147 @@
         // Auto-focus search input on page load
         if (searchInput) {
             searchInput.focus();
+        }
+        
+        // AI Summary functionality
+        const generateSummaryBtn = document.getElementById('generate-summary-btn');
+        const summaryContent = document.getElementById('ai-summary-content');
+        const summaryModel = document.getElementById('summary-model');
+        const summaryTimestamp = document.getElementById('summary-timestamp');
+        
+        if (generateSummaryBtn) {
+            generateSummaryBtn.addEventListener('click', async function() {
+                const query = this.getAttribute('data-query');
+                const category = this.getAttribute('data-category');
+                
+                // Collect search results from the page
+                const searchResults = collectSearchResults();
+                
+                if (searchResults.length === 0) {
+                    alert('No search results found to summarize.');
+                    return;
+                }
+                
+                // Show loading state
+                showLoadingState();
+                
+                try {
+                    // Call the API to generate summary
+                    const response = await fetch('/api/search/summary', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            search_results: searchResults,
+                            query: query,
+                            category: category
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showSummary(result.summary, result.metadata);
+                    } else {
+                        showError(result.error || 'Failed to generate summary');
+                    }
+                    
+                } catch (error) {
+                    console.error('Error generating summary:', error);
+                    showError('Network error occurred. Please try again.');
+                }
+            });
+        }
+        
+        function collectSearchResults() {
+            const results = [];
+            const resultElements = document.querySelectorAll('.search-result');
+            
+            resultElements.forEach(element => {
+                const titleElement = element.querySelector('.result-title');
+                const urlElement = element.querySelector('.result-url');
+                const descriptionElement = element.querySelector('.result-description');
+                const sourceElement = element.querySelector('.result-source');
+                const dateElement = element.querySelector('.result-date');
+                
+                if (titleElement && urlElement && descriptionElement) {
+                    const result = {
+                        title: titleElement.textContent.trim(),
+                        url: urlElement.textContent.trim(),
+                        description: descriptionElement.textContent.trim()
+                    };
+                    
+                    // Add news-specific fields if available
+                    if (sourceElement) {
+                        result.source = sourceElement.textContent.trim();
+                    }
+                    if (dateElement) {
+                        result.date = dateElement.textContent.trim();
+                    }
+                    
+                    results.push(result);
+                }
+            });
+            
+            return results;
+        }
+        
+        function showLoadingState() {
+            summaryContent.innerHTML = `
+                <div class="summary-loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Analyzing search results and generating AI summary...</p>
+                    <small class="text-muted">This may take a few seconds</small>
+                </div>
+            `;
+        }
+        
+        function showSummary(summaryText, metadata) {
+            // Parse markdown and display summary
+            const parsedSummary = marked.parse(summaryText);
+            
+            summaryContent.innerHTML = `
+                <div class="summary-content">
+                    ${parsedSummary}
+                </div>
+            `;
+            
+            // Update footer with metadata
+            if (metadata) {
+                if (metadata.model_used) {
+                    summaryModel.textContent = `Model: ${metadata.model_used}`;
+                }
+                
+                if (metadata.generation_time) {
+                    const timestamp = new Date().toLocaleTimeString();
+                    summaryTimestamp.textContent = `Generated at ${timestamp} (${metadata.generation_time.toFixed(1)}s)`;
+                }
+            }
+        }
+        
+        function showError(errorMessage) {
+            summaryContent.innerHTML = `
+                <div class="summary-placeholder">
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Error:</strong> ${errorMessage}
+                    </div>
+                    <button id="retry-summary-btn" class="btn btn-outline-primary mt-2">
+                        <i class="fas fa-redo me-2"></i>Try Again
+                    </button>
+                </div>
+            `;
+            
+            // Add retry functionality
+            const retryBtn = document.getElementById('retry-summary-btn');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', function() {
+                    generateSummaryBtn.click();
+                });
+            }
         }
     </script>
 </body>

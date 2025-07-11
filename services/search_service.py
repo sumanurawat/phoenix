@@ -13,6 +13,9 @@ from googleapiclient.errors import HttpError
 # Import configurations
 from config.settings import GOOGLE_API_KEY, GOOGLE_SEARCH_ENGINE_ID
 
+# Import LLM service for AI summary generation
+from services.llm_service import LLMService
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -456,3 +459,149 @@ class SearchService:
             })
         
         return results
+    
+    def generate_search_summary(self, search_results: List[Dict[str, Any]], query: str, category: str = "web") -> Dict[str, Any]:
+        """
+        Generate AI summary from search results.
+        
+        Args:
+            search_results: List of search result dictionaries
+            query: The original search query
+            category: Type of search (web or news)
+            
+        Returns:
+            Dictionary containing the AI summary and metadata
+        """
+        logger.info(f"🤖 Generating AI summary for query: '{query}' (category: {category})")
+        
+        try:
+            # Initialize LLM service
+            llm_service = LLMService()
+            
+            # Compile search results into a structured format
+            compiled_content = self._compile_search_results(search_results, query, category)
+            
+            # Generate the summary prompt
+            summary_prompt = self._create_summary_prompt(compiled_content, query, category)
+            
+            # Generate summary using LLM
+            start_time = time.time()
+            llm_response = llm_service.generate_text(summary_prompt)
+            generation_time = time.time() - start_time
+            
+            if llm_response.get("success"):
+                logger.info(f"✅ AI summary generated successfully in {generation_time:.2f}s")
+                
+                return {
+                    "success": True,
+                    "summary": llm_response["text"],
+                    "metadata": {
+                        "query": query,
+                        "category": category,
+                        "model_used": llm_response.get("model_used"),
+                        "generation_time": generation_time,
+                        "results_count": len(search_results),
+                        "timestamp": time.time()
+                    }
+                }
+            else:
+                logger.error(f"❌ LLM generation failed: {llm_response.get('error', 'Unknown error')}")
+                return {
+                    "success": False,
+                    "error": "Failed to generate AI summary",
+                    "details": llm_response.get("error", "Unknown error")
+                }
+                
+        except Exception as e:
+            logger.error(f"❌ Exception in generate_search_summary: {str(e)}")
+            return {
+                "success": False,
+                "error": "Exception occurred during summary generation",
+                "details": str(e)
+            }
+    
+    def _compile_search_results(self, search_results: List[Dict[str, Any]], query: str, category: str) -> str:
+        """
+        Compile search results into a structured text format for LLM processing.
+        
+        Args:
+            search_results: List of search result dictionaries
+            query: The original search query
+            category: Type of search (web or news)
+            
+        Returns:
+            Compiled text content
+        """
+        logger.info(f"📝 Compiling {len(search_results)} search results for AI analysis")
+        
+        # Start with query context
+        compiled = f"Search Query: {query}\n"
+        compiled += f"Search Category: {category}\n"
+        compiled += f"Number of Results: {len(search_results)}\n\n"
+        
+        # Add each search result
+        for i, result in enumerate(search_results, 1):
+            compiled += f"Result {i}:\n"
+            compiled += f"Title: {result.get('title', 'No title')}\n"
+            compiled += f"URL: {result.get('url', 'No URL')}\n"
+            compiled += f"Description: {result.get('description', 'No description')}\n"
+            
+            # Add category-specific metadata
+            if category == "news" and result.get('source'):
+                compiled += f"Source: {result.get('source')}\n"
+                if result.get('date'):
+                    compiled += f"Date: {result.get('date')}\n"
+            
+            compiled += "\n"
+        
+        logger.info(f"✅ Compiled content: {len(compiled)} characters")
+        return compiled
+    
+    def _create_summary_prompt(self, compiled_content: str, query: str, category: str) -> str:
+        """
+        Create an optimized prompt for generating search result summaries.
+        
+        Args:
+            compiled_content: Compiled search results text
+            query: The original search query
+            category: Type of search (web or news)
+            
+        Returns:
+            Formatted prompt for LLM
+        """
+        if category == "news":
+            prompt = f"""You are a professional news analyst. Based on the search results below, provide a comprehensive news summary about "{query}".
+
+{compiled_content}
+
+Instructions:
+1. START with 1-2 clear, direct sentences that answer the search query or summarize the main news developments
+2. Then provide a detailed analysis that synthesizes the key information from all search results
+3. Focus on current events, trends, and factual reporting
+4. Identify main themes and developments
+5. Present information in a clear, journalistic style
+6. Highlight any breaking news or recent developments
+7. Include relevant dates and sources when mentioned
+8. Structure your response with clear sections if appropriate
+
+Format: Begin with a direct answer/summary, then elaborate with detailed information to help readers quickly understand the current state of this topic based on recent news coverage."""
+
+        else:  # web search
+            prompt = f"""You are a research assistant helping users understand search topics. Based on the search results below, provide a comprehensive overview about "{query}".
+
+{compiled_content}
+
+Instructions:
+1. START with 1-2 clear, direct sentences that directly answer the search query or define the main concept
+2. Then provide a detailed explanation that synthesizes key concepts and information from all search results
+3. Provide a balanced overview of the topic
+4. Explain important definitions, concepts, or background information
+5. Identify main themes and current developments
+6. Present information in an educational, informative style
+7. Structure your response logically with clear sections
+8. Help readers understand the topic's significance and current status
+
+Format: Begin with a direct answer/definition, then elaborate with comprehensive information to give readers a solid understanding of this topic based on current web information."""
+
+        logger.info(f"📋 Created {category} summary prompt: {len(prompt)} characters")
+        return prompt
