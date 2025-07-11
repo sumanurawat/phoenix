@@ -606,19 +606,14 @@
         const messagesContainer = document.getElementById('messagesContainer');
         const welcomeState = document.getElementById('welcomeState');
         const chatTitle = document.getElementById('chatTitle');
-        const currentModel = document.getElementById('currentModel');
         const chatForm = document.getElementById('chatForm');
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
         
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            // Set default model info immediately
-            currentModel.textContent = 'Gemini AI';
-            
             loadConversations();
             setupEventListeners();
-            loadModelInfo();
         });
         
         function setupEventListeners() {
@@ -720,8 +715,57 @@
             // Clear current conversation
             currentConversationId = null;
             updateActiveConversation();
-            showWelcomeState();
-            chatTitle.textContent = 'New Conversation';
+            
+            // Clear messages and restore welcome state
+            messagesContainer.innerHTML = `
+                <div class="welcome-state" id="welcomeState">
+                    <i class="fas fa-comments fa-3x mb-4 text-primary"></i>
+                    <h3>Start a new conversation</h3>
+                    <p class="lead mb-4">Ask me anything! I'm powered by Google's Gemini AI models.</p>
+                    <div class="row g-3 w-100" style="max-width: 600px;">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-start">
+                                    <i class="fas fa-lightbulb text-warning mb-2"></i>
+                                    <h6 class="card-title">Get Ideas</h6>
+                                    <p class="card-text small text-muted">Brainstorm creative solutions</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-start">
+                                    <i class="fas fa-code text-info mb-2"></i>
+                                    <h6 class="card-title">Write Code</h6>
+                                    <p class="card-text small text-muted">Get programming help</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-start">
+                                    <i class="fas fa-search text-success mb-2"></i>
+                                    <h6 class="card-title">Research</h6>
+                                    <p class="card-text small text-muted">Find information on any topic</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-start">
+                                    <i class="fas fa-pen text-primary mb-2"></i>
+                                    <h6 class="card-title">Write & Edit</h6>
+                                    <p class="card-text small text-muted">Create and improve content</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Update DOM reference
+            welcomeState = document.getElementById('welcomeState');
+            chatTitle.textContent = 'Welcome to Derplexity';
             messageInput.focus();
             
             // Close sidebar on mobile
@@ -793,7 +837,7 @@
                     
                     // Update model info
                     if (data.model_info?.current_model) {
-                        currentModel.textContent = data.model_info.current_model;
+                        // Model info displayed with individual messages
                     }
                 } else {
                     throw new Error(data.error || 'Failed to start conversation');
@@ -888,9 +932,8 @@
         }
         
         function renderMessages(messages) {
-            // Clear messages except welcome state
-            const existingMessages = messagesContainer.querySelectorAll('.message');
-            existingMessages.forEach(msg => msg.remove());
+            // Clear all content in messages container
+            messagesContainer.innerHTML = '';
             
             if (!messages || messages.length === 0) return;
             
@@ -991,11 +1034,17 @@
         }
         
         function showWelcomeState() {
-            welcomeState.style.display = 'flex';
+            const welcomeEl = document.getElementById('welcomeState');
+            if (welcomeEl) {
+                welcomeEl.style.display = 'flex';
+            }
         }
         
         function hideWelcomeState() {
-            welcomeState.style.display = 'none';
+            const welcomeEl = document.getElementById('welcomeState');
+            if (welcomeEl) {
+                welcomeEl.style.display = 'none';
+            }
         }
         
         function updateActiveConversation() {
@@ -1032,27 +1081,7 @@
             `;
         }
         
-        async function loadModelInfo() {
-            try {
-                const response = await fetch('/api/chat/models');
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success && data.models?.current_model) {
-                        currentModel.textContent = data.models.current_model;
-                    } else {
-                        currentModel.textContent = 'Model Info Unavailable';
-                    }
-                } else if (response.status === 401) {
-                    // Authentication required - show default
-                    currentModel.textContent = 'Gemini AI';
-                } else {
-                    currentModel.textContent = 'Model Info Unavailable';
-                }
-            } catch (error) {
-                console.error('Error loading model info:', error);
-                currentModel.textContent = 'Gemini AI';
-            }
-        }
+        // Model info is now displayed per-message instead of globally
         
         async function editTitle(conversationId) {
             const conversation = conversations.find(c => c.conversation_id === conversationId);
