@@ -29,3 +29,46 @@ def search():
     
     # Return the search results
     return jsonify(search_results)
+
+@search_bp.route('/summary', methods=['POST'])
+def generate_summary():
+    """Generate AI summary from search results."""
+    try:
+        # Get request data
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({
+                "success": False,
+                "error": "No JSON data provided"
+            }), 400
+        
+        # Extract required fields
+        search_results = data.get('search_results', [])
+        query = data.get('query', '')
+        category = data.get('category', 'web')
+        
+        # Validate inputs
+        if not search_results:
+            return jsonify({
+                "success": False,
+                "error": "No search results provided"
+            }), 400
+        
+        if not query:
+            return jsonify({
+                "success": False,
+                "error": "No search query provided"
+            }), 400
+        
+        # Generate AI summary
+        summary_result = search_service.generate_search_summary(search_results, query, category)
+        
+        return jsonify(summary_result)
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": "Internal server error",
+            "details": str(e)
+        }), 500
