@@ -29,6 +29,20 @@
                 <span class="model-info">
                     Model: <span id="current-model">{{ chat.model_info.current_model }}</span>
                 </span>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                            <i class="fas fa-user-circle me-2"></i>Profile
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        </a></li>
+                    </ul>
+                </div>
             </div>
         </div>
         
@@ -134,9 +148,37 @@
                 // Remove loading message
                 loadingMessage.remove();
                 
+                // Handle authentication errors
+                if (response.status === 401) {
+                    try {
+                        const errorData = await response.json();
+                        if (errorData.redirect) {
+                            alert('Please log in to upload documents.');
+                            window.location.href = errorData.redirect;
+                            return;
+                        }
+                    } catch (e) {
+                        // If we can't parse JSON, it's probably an HTML login page
+                        alert('Authentication required. Please log in to continue.');
+                        window.location.href = '/login';
+                        return;
+                    }
+                }
+                
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to upload document');
+                    const errorText = await response.text();
+                    // Check if response is HTML (login page)
+                    if (errorText.includes('<!DOCTYPE') || errorText.includes('<html')) {
+                        alert('Authentication required. Please log in to continue.');
+                        window.location.href = '/login';
+                        return;
+                    }
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        throw new Error(errorData.error || 'Failed to upload document');
+                    } catch (e) {
+                        throw new Error('Failed to upload document');
+                    }
                 }
                 
                 const data = await response.json();
@@ -192,8 +234,27 @@
                     body: JSON.stringify({ message }),
                 });
                 
+                // Handle authentication errors
+                if (response.status === 401) {
+                    loadingMessage.remove();
+                    const errorData = await response.json();
+                    if (errorData.redirect) {
+                        alert('Please log in to continue chatting.');
+                        window.location.href = errorData.redirect;
+                        return;
+                    }
+                }
+                
                 if (!response.ok) {
-                    throw new Error('Failed to send message');
+                    const errorText = await response.text();
+                    // Check if response is HTML (login page)
+                    if (errorText.includes('<!DOCTYPE') || errorText.includes('<html')) {
+                        loadingMessage.remove();
+                        alert('Authentication required. Please log in to continue.');
+                        window.location.href = '/login';
+                        return;
+                    }
+                    throw new Error(`Server error: ${response.status}`);
                 }
                 
                 const data = await response.json();
@@ -230,7 +291,29 @@
                         method: 'POST',
                     });
                     
+                    // Handle authentication errors
+                    if (response.status === 401) {
+                        try {
+                            const errorData = await response.json();
+                            if (errorData.redirect) {
+                                alert('Please log in to clear chat.');
+                                window.location.href = errorData.redirect;
+                                return;
+                            }
+                        } catch (e) {
+                            alert('Authentication required. Please log in to continue.');
+                            window.location.href = '/login';
+                            return;
+                        }
+                    }
+                    
                     if (!response.ok) {
+                        const errorText = await response.text();
+                        if (errorText.includes('<!DOCTYPE') || errorText.includes('<html')) {
+                            alert('Authentication required. Please log in to continue.');
+                            window.location.href = '/login';
+                            return;
+                        }
                         throw new Error('Failed to clear chat');
                     }
                     
@@ -424,5 +507,8 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         });
     </script>
+    
+    <!-- Bootstrap JS for dropdown functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
