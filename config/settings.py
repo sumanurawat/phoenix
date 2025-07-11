@@ -4,6 +4,7 @@ Centralizes all configuration variables for easier management.
 """
 import os
 from dotenv import load_dotenv
+from config.gemini_models import GEMINI_MODELS
 
 # Load environment variables
 load_dotenv()
@@ -13,10 +14,14 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 GOOGLE_SEARCH_ENGINE_ID = os.getenv("GOOGLE_SEARCH_ENGINE_ID")
 
-# LLM Models
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gemini-2.5-pro-exp-03-25")
-FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "gemini-2.0-flash")
-FINAL_FALLBACK_MODEL = "gemini-1.5-flash"
+# LLM Models - Using constants from gemini_models.py
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", GEMINI_MODELS.PRIMARY)  # gemini-1.5-flash
+FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", GEMINI_MODELS.FALLBACK)  # gemini-1.5-flash-002
+FINAL_FALLBACK_MODEL = GEMINI_MODELS.FINAL_FALLBACK  # gemini-1.5-flash
+
+# Alternative model configurations (can be set via environment variables)
+HIGH_PERFORMANCE_MODEL = os.getenv("HIGH_PERFORMANCE_MODEL", GEMINI_MODELS.HIGH_PERFORMANCE)  # gemini-2.5-pro
+ULTRA_FAST_MODEL = os.getenv("ULTRA_FAST_MODEL", GEMINI_MODELS.ULTRA_FAST)  # gemini-1.5-flash-8b
 
 # Flask configuration
 SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")

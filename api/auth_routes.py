@@ -2,7 +2,7 @@
 import os
 from functools import wraps
 from urllib.parse import urlparse, urljoin
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
 import requests
 
 from services.auth_service import AuthService
@@ -22,7 +22,13 @@ def login_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if 'id_token' not in session:
-            return redirect(url_for('auth.login', next=request.url))
+            # Check if this is an AJAX request (expects JSON response)
+            if request.headers.get('Content-Type') == 'application/json' or \
+               request.headers.get('Accept', '').find('application/json') > -1 or \
+               request.path.startswith('/api/'):
+                return jsonify({"error": "Authentication required", "redirect": "/login"}), 401
+            else:
+                return redirect(url_for('auth.login', next=request.url))
         return func(*args, **kwargs)
     return wrapper
 

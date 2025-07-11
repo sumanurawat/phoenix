@@ -1,0 +1,28 @@
+# Unified LLM Service Dependencies
+# Add these to your main requirements.txt or install separately
+
+# Core dependencies (already in your project)
+google-cloud-aiplatform>=1.87.0
+google-generativeai>=0.3.2
+python-dotenv>=1.0.0
+
+# OpenAI support
+openai>=1.51.0
+
+# Anthropic support  
+anthropic>=0.39.0
+
+# Grok support (X.AI)
+groq>=0.11.0
+
+# Optional: Enhanced functionality
+langchain>=0.3.0          # For advanced LLM workflows
+tiktoken>=0.8.0           # For token counting
+tenacity>=8.0.0           # For advanced retry logic
+pydantic>=2.0.0           # For data validation
+aiohttp>=3.10.0           # For async HTTP calls
+
+# Optional: Local models
+# ollama>=0.3.0           # For running local models
+# transformers>=4.40.0    # For Hugging Face models
+# torch>=2.0.0            # For PyTorch models

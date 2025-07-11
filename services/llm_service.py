@@ -13,6 +13,7 @@ from config.settings import (
     GEMINI_API_KEY, DEFAULT_MODEL, FALLBACK_MODEL, 
     FINAL_FALLBACK_MODEL, MAX_RETRIES, RETRY_DELAY
 )
+from config.gemini_models import get_model_info, GEMINI_MODELS
 from services.utils import format_chat_history, handle_api_error
 
 # Configure logging
@@ -35,8 +36,27 @@ class LLMService:
         }
         self.current_model = self.models["primary"]
         
-        # Log available models
-        logger.info(f"Initialized LLM service with primary model: {self.current_model}")
+        # Log detailed model information
+        primary_info = get_model_info(self.current_model)
+        logger.info(f"🚀 LLM Service initialized successfully!")
+        logger.info(f"📊 Primary model: {self.current_model}")
+        logger.info(f"📝 Model info: {primary_info.get('name', 'Unknown')} - {primary_info.get('description', 'No description')}")
+        logger.info(f"⚡ Performance: {primary_info.get('performance', 'Unknown')} | Speed: {primary_info.get('speed', 'Unknown')} | Cost: {primary_info.get('cost', 'Unknown')}")
+        logger.info(f"🔧 Fallback models: {self.models['fallback']} → {self.models['final_fallback']}")
+        
+        # Log API key info (first 10 chars for security)
+        logger.info(f"🔑 Using API key: {GEMINI_API_KEY[:10]}...")
+        
+        # Try to verify API connectivity
+        try:
+            available_models = self.list_available_models()
+            if self.current_model.replace("models/", "") in [m.replace("models/", "") for m in available_models]:
+                logger.info(f"✅ Primary model {self.current_model} is available via API")
+            else:
+                logger.warning(f"⚠️ Primary model {self.current_model} not found in available models")
+                logger.info(f"📋 Available models: {len(available_models)} total")
+        except Exception as e:
+            logger.warning(f"⚠️ Could not verify model availability: {e}")
     
     def list_available_models(self) -> List[str]:
         """
@@ -47,9 +67,11 @@ class LLMService:
         """
         try:
             models = genai.list_models()
-            return [model.name for model in models if 'generateContent' in model.supported_generation_methods]
+            available = [model.name for model in models if 'generateContent' in model.supported_generation_methods]
+            logger.info(f"📋 Found {len(available)} available models")
+            return available
         except Exception as e:
-            logger.error(f"Error listing models: {e}")
+            logger.error(f"❌ Error listing models: {e}")
             return []
     
     def switch_to_fallback_model(self) -> str:
@@ -104,6 +126,9 @@ class LLMService:
         Returns:
             Dictionary containing the generated text and metadata
         """
+        logger.info(f"🤖 Generating text with model: {self.current_model}")
+        logger.info(f"📝 Prompt length: {len(prompt)} characters")
+        
         for attempt in range(MAX_RETRIES):
             try:
                 model = genai.GenerativeModel(
@@ -112,12 +137,26 @@ class LLMService:
                     safety_settings=self._create_safety_settings()
                 )
                 
+                logger.info(f"🚀 Making API call to {self.current_model} (attempt {attempt + 1})")
+                start_time = time.time()
                 response = model.generate_content(prompt)
+                end_time = time.time()
+                
+                response_time = end_time - start_time
+                logger.info(f"✅ Successfully generated text with {self.current_model}")
+                logger.info(f"⏱️ Response time: {response_time:.2f} seconds")
+                logger.info(f"📄 Response length: {len(response.text)} characters")
+                
+                # Log model info for verification
+                model_info = get_model_info(self.current_model)
+                logger.info(f"🏷️ Model used: {model_info.get('name', self.current_model)} ({model_info.get('generation', 'Unknown')} gen)")
                 
                 return {
                     "success": True,
                     "text": response.text,
                     "model_used": self.current_model,
+                    "model_info": model_info,
+                    "response_time": response_time,
                     "timestamp": time.time()
                 }
                 
@@ -144,6 +183,8 @@ class LLMService:
             Dictionary containing the response and metadata
         """
         formatted_messages = format_chat_history(messages)
+        logger.info(f"💬 Starting chat with model: {self.current_model}")
+        logger.info(f"📨 Message count: {len(messages)}")
         
         for attempt in range(MAX_RETRIES):
             try:
@@ -154,12 +195,26 @@ class LLMService:
                 )
                 
                 chat = model.start_chat(history=formatted_messages[:-1] if len(formatted_messages) > 1 else [])
+                logger.info(f"🚀 Sending chat message to {self.current_model} (attempt {attempt + 1})")
+                start_time = time.time()
                 response = chat.send_message(formatted_messages[-1]["parts"][0]["text"])
+                end_time = time.time()
+                
+                response_time = end_time - start_time
+                logger.info(f"✅ Successfully received chat response from {self.current_model}")
+                logger.info(f"⏱️ Response time: {response_time:.2f} seconds")
+                logger.info(f"📄 Response length: {len(response.text)} characters")
+                
+                # Log model info for verification
+                model_info = get_model_info(self.current_model)
+                logger.info(f"🏷️ Model used: {model_info.get('name', self.current_model)} ({model_info.get('generation', 'Unknown')} gen)")
                 
                 return {
                     "success": True,
                     "text": response.text,
                     "model_used": self.current_model,
+                    "model_info": model_info,
+                    "response_time": response_time,
                     "timestamp": time.time()
                 }
                 
@@ -180,10 +235,20 @@ class LLMService:
         Get information about the currently used model.
         
         Returns:
-            Dictionary with model information
+            Dictionary with detailed model information
         """
+        current_model_info = get_model_info(self.current_model)
+        primary_model_info = get_model_info(self.models["primary"])
+        
         return {
             "current_model": self.current_model,
+            "current_model_info": current_model_info,
             "primary_model": self.models["primary"],
-            "fallback_models": [self.models["fallback"], self.models["final_fallback"]]
+            "primary_model_info": primary_model_info,
+            "fallback_models": [self.models["fallback"], self.models["final_fallback"]],
+            "available_models": {
+                "production_recommended": [GEMINI_MODELS.PRIMARY, GEMINI_MODELS.FALLBACK],
+                "high_performance": [GEMINI_MODELS.HIGH_PERFORMANCE],
+                "ultra_fast": [GEMINI_MODELS.ULTRA_FAST]
+            }
         }
