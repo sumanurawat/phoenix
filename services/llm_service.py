@@ -182,9 +182,19 @@ class LLMService:
         Returns:
             Dictionary containing the response and metadata
         """
+        # Validate input
+        if not messages:
+            logger.error("No messages provided to chat method")
+            return handle_api_error(ValueError("No messages provided"))
+        
         formatted_messages = format_chat_history(messages)
         logger.info(f"💬 Starting chat with model: {self.current_model}")
         logger.info(f"📨 Message count: {len(messages)}")
+        
+        # Additional validation after formatting
+        if not formatted_messages:
+            logger.error("No formatted messages available")
+            return handle_api_error(ValueError("No formatted messages available"))
         
         for attempt in range(MAX_RETRIES):
             try:
@@ -194,10 +204,20 @@ class LLMService:
                     safety_settings=self._create_safety_settings()
                 )
                 
+                # Safely get the last message
+                if len(formatted_messages) == 0:
+                    logger.error("Formatted messages list is empty")
+                    return handle_api_error(ValueError("No messages to send"))
+                
+                last_message = formatted_messages[-1]
+                if "parts" not in last_message or not last_message["parts"]:
+                    logger.error("Last message has no parts")
+                    return handle_api_error(ValueError("Invalid message format"))
+                
                 chat = model.start_chat(history=formatted_messages[:-1] if len(formatted_messages) > 1 else [])
                 logger.info(f"🚀 Sending chat message to {self.current_model} (attempt {attempt + 1})")
                 start_time = time.time()
-                response = chat.send_message(formatted_messages[-1]["parts"][0]["text"])
+                response = chat.send_message(last_message["parts"][0]["text"])
                 end_time = time.time()
                 
                 response_time = end_time - start_time

@@ -45,14 +45,16 @@ except Exception as e:
 
 # Import API routes (AFTER Firebase initialization)
 from api.chat_routes import chat_bp
+from api.enhanced_chat_routes import enhanced_chat_bp
 from api.search_routes import search_bp
 from api.robin_routes import robin_bp
 from api.deeplink_routes import deeplink_bp
-from api.auth_routes import auth_bp
+from api.auth_routes import auth_bp, login_required
 from api.stats_routes import stats_bp
 
 # Import services (AFTER Firebase initialization)
 from services.chat_service import ChatService
+from services.enhanced_chat_service import EnhancedChatService
 from services.search_service import SearchService
 
 # Configure logging
@@ -76,6 +78,7 @@ except Exception as e:
 
 # Initialize services
 chat_service = ChatService()
+enhanced_chat_service = EnhancedChatService()
 search_service = SearchService()
 
 def require_auth(f):
@@ -112,6 +115,7 @@ def create_app():
     
     # Register blueprints
     app.register_blueprint(chat_bp)
+    app.register_blueprint(enhanced_chat_bp)
     app.register_blueprint(search_bp)
     app.register_blueprint(robin_bp)
     app.register_blueprint(deeplink_bp)
@@ -125,14 +129,28 @@ def create_app():
         return render_template('index.html', title='Phoenix AI Platform')
 
     @app.route('/derplexity')
+    @login_required
     def derplexity():
-        """Render the Derplexity chat interface."""
+        """Render the enhanced Derplexity chat interface with persistent conversations."""
+        return render_template('derplexity_v2.html', 
+                            title='Derplexity Chat')
+    
+    @app.route('/derplexity-enhanced')
+    @login_required
+    def derplexity_enhanced():
+        """Render the enhanced Derplexity chat interface (alternative)."""
+        return render_template('enhanced_derplexity.html', 
+                            title='Derplexity Chat (Enhanced)')
+    
+    @app.route('/derplexity-legacy')
+    def derplexity_legacy():
+        """Render the legacy Derplexity chat interface (session-based)."""
         # Initialize a new chat session if one doesn't exist
         if "chat" not in session:
             session["chat"] = chat_service.start_new_chat()
         
         return render_template('derplexity.html', 
-                            title='Derplexity Chat', 
+                            title='Derplexity Chat (Legacy)', 
                             chat=session["chat"])
     
     @app.route('/doogle')
