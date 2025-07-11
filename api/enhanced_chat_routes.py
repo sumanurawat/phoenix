@@ -347,10 +347,9 @@ def load_session(conversation_id):
 # Utility Endpoints
 
 @enhanced_chat_bp.route('/api/chat/models', methods=['GET'])
-@login_required
 @handle_api_error
 def get_models():
-    """Get available models information."""
+    """Get available models information (public endpoint)."""
     model_info = chat_service.llm_service.get_model_info()
     return jsonify({
         "success": True,

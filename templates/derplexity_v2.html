@@ -185,14 +185,27 @@
             margin: 0;
         }
         
-        .model-info {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            background: var(--sidebar-bg);
-            padding: 4px 8px;
-            border-radius: 12px;
+        /* Model selector styles - for future implementation
+        .model-selector {
+            position: relative;
             margin-right: 1rem;
         }
+        
+        .model-selector-btn {
+            background: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+        
+        .model-option.premium {
+            opacity: 0.5;
+            color: var(--text-muted);
+        }
+        */
         
         /* Messages Area */
         .messages-container {
@@ -506,10 +519,7 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <h1 class="chat-title" id="chatTitle">Welcome to Derplexity</h1>
-                <div class="model-info">
-                    <i class="fas fa-robot me-1"></i>
-                    <span id="currentModel">Loading...</span>
-                </div>
+                <!-- Model selector will be added here in future for subscription-based model selection -->
             </div>
             
             <!-- Messages -->
@@ -603,6 +613,9 @@
         
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            // Set default model info immediately
+            currentModel.textContent = 'Gemini AI';
+            
             loadConversations();
             setupEventListeners();
             loadModelInfo();
@@ -1026,10 +1039,18 @@
                     const data = await response.json();
                     if (data.success && data.models?.current_model) {
                         currentModel.textContent = data.models.current_model;
+                    } else {
+                        currentModel.textContent = 'Model Info Unavailable';
                     }
+                } else if (response.status === 401) {
+                    // Authentication required - show default
+                    currentModel.textContent = 'Gemini AI';
+                } else {
+                    currentModel.textContent = 'Model Info Unavailable';
                 }
             } catch (error) {
                 console.error('Error loading model info:', error);
+                currentModel.textContent = 'Gemini AI';
             }
         }
         
