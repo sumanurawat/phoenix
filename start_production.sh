@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Script to clean port 8080 and start the Phoenix AI Platform
-echo "=== Phoenix AI Platform Startup ==="
+# Script to start Phoenix AI Platform in production mode (no debug, no auto-reloader)
+echo "=== Phoenix AI Platform Production Startup ==="
 
 # Check if .env file exists, warn if not
 if [ ! -f .env ]; then
@@ -46,9 +46,13 @@ fi
 echo "Creating session directory if it doesn't exist..."
 mkdir -p ./flask_session
 
-echo "Starting Phoenix AI Platform..."
-echo "📝 Note: You'll see initialization logs twice due to Flask debug mode auto-reloader"
+echo "Starting Phoenix AI Platform in production mode..."
 echo "🌐 Server will be available at: http://localhost:8080"
+echo "🚀 Production mode: No auto-reloader, single initialization"
 echo ""
+
+# Set production environment variables
+export FLASK_ENV=production
+export FLASK_DEBUG=0
 
 python app.py

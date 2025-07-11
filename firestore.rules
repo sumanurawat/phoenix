@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read/write access to all documents for authenticated users
+    // for existing collections (shortened_links, website_stats, etc.)
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Specific rules for chat conversations
+    match /conversations/{conversationId} {
+      allow read, write: if request.auth != null 
+        && request.auth.uid == resource.data.user_id;
+      allow create: if request.auth != null 
+        && request.auth.uid == request.resource.data.user_id;
+    }
+    
+    // Specific rules for chat messages
+    match /messages/{messageId} {
+      allow read, write: if request.auth != null
+        && exists(/databases/$(database)/documents/conversations/$(resource.data.conversation_id))
+        && get(/databases/$(database)/documents/conversations/$(resource.data.conversation_id)).data.user_id == request.auth.uid;
+      allow create: if request.auth != null
+        && exists(/databases/$(database)/documents/conversations/$(request.resource.data.conversation_id))
+        && get(/databases/$(database)/documents/conversations/$(request.resource.data.conversation_id)).data.user_id == request.auth.uid;
+    }
+    
+    // Specific rules for conversation documents
+    match /conversation_documents/{documentId} {
+      allow read, write: if request.auth != null 
+        && request.auth.uid == resource.data.user_id;
+      allow create: if request.auth != null 
+        && request.auth.uid == request.resource.data.user_id;
+    }
+  }
+}
