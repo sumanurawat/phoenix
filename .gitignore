@@ -35,6 +35,13 @@ instance/
 .webassets-cache
 flask_session/
 
+# Logs and temp files
+temp_logs/
+
+# Experiments (large data and outputs)
+experiments/population/data/
+experiments/population/outputs/
+
 # Environment variables
 .env
 .env.*
