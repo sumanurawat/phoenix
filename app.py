@@ -203,7 +203,7 @@ def create_app():
         import os
         from flask import send_file, abort
         
-        app.logger.info(f"📊 FIGURE_DIKHA_SERVER_001: Requesting image: {filename}")
+        app.logger.info(f"📊 Requesting image: {filename}")
         
         # Look for the image in common analysis directories
         import glob
@@ -231,11 +231,11 @@ def create_app():
         
         for path in possible_paths:
             if os.path.exists(path):
-                app.logger.info(f"✅ FIGURE_DIKHA_SERVER_002: Found image at: {path}")
+                app.logger.info(f"✅ Found image at: {path}")
                 return send_file(path, mimetype='image/png')
         
         # Log all paths searched
-        app.logger.warning(f"❌ FIGURE_DIKHA_SERVER_003: Image not found. Searched paths: {possible_paths}")
+        app.logger.warning(f"❌ Image not found. Searched paths: {possible_paths}")
         
         # If not found, return a placeholder or 404
         abort(404)

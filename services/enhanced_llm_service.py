@@ -1,5 +1,5 @@
 """
-Enhanced LLM Service with multi-provider support (Gemini + Claude)
+Enhanced LLM Service with multi-provider support (Gemini + Claude + Grok)
 Supports model selection and provider switching for analysis tasks.
 """
 import time
@@ -19,7 +19,15 @@ except ImportError:
     CLAUDE_AVAILABLE = False
     logging.warning("Claude API not available. Run: pip install anthropic")
 
-from config.settings import GEMINI_API_KEY, CLAUDE_API_KEY, MAX_RETRIES, RETRY_DELAY
+# Grok imports (OpenAI-compatible API)
+try:
+    import openai
+    GROK_AVAILABLE = True
+except ImportError:
+    GROK_AVAILABLE = False
+    logging.warning("Grok API not available. Run: pip install openai")
+
+from config.settings import GEMINI_API_KEY, CLAUDE_API_KEY, GROK_API_KEY, MAX_RETRIES, RETRY_DELAY
 from config.gemini_models import GEMINI_MODELS, get_model_info
 from services.utils import format_chat_history, handle_api_error
 
@@ -30,6 +38,7 @@ class ModelProvider(Enum):
     """Available LLM providers."""
     GEMINI = "gemini"
     CLAUDE = "claude"
+    GROK = "grok"
 
 
 class ModelInfo:
@@ -41,6 +50,7 @@ class ModelInfo:
     === ULTRA-PREMIUM TIER ($$$$ - $15+ input) ===
     Claude 4 Opus:     $15.00 input / $75.00 output  🏆 World's best coding model
     Claude 3 Opus:     $15.00 input / $75.00 output  📚 Legacy premium
+    Grok 4:            $3.00 input / $15.00 output   🚀 xAI flagship with real-time search
     GPT-4 Turbo:       $10.00 input / $30.00 output  🤖 OpenAI flagship
     
     === PREMIUM TIER ($$$ - $3-10 input) ===
@@ -51,6 +61,7 @@ class ModelInfo:
     GPT-4o:            $5.00 input / $15.00 output    🔥 OpenAI multimodal
     
     === PRODUCTION TIER ($$ - $0.5-3 input) ===
+    Grok 2-1212:       $2.00 input / $10.00 output   ⚡ xAI production model
     GPT-4o mini:       $0.15 input / $0.60 output    ⚡ OpenAI efficient
     
     === EFFICIENT TIER ($ - $0.1-0.5 input) ===
@@ -66,8 +77,10 @@ class ModelInfo:
     💡 Gemini offers the best budget options (Flash models)
     💡 Claude 4 Sonnet offers best premium balance 
     💡 Claude 4 Opus is unmatched for complex coding
+    💡 Grok 4 provides real-time search & competitive premium pricing
+    💡 Grok 2-1212 is well-positioned in production tier
     💡 OpenAI GPT-4o mini is competitive in mid-tier
-    💡 Context windows: Claude/Gemini (200K+) > OpenAI (128K)
+    💡 Context windows: Claude/Gemini (200K+) > Grok (256K) > OpenAI (128K)
     """
     
     # Gemini models (Google - Best budget options)
@@ -86,6 +99,15 @@ class ModelInfo:
         "claude-3-5-sonnet-20241022": {"name": "Claude 3.5 Sonnet", "cost": "Medium", "performance": "High"},
         "claude-3-5-haiku-20241022": {"name": "Claude 3.5 Haiku", "cost": "Low", "performance": "Good"},
         "claude-3-opus-20240229": {"name": "Claude 3 Opus", "cost": "High", "performance": "High"},
+    }
+    
+    # Grok models (xAI - Real-time search & competitive pricing)
+    GROK_MODELS = {
+        "grok-4": {"name": "Grok 4", "cost": "High", "performance": "Highest"},
+        "grok-2-1212": {"name": "Grok 2-1212", "cost": "Medium", "performance": "High"},
+        "grok-2-vision-1212": {"name": "Grok 2 Vision-1212", "cost": "Medium", "performance": "High"},
+        "grok-beta": {"name": "Grok Beta", "cost": "High", "performance": "High"},
+        "grok-vision-beta": {"name": "Grok Vision Beta", "cost": "High", "performance": "High"},
     }
     
     # OpenAI models (for reference - not implemented yet)
@@ -109,6 +131,7 @@ class EnhancedLLMService:
         # Initialize APIs
         self._init_gemini()
         self._init_claude()
+        self._init_grok()
         
         logger.info(f"🚀 Enhanced LLM Service initialized")
         logger.info(f"📊 Provider: {provider.value}, Model: {self.model}")
@@ -119,6 +142,8 @@ class EnhancedLLMService:
             return GEMINI_MODELS.HIGH_PERFORMANCE
         elif provider == ModelProvider.CLAUDE:
             return "claude-sonnet-4-20250514"  # Default to Claude 4 Sonnet
+        elif provider == ModelProvider.GROK:
+            return "grok-2-1212"  # Default to Grok 2-1212 (production model)
         return GEMINI_MODELS.PRIMARY
     
     def _init_gemini(self):
@@ -145,6 +170,48 @@ class EnhancedLLMService:
                 logger.error(f"❌ Failed to initialize Claude API: {e}")
                 self.claude_client = None
     
+    def _init_grok(self):
+        """Initialize Grok API using direct HTTP client."""
+        if not GROK_API_KEY:
+            logger.warning("⚠️ Grok API key not found in environment variables")
+            self.grok_client = None
+        else:
+            try:
+                # Use httpx directly instead of OpenAI client to avoid compatibility issues
+                import httpx
+                import json
+                
+                self.grok_http_client = httpx.Client(
+                    base_url="https://api.x.ai/v1",
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {GROK_API_KEY}"
+                    },
+                    timeout=30.0
+                )
+                
+                logger.info("🧪 Testing Grok API connection with direct HTTP...")
+                test_payload = {
+                    "model": "grok-2-1212",
+                    "messages": [{"role": "user", "content": "Hello, respond with just 'OK'"}],
+                    "max_tokens": 10,
+                    "temperature": 0.1
+                }
+                
+                response = self.grok_http_client.post("/chat/completions", json=test_payload)
+                if response.status_code == 200:
+                    result = response.json()
+                    logger.info(f"✅ Grok API test successful: {result['choices'][0]['message']['content']}")
+                    self.grok_client = "http_client"  # Use string to indicate we're using HTTP client
+                else:
+                    logger.error(f"❌ Grok API test failed: {response.status_code} - {response.text}")
+                    self.grok_client = None
+                    
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize Grok API: {e}")
+                logger.error(f"🔍 Error type: {type(e).__name__}")
+                self.grok_client = None
+    
     def switch_model(self, provider: ModelProvider, model: str):
         """Switch to a different model/provider."""
         old_info = f"{self.provider.value}:{self.model}"
@@ -153,14 +220,17 @@ class EnhancedLLMService:
         new_info = f"{provider.value}:{model}"
         logger.info(f"🔄 Switched model: {old_info} → {new_info}")
     
-    def generate_text(self, prompt: str, max_retries: int = 3, enable_fallback: bool = True) -> Dict[str, Any]:
+    def generate_text(self, prompt: str, max_retries: int = 3, enable_fallback: bool = True, 
+                     enable_thinking: bool = False, thinking_budget: int = 2048) -> Dict[str, Any]:
         """Generate text using the selected provider with automatic fallback."""
         primary_result = None
         
         if self.provider == ModelProvider.GEMINI:
             primary_result = self._generate_with_gemini(prompt, max_retries)
         elif self.provider == ModelProvider.CLAUDE:
-            primary_result = self._generate_with_claude(prompt, max_retries)
+            primary_result = self._generate_with_claude(prompt, max_retries, enable_thinking, thinking_budget)
+        elif self.provider == ModelProvider.GROK:
+            primary_result = self._generate_with_grok(prompt, max_retries)
         else:
             raise ValueError(f"Unsupported provider: {self.provider}")
         
@@ -169,8 +239,8 @@ class EnhancedLLMService:
             return primary_result
         
         # If primary failed and fallback is enabled, try Gemini Flash as backup
-        if enable_fallback and self.provider == ModelProvider.CLAUDE:
-            logger.warning(f"🔄 Claude failed, falling back to Gemini 1.5 Flash as backup...")
+        if enable_fallback and self.provider in [ModelProvider.CLAUDE, ModelProvider.GROK]:
+            logger.warning(f"🔄 {self.provider.value} failed, falling back to Gemini 1.5 Flash as backup...")
             return self._fallback_to_gemini(prompt, max_retries, primary_result)
         
         # Return original result if no fallback or fallback not applicable
@@ -214,7 +284,7 @@ class EnhancedLLMService:
                     return {"success": False, "error": str(e), "provider": "gemini"}
                 time.sleep(RETRY_DELAY)
     
-    def _generate_with_claude(self, prompt: str, max_retries: int) -> Dict[str, Any]:
+    def _generate_with_claude(self, prompt: str, max_retries: int, enable_thinking: bool = False, thinking_budget: int = 2048) -> Dict[str, Any]:
         """Generate text using Claude."""
         if not self.claude_client:
             return {"success": False, "error": "Claude API not available", "provider": "claude"}
@@ -224,15 +294,35 @@ class EnhancedLLMService:
         for attempt in range(max_retries):
             try:
                 start_time = time.time()
-                response = self.claude_client.messages.create(
-                    model=self.model,
-                    max_tokens=4096,
-                    temperature=0.1,  # Lower temperature for code generation
-                    messages=[{"role": "user", "content": prompt}]
-                )
+                
+                # Prepare API request parameters
+                api_params = {
+                    "model": self.model,
+                    "max_tokens": 4096,
+                    "temperature": 0.1,  # Lower temperature for code generation
+                    "messages": [{"role": "user", "content": prompt}]
+                }
+                
+                # Add thinking parameters for Claude 4 models if enabled
+                if enable_thinking and self._is_claude_4_model() and thinking_budget >= 1024:
+                    api_params["thinking"] = {
+                        "type": "enabled",
+                        "budget_tokens": min(thinking_budget, 3072)  # Max budget to leave room for response
+                    }
+                    logger.info(f"🧠 Enabling thinking mode with {thinking_budget} tokens budget")
+                
+                response = self.claude_client.messages.create(**api_params)
                 response_time = time.time() - start_time
                 
-                response_text = response.content[0].text
+                # Extract response text and thinking content
+                response_text = ""
+                thinking_content = ""
+                
+                for content_block in response.content:
+                    if content_block.type == "text":
+                        response_text += content_block.text
+                    elif content_block.type == "thinking":
+                        thinking_content += content_block.content
                 
                 # Extract token usage from Claude API response
                 input_tokens = getattr(response.usage, 'input_tokens', 0)
@@ -242,8 +332,10 @@ class EnhancedLLMService:
                 
                 logger.info(f"✅ Claude generation successful ({response_time:.2f}s)")
                 logger.info(f"📊 Token usage: {input_tokens} input + {output_tokens} output = {input_tokens + output_tokens} total")
+                if thinking_content:
+                    logger.info(f"🧠 Thinking content generated: {len(thinking_content)} characters")
                 
-                return {
+                result = {
                     "success": True,
                     "text": response_text,
                     "provider": "claude",
@@ -257,11 +349,81 @@ class EnhancedLLMService:
                     "cost_info": self.cost_tracker
                 }
                 
+                # Add thinking content if available
+                if thinking_content:
+                    result["thinking"] = thinking_content
+                    result["has_thinking"] = True
+                
+                return result
+                
             except Exception as e:
                 logger.error(f"❌ Claude attempt {attempt + 1} failed: {e}")
                 if attempt == max_retries - 1:
                     return {"success": False, "error": str(e), "provider": "claude"}
                 time.sleep(RETRY_DELAY)
+    
+    def _generate_with_grok(self, prompt: str, max_retries: int) -> Dict[str, Any]:
+        """Generate text using Grok (xAI) via direct HTTP API."""
+        if not self.grok_client or not hasattr(self, 'grok_http_client'):
+            return {"success": False, "error": "Grok client not initialized", "provider": "grok"}
+        
+        logger.info(f"🚀 Generating with Grok: {self.model}")
+        
+        for attempt in range(max_retries):
+            try:
+                start_time = time.time()
+                
+                payload = {
+                    "model": self.model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.1,  # Lower temperature for code generation
+                    "max_tokens": 4096,
+                    "stream": False
+                }
+                
+                response = self.grok_http_client.post("/chat/completions", json=payload)
+                response_time = time.time() - start_time
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    
+                    # Extract response text and usage information
+                    response_text = result["choices"][0]["message"]["content"]
+                    usage = result["usage"]
+                    
+                    input_tokens = usage["prompt_tokens"]
+                    output_tokens = usage["completion_tokens"]
+                    
+                    self._track_cost("grok", input_tokens, output_tokens)
+                    
+                    logger.info(f"✅ Grok generation successful ({response_time:.2f}s)")
+                    logger.info(f"📊 Token usage: {input_tokens} input + {output_tokens} output = {input_tokens + output_tokens} total")
+                    
+                    return {
+                        "success": True,
+                        "text": response_text,
+                        "provider": "grok",
+                        "model": self.model,
+                        "response_time": response_time,
+                        "usage": {
+                            "input_tokens": input_tokens,
+                            "output_tokens": output_tokens,
+                            "total_tokens": input_tokens + output_tokens
+                        },
+                        "cost_info": self.cost_tracker
+                    }
+                else:
+                    error_msg = f"HTTP {response.status_code}: {response.text}"
+                    logger.error(f"❌ Grok attempt {attempt + 1} failed: {error_msg}")
+                    if attempt == max_retries - 1:
+                        return {"success": False, "error": error_msg, "provider": "grok"}
+                
+            except Exception as e:
+                logger.error(f"❌ Grok attempt {attempt + 1} failed: {e}")
+                if attempt == max_retries - 1:
+                    return {"success": False, "error": str(e), "provider": "grok"}
+                
+            time.sleep(RETRY_DELAY)
     
     def _track_cost(self, provider: str, input_tokens: int, output_tokens: int):
         """Track estimated costs."""
@@ -292,6 +454,14 @@ class EnhancedLLMService:
             # Claude 3 - Legacy
             "claude-3-opus-20240229": {"input": 15.0, "output": 75.0},    # Same price as 4 Opus, use 4!
             
+            # === GROK MODELS (xAI) - REAL-TIME SEARCH & COMPETITIVE PRICING ===
+            # xAI's strength: Real-time search, web access, competitive pricing
+            "grok-4": {"input": 3.0, "output": 15.0},             # Premium tier, same as Claude 4 Sonnet
+            "grok-2-1212": {"input": 2.0, "output": 10.0},        # Production tier, great value
+            "grok-2-vision-1212": {"input": 2.0, "output": 10.0}, # Production tier with vision
+            "grok-beta": {"input": 5.0, "output": 15.0},          # Beta model pricing
+            "grok-vision-beta": {"input": 5.0, "output": 15.0},   # Beta vision model
+            
             # === OPENAI MODELS (for reference - could be added later) ===
             # OpenAI's strength: Multimodal capabilities and ecosystem
             "gpt-4-turbo": {"input": 10.0, "output": 30.0},       # Cheaper than Claude Opus
@@ -312,6 +482,8 @@ class EnhancedLLMService:
             rates = model_costs[self.model]
         elif provider == "gemini":
             rates = {"input": 3.5, "output": 10.5}  # Default Gemini Pro pricing
+        elif provider == "grok":
+            rates = {"input": 2.0, "output": 10.0}  # Default Grok 2-1212 pricing
         else:
             rates = {"input": 3.0, "output": 15.0}  # Default Claude pricing
         
@@ -383,6 +555,15 @@ class EnhancedLLMService:
                 {"id": "claude-3-opus-20240229", "name": "Claude 3 Opus", "cost": "High", "performance": "High"},
             ]
         
+        if GROK_AVAILABLE and GROK_API_KEY:
+            models["grok"] = [
+                {"id": "grok-4", "name": "Grok 4 (Real-time Search)", "cost": "High", "performance": "Highest"},
+                {"id": "grok-2-1212", "name": "Grok 2-1212 (Production Model)", "cost": "Medium", "performance": "High"},
+                {"id": "grok-2-vision-1212", "name": "Grok 2 Vision-1212", "cost": "Medium", "performance": "High"},
+                {"id": "grok-beta", "name": "Grok Beta", "cost": "High", "performance": "High"},
+                {"id": "grok-vision-beta", "name": "Grok Vision Beta", "cost": "High", "performance": "High"},
+            ]
+        
         return models
     
     def get_cost_summary(self) -> Dict[str, Any]:
@@ -393,3 +574,20 @@ class EnhancedLLMService:
             "current_provider": self.provider.value,
             "current_model": self.model
         }
+    
+    def get_model_info(self) -> Dict[str, Any]:
+        """Get current model information."""
+        return {
+            "current_model": self.model,
+            "current_provider": self.provider.value,
+            "cost_info": self.get_cost_summary(),
+            "available_models": self.get_available_models()
+        }
+    
+    def _is_claude_4_model(self) -> bool:
+        """Check if current model is a Claude 4 model that supports thinking."""
+        claude_4_models = [
+            "claude-opus-4-20250514",
+            "claude-sonnet-4-20250514"
+        ]
+        return self.model in claude_4_models

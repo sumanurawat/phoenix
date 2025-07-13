@@ -212,10 +212,20 @@ def send_message(conversation_id):
     if not message:
         return jsonify({"success": False, "error": "Message cannot be empty"}), 400
     
+    # Get model configuration from request
+    model_provider = data.get('model_provider')
+    model_name = data.get('model_name')
+    enable_thinking = data.get('enable_thinking', False)
+    thinking_budget = data.get('thinking_budget', 2048)
+    
     result = chat_service.process_user_message(
         conversation_id=conversation_id,
         user_id=user['uid'],
-        message=message
+        message=message,
+        model_provider=model_provider,
+        model_name=model_name,
+        enable_thinking=enable_thinking,
+        thinking_budget=thinking_budget
     )
     
     if result.get('success'):
@@ -262,12 +272,20 @@ def start_conversation_with_message():
         return jsonify({"success": False, "error": "Message cannot be empty"}), 400
     
     origin = data.get('origin', 'derplexity')
+    model_provider = data.get('model_provider')
+    model_name = data.get('model_name')
+    enable_thinking = data.get('enable_thinking', False)
+    thinking_budget = data.get('thinking_budget', 2048)
     
     result = chat_service.create_conversation_with_first_message(
         user_id=user['uid'],
         user_email=user['email'],
         first_message=message,
-        origin=origin
+        origin=origin,
+        model_provider=model_provider,
+        model_name=model_name,
+        enable_thinking=enable_thinking,
+        thinking_budget=thinking_budget
     )
     
     if result.get('success'):

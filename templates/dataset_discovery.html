@@ -259,10 +259,23 @@
                     <h4>Ready to Search</h4>
                     <p>Enter a search query to find relevant datasets from Kaggle</p>
                     
+                    <!-- Beta Notice -->
+                    <div class="alert alert-info mt-3 mx-auto" style="max-width: 600px;">
+                        <i class="fas fa-flask me-2"></i>
+                        <strong>Beta Feature:</strong> Currently tested with "iris" dataset. General dataset search will be enhanced soon.
+                        <br>
+                        <small class="text-muted mt-1 d-block">
+                            <i class="fas fa-upload me-1"></i> Custom dataset upload feature coming soon!
+                        </small>
+                    </div>
+                    
                     <!-- Example queries -->
                     <div class="mt-4">
                         <h6>Try these examples:</h6>
                         <div class="d-flex flex-wrap justify-content-center gap-2 mt-2">
+                            <button class="btn btn-outline-success btn-sm" onclick="searchExample('iris')">
+                                <i class="fas fa-check-circle me-1"></i>Iris (Tested)
+                            </button>
                             <button class="btn btn-outline-primary btn-sm" onclick="searchExample('climate change')">Climate Change</button>
                             <button class="btn btn-outline-primary btn-sm" onclick="searchExample('machine learning')">Machine Learning</button>
                             <button class="btn btn-outline-primary btn-sm" onclick="searchExample('covid')">COVID Data</button>
@@ -519,6 +532,31 @@
                     <i class="fas fa-search fa-3x mb-3"></i>
                     <h4>Ready to Search</h4>
                     <p>Enter a search query to find relevant datasets from Kaggle</p>
+                    
+                    <!-- Beta Notice -->
+                    <div class="alert alert-info mt-3 mx-auto" style="max-width: 600px;">
+                        <i class="fas fa-flask me-2"></i>
+                        <strong>Beta Feature:</strong> Currently tested with "iris" dataset. General dataset search will be enhanced soon.
+                        <br>
+                        <small class="text-muted mt-1 d-block">
+                            <i class="fas fa-upload me-1"></i> Custom dataset upload feature coming soon!
+                        </small>
+                    </div>
+                    
+                    <!-- Example queries -->
+                    <div class="mt-4">
+                        <h6>Try these examples:</h6>
+                        <div class="d-flex flex-wrap justify-content-center gap-2 mt-2">
+                            <button class="btn btn-outline-success btn-sm" onclick="searchExample('iris')">
+                                <i class="fas fa-check-circle me-1"></i>Iris (Tested)
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="searchExample('climate change')">Climate Change</button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="searchExample('machine learning')">Machine Learning</button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="searchExample('covid')">COVID Data</button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="searchExample('financial data')">Financial Data</button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="searchExample('image classification')">Image Classification</button>
+                        </div>
+                    </div>
                 </div>
             `;
         }

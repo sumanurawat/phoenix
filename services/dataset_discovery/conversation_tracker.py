@@ -174,12 +174,21 @@ class ConversationTracker:
     def add_model_response(self, step: int, iteration: int, success: bool, 
                           output: str = "", error: str = "", execution_time: float = 0,
                           generation_time: float = 0, tokens: Dict[str, int] = None, 
-                          code: str = "") -> Dict[str, Any]:
+                          code: str = "", model_used: str = "") -> Dict[str, Any]:
         """Add a model response."""
         status = "✅ Success" if success else "❌ Failed"
         title = f"Step {step} Iteration {iteration} - {status}"
         
         content = output if success else f"Error: {error}"
+        
+        # Ensure tokens structure is correct for frontend
+        token_data = tokens or {}
+        standardized_tokens = {
+            "input": token_data.get("input") or token_data.get("prompt_tokens") or 0,
+            "output": token_data.get("output") or token_data.get("completion_tokens") or 0,
+            "prompt_tokens": token_data.get("input") or token_data.get("prompt_tokens") or 0,
+            "completion_tokens": token_data.get("output") or token_data.get("completion_tokens") or 0
+        }
         
         return self.add_message("assistant", content, {
             "step": step,
@@ -187,10 +196,16 @@ class ConversationTracker:
             "success": success,
             "execution_time": execution_time,
             "generation_time": generation_time,
-            "tokens": tokens or {},
+            "duration": generation_time,  # Add duration for frontend
+            "tokens": standardized_tokens,
+            "model": model_used,  # Add model information
+            "model_used": model_used,  # Alternative field name
             "title": title,
             "status": status,
-            "code": code  # Include code in metadata
+            "code": code,  # Include code in metadata
+            "execution_result": output if success else "",  # Add execution result
+            "error_message": error if not success else "",  # Add error message
+            "message_type": "model_response"  # Add message type
         })
     
     def cleanup_conversation(self) -> bool:

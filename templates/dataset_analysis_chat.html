@@ -1520,17 +1520,13 @@
                     }
                     
                     // 3. CHARTS/PLOTS SECTION (Extract plot info and show files)
-                    console.log('FIGURE_DIKHA_001: Starting plot extraction from output');
                     if (data.result.output) {
-                        console.log('FIGURE_DIKHA_002: Output exists, searching for PLOT_INFO blocks');
                         const plotMatches = data.result.output.match(/PLOT_INFO_START([\s\S]*?)PLOT_INFO_END/g);
-                        console.log('FIGURE_DIKHA_003: Plot matches found:', plotMatches ? plotMatches.length : 0);
                         if (plotMatches && plotMatches.length > 0) {
                             fullContent += '<div class="mb-4">';
                             fullContent += '<h4><i class="fas fa-chart-bar text-success me-2"></i>Generated Charts (' + plotMatches.length + ' plots)</h4>';
                             
                             plotMatches.forEach((plotBlock, index) => {
-                                console.log(`FIGURE_DIKHA_004: Processing plot ${index + 1}:`, plotBlock);
                                 const plotInfo = plotBlock.replace(/PLOT_INFO_START|PLOT_INFO_END/g, '').trim();
                                 const lines = plotInfo.split('\n');
                                 
@@ -1546,26 +1542,19 @@
                                     if (line.startsWith('key_insights:')) insights = line.replace('key_insights:', '').trim();
                                 });
                                 
-                                console.log(`FIGURE_DIKHA_005: Parsed plot info - Title: "${title}", Filename: "${filename}", Description: "${description}"`);
-                                
                                 fullContent += `<div class="card mb-3">`;
                                 fullContent += `<div class="card-header bg-success text-white"><strong><i class="fas fa-chart-line me-2"></i>${title}</strong></div>`;
                                 fullContent += `<div class="card-body">`;
                                 if (description) fullContent += `<p><strong><i class="fas fa-info-circle me-1"></i>Description:</strong> ${description}</p>`;
                                 if (filename) {
-                                    console.log(`FIGURE_DIKHA_006: Attempting to display image: "${filename}"`);
                                     fullContent += `<p><strong><i class="fas fa-file me-1"></i>File:</strong> <code>${filename}</code></p>`;
                                     // Try to display the actual image
                                     fullContent += `<div class="text-center mb-3">`;
                                     const imageUrl = `/api/dataset-image/${filename}`;
-                                    console.log(`FIGURE_DIKHA_007: Image URL constructed: "${imageUrl}"`);
                                     fullContent += `<img src="${imageUrl}" class="img-fluid" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px;" `;
-                                    fullContent += `onload="console.log('FIGURE_DIKHA_008: Image loaded successfully: ${filename}')" `;
-                                    fullContent += `onerror="console.log('FIGURE_DIKHA_009: Image failed to load: ${filename}'); this.style.display='none'; this.nextElementSibling.style.display='block';" />`;
+                                    fullContent += `onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />`;
                                     fullContent += `<div class="alert alert-warning" style="display: none;"><i class="fas fa-exclamation-triangle me-2"></i>Image file "${filename}" not found or could not be loaded.</div>`;
                                     fullContent += `</div>`;
-                                } else {
-                                    console.log('FIGURE_DIKHA_010: No filename found for this plot');
                                 }
                                 if (insights) fullContent += `<p><strong><i class="fas fa-lightbulb me-1"></i>Key Insights:</strong> ${insights}</p>`;
                                 fullContent += `</div>`;
@@ -1573,22 +1562,7 @@
                             });
                             
                             fullContent += '</div>';
-                            console.log('FIGURE_DIKHA_011: Charts section added to content');
-                            
-                            // Debug: Check what images are available
-                            fetch('/api/list-dataset-images')
-                                .then(response => response.json())
-                                .then(imageList => {
-                                    console.log('FIGURE_DIKHA_014: Available images on server:', imageList);
-                                })
-                                .catch(error => {
-                                    console.log('FIGURE_DIKHA_015: Error checking available images:', error);
-                                });
-                        } else {
-                            console.log('FIGURE_DIKHA_012: No plot matches found in output');
                         }
-                    } else {
-                        console.log('FIGURE_DIKHA_013: No output data available for plot extraction');
                     }
                     
                     // 4. INSIGHTS SECTION (if available)
