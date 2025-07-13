@@ -10,6 +10,7 @@ from typing import Dict, Any, List, Optional
 from firebase_admin import firestore
 
 from services.llm_service import LLMService
+from services.enhanced_llm_service import EnhancedLLMService, ModelProvider
 from services.utils import format_timestamp
 
 # Configure logging
@@ -20,7 +21,8 @@ class EnhancedChatService:
     
     def __init__(self, db=None):
         """Initialize the enhanced chat service."""
-        self.llm_service = LLMService()
+        # Use EnhancedLLMService for multi-provider support
+        self.llm_service = EnhancedLLMService()
         self.db = db or firestore.client()
     
     # Conversation Management
@@ -427,7 +429,9 @@ class EnhancedChatService:
     
     # Enhanced Chat Operations
     
-    def process_user_message(self, conversation_id: str, user_id: str, message: str) -> Dict[str, Any]:
+    def process_user_message(self, conversation_id: str, user_id: str, message: str, 
+                           model_provider: str = None, model_name: str = None,
+                           enable_thinking: bool = False, thinking_budget: int = 2048) -> Dict[str, Any]:
         """
         Process a user message and generate AI response.
         
@@ -435,6 +439,10 @@ class EnhancedChatService:
             conversation_id: Conversation ID
             user_id: User ID
             message: User message text
+            model_provider: Optional model provider override
+            model_name: Optional model name override
+            enable_thinking: Enable Claude thinking mode
+            thinking_budget: Token budget for thinking (1024-3072)
             
         Returns:
             Dictionary containing user message and AI response
@@ -469,25 +477,60 @@ class EnhancedChatService:
                 logger.warning(f"No messages found for conversation {conversation_id}, using current message only")
                 llm_messages = [{"role": "user", "content": message}]
             
-            # Generate AI response
-            response = self.llm_service.chat(llm_messages)
+            # Switch model if requested
+            if model_provider and model_name:
+                original_provider = self.llm_service.provider
+                original_model = self.llm_service.model
+                try:
+                    provider_enum = ModelProvider(model_provider)
+                    self.llm_service.switch_model(provider_enum, model_name)
+                    logger.info(f"Switched to {model_provider}:{model_name} for this message")
+                except Exception as e:
+                    logger.warning(f"Failed to switch model: {e}, using default")
             
-            if response["success"]:
+            # Generate AI response
+            response = self.llm_service.generate_text(
+                self._format_messages_for_llm(llm_messages),
+                enable_fallback=True,
+                enable_thinking=enable_thinking,
+                thinking_budget=thinking_budget
+            )
+            
+            # Restore original model if we switched
+            if model_provider and model_name:
+                try:
+                    self.llm_service.switch_model(original_provider, original_model)
+                except:
+                    pass
+            
+            if response.get("success"):
                 # Create assistant message
                 model_info = {
-                    "model_used": response.get("model_used"),
-                    "input_tokens": response.get("input_tokens", 0),
-                    "output_tokens": response.get("output_tokens", 0),
-                    "generation_time": response.get("generation_time", 0)
+                    "model_used": response.get("model", response.get("model_used")),
+                    "input_tokens": response.get("usage", {}).get("input_tokens", 0),
+                    "output_tokens": response.get("usage", {}).get("output_tokens", 0),
+                    "generation_time": response.get("response_time", 0),
+                    "fallback_used": response.get("fallback_used", False),
+                    "provider": response.get("provider", "unknown")
                 }
+                
+                # Add thinking content to message if available
+                message_content = response["text"]
+                if response.get("thinking"):
+                    # Store thinking content in model_info for database storage
+                    model_info["thinking"] = response["thinking"]
                 
                 assistant_message = self.create_message(
                     conversation_id=conversation_id,
                     user_id=user_id,
                     role="assistant",
-                    content=response["text"],
+                    content=message_content,
                     model_info=model_info
                 )
+                
+                # Add thinking content to response for API
+                if response.get("thinking"):
+                    assistant_message["thinking"] = response["thinking"]
                 
                 # Update conversation title if this is the first exchange
                 conversation = self.get_conversation(conversation_id, user_id)
@@ -571,7 +614,9 @@ class EnhancedChatService:
         return title or "New Conversation"
     
     def create_conversation_with_first_message(self, user_id: str, user_email: str, 
-                                             first_message: str, origin: str = "derplexity") -> Dict[str, Any]:
+                                             first_message: str, origin: str = "derplexity",
+                                             model_provider: str = None, model_name: str = None,
+                                             enable_thinking: bool = False, thinking_budget: int = 2048) -> Dict[str, Any]:
         """
         Create a new conversation with the first user message and AI response.
         This is the main method to start a conversation.
@@ -581,6 +626,10 @@ class EnhancedChatService:
             user_email: User email
             first_message: First user message
             origin: Application origin
+            model_provider: Optional model provider override
+            model_name: Optional model name override
+            enable_thinking: Enable Claude thinking mode
+            thinking_budget: Token budget for thinking (1024-3072)
             
         Returns:
             Complete conversation data with messages
@@ -605,26 +654,61 @@ class EnhancedChatService:
                 content=first_message
             )
             
+            # Switch model if requested
+            if model_provider and model_name:
+                original_provider = self.llm_service.provider
+                original_model = self.llm_service.model
+                try:
+                    provider_enum = ModelProvider(model_provider)
+                    self.llm_service.switch_model(provider_enum, model_name)
+                    logger.info(f"Switched to {model_provider}:{model_name} for first message")
+                except Exception as e:
+                    logger.warning(f"Failed to switch model: {e}, using default")
+            
             # Generate AI response
             llm_messages = [{"role": "user", "content": first_message}]
-            response = self.llm_service.chat(llm_messages)
+            response = self.llm_service.generate_text(
+                self._format_messages_for_llm(llm_messages),
+                enable_fallback=True,
+                enable_thinking=enable_thinking,
+                thinking_budget=thinking_budget
+            )
             
-            if response["success"]:
+            # Restore original model if we switched
+            if model_provider and model_name:
+                try:
+                    self.llm_service.switch_model(original_provider, original_model)
+                except:
+                    pass
+            
+            if response.get("success"):
                 # Create assistant message
                 model_info = {
-                    "model_used": response.get("model_used"),
-                    "input_tokens": response.get("input_tokens", 0),
-                    "output_tokens": response.get("output_tokens", 0),
-                    "generation_time": response.get("generation_time", 0)
+                    "model_used": response.get("model", response.get("model_used")),
+                    "input_tokens": response.get("usage", {}).get("input_tokens", 0),
+                    "output_tokens": response.get("usage", {}).get("output_tokens", 0),
+                    "generation_time": response.get("response_time", 0),
+                    "fallback_used": response.get("fallback_used", False),
+                    "provider": response.get("provider", "unknown")
                 }
+                
+                # Add thinking content to message if available
+                message_content = response["text"]
+                if response.get("thinking"):
+                    # Store thinking content in model_info for database storage
+                    model_info["thinking"] = response["thinking"]
                 
                 assistant_message = self.create_message(
                     conversation_id=conversation['conversation_id'],
                     user_id=user_id,
                     role="assistant",
-                    content=response["text"],
+                    content=message_content,
                     model_info=model_info
                 )
+                
+                # Add thinking content to response for API
+                if response.get("thinking"):
+                    assistant_message["thinking"] = response["thinking"]
                 
                 return {
                     "success": True,
@@ -684,3 +768,17 @@ class EnhancedChatService:
         except Exception as e:
             logger.error(f"Error starting new chat session: {str(e)}", exc_info=True)
             raise
+    
+    def _format_messages_for_llm(self, messages: List[Dict[str, str]]) -> str:
+        """Format messages into a prompt string for the LLM."""
+        prompt_parts = []
+        for msg in messages:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role == "user":
+                prompt_parts.append(f"User: {content}")
+            elif role == "assistant":
+                prompt_parts.append(f"Assistant: {content}")
+        
+        prompt_parts.append("Assistant:")  # Prompt for the next response
+        return "\n\n".join(prompt_parts)

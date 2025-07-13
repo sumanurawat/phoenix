@@ -508,7 +508,7 @@ Only return the Python code, no explanations.
             logger.info(f"📝 Raw refinement response preview: {response['text'][:300]}...")
             
             # Add detailed iteration debugging
-            logger.info(f"🔍 ITER_DEBUG_001: Attempting to extract code from iteration {len(all_iterations)} response")
+            logger.info(f"🔍 Attempting to extract code from iteration {len(all_iterations)} response")
             
             code = self._extract_code_from_response(response["text"])
             logger.info(f"🎯 Refined code length: {len(code)}")
@@ -584,24 +584,24 @@ Only return the Python code, no explanations.
             # Check for plot generation in output
             if result.stdout and "PLOT_INFO_START" in result.stdout:
                 plot_count = result.stdout.count("PLOT_INFO_START")
-                logger.info(f"📈 FIGURE_DIKHA_PYTHON_001: Found {plot_count} plots in output")
+                logger.info(f"📈 Found {plot_count} plots in output")
                 
                 # Extract and log plot filenames
                 import re
                 plot_matches = re.findall(r'filename:\s*(.+)$', result.stdout, re.MULTILINE)
                 if plot_matches:
-                    logger.info(f"📊 FIGURE_DIKHA_PYTHON_002: Generated plot files: {plot_matches}")
+                    logger.info(f"📊 Generated plot files: {plot_matches}")
                     
                     # Check if files actually exist
                     working_dir = dataset_files[0].parent if dataset_files else Path.cwd()
                     for plot_file in plot_matches:
                         plot_path = working_dir / plot_file
                         if plot_path.exists():
-                            logger.info(f"✅ FIGURE_DIKHA_PYTHON_003: Plot file exists: {plot_path}")
+                            logger.info(f"✅ Plot file exists: {plot_path}")
                         else:
-                            logger.warning(f"❌ FIGURE_DIKHA_PYTHON_004: Plot file NOT found: {plot_path}")
+                            logger.warning(f"❌ Plot file NOT found: {plot_path}")
             else:
-                logger.info("📊 FIGURE_DIKHA_PYTHON_005: No plots found in output")
+                logger.info("📊 No plots found in output")
             
             if result.stdout:
                 logger.info(f"📤 STDOUT (length: {len(result.stdout)}):")
@@ -772,13 +772,13 @@ print(f"Working directory: {current_dir}")
                 indent = len(line) - len(line.lstrip())
                 if any(keyword in line for keyword in ['if ', 'for ', 'while ', 'def ', 'class ', 'try:', 'except', 'else:', 'elif ']):
                     pass_line = ' ' * (indent + 4) + 'pass'
-                    logger.info(f"🔧 ITER_FIX_001: Adding pass statement with {indent + 4} spaces after: {line.strip()}")
+                    logger.info(f"🔧 Adding pass statement with {indent + 4} spaces after: {line.strip()}")
                     fixed_lines.append(pass_line)
         
         # Remove trailing incomplete lines
         while fixed_lines and fixed_lines[-1].strip() and not fixed_lines[-1].strip().endswith((':', ';', ')', ']', '}')) and not fixed_lines[-1].strip().startswith(('#', '//', '"""', "'''")):
             if len(fixed_lines[-1].strip()) < 20 and any(char in fixed_lines[-1] for char in ['(', '[', '{', '"', "'"]):
-                logger.warning(f"🗑️ ITER_FIX_002: Removing potentially incomplete line: {fixed_lines[-1]}")
+                logger.warning(f"🗑️ Removing potentially incomplete line: {fixed_lines[-1]}")
                 fixed_lines.pop()
             else:
                 break
