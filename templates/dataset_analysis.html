@@ -767,6 +767,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/model-selector.js') }}"></script>
     <script>
         // Global variables
         const datasetRef = '{{ dataset_ref }}';
@@ -989,6 +990,11 @@
         
         // Initialize resizer and environment when page loads
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('Dataset Analysis: DOM loaded, initializing...');
+            console.log('startAnalysis function available:', typeof startAnalysis);
+            console.log('toggleMessage function available:', typeof toggleMessage);
+            console.log('globalModelSelector available:', typeof globalModelSelector);
+            
             initializeResizer();
             initializeEnvironment();
         });
@@ -1008,92 +1014,46 @@
             }
         }
 
-        // Detect environment
-        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        
-        // Available models by provider
-        const availableModels = {
-            gemini: [
-                {id: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash 8B (Fast & Cost-Effective)', cost: 'Very Low'},
-                // Additional models only for localhost
-                ...(isLocalhost ? [
-                    {id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Highest Quality, $$$)', cost: 'High'},
-                    {id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (High Quality, $)', cost: 'Low'},
-                    {id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Good Quality, $$)', cost: 'Medium'},
-                    {id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Good Quality, $)', cost: 'Low'}
-                ] : [])
-            ],
-            claude: isLocalhost ? [
-                {id: 'claude-opus-4-20250514', name: 'Claude 4 Opus (World\'s Best Coding Model, $$$$)', cost: 'Very High'},
-                {id: 'claude-sonnet-4-20250514', name: 'Claude 4 Sonnet (Latest & Best Balance, $$$)', cost: 'High'},
-                {id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (High Quality, $$)', cost: 'Medium'},
-                {id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku (Fast & Affordable, $)', cost: 'Low'},
-                {id: 'claude-3-opus-20240229', name: 'Claude 3 Opus (Premium, $$$)', cost: 'High'}
-            ] : []
-        };
-
-        // Update available models when provider changes
-        function updateAvailableModels() {
-            const provider = document.getElementById('modelProvider').value;
-            const modelSelect = document.getElementById('modelName');
-            const models = availableModels[provider] || [];
-            
-            modelSelect.innerHTML = '';
-            models.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model.id;
-                option.textContent = model.name;
-                modelSelect.appendChild(option);
-            });
-            
-            // Select the appropriate default model
-            if (provider === 'gemini') {
-                modelSelect.value = 'gemini-1.5-flash-8b';  // Always default to most cost-effective
-            } else if (provider === 'claude' && isLocalhost) {
-                modelSelect.value = 'claude-sonnet-4-20250514';  // Default to Claude 4 Sonnet for localhost
-            }
-            
-            updateCostEstimate();
-        }
+        // Initialize model selector component (handled by model-selector.js)
+        // Component provides: updateAvailableModels(), getCurrentModelConfig(), calculateModelCost()
         
         // Initialize environment-specific UI
         function initializeEnvironment() {
-            // Hide Claude option in production/dev environments
-            if (!isLocalhost) {
-                const claudeOption = document.getElementById('claudeOption');
-                if (claudeOption) {
-                    claudeOption.style.display = 'none';
-                }
-                
-                // Update cost warning for production
-                const costInfo = document.querySelector('.alert-info');
-                if (costInfo) {
-                    costInfo.innerHTML = `
-                        <i class="fas fa-info-circle me-2"></i>
-                        <div>
-                            <strong>💰 Production Environment:</strong> Only cost-effective Gemini Flash 8B model available to control costs.
-                            <br><small>
-                            🔒 <strong>Note:</strong> Premium models (Claude, larger Gemini) are available for localhost testing only.
-                            </small>
-                        </div>
-                    `;
-                }
-            }
+            // The model selector component handles all model selection logic
+            // Just update cost estimate when models change
+            setTimeout(updateCostEstimate, 100); // Wait for component to initialize
             
-            // Initialize with default model
-            updateAvailableModels();
+            // Add event listeners for model changes to update cost estimates
+            const providerSelect = document.getElementById('modelProvider');
+            const modelSelect = document.getElementById('modelName');
+            const iterativeMode = document.getElementById('enableIterativeMode');
+            const maxIterations = document.getElementById('maxIterations');
+            
+            if (providerSelect) {
+                providerSelect.addEventListener('change', updateCostEstimate);
+            }
+            if (modelSelect) {
+                modelSelect.addEventListener('change', updateCostEstimate);
+            }
+            if (iterativeMode) {
+                iterativeMode.addEventListener('change', updateCostEstimate);
+            }
+            if (maxIterations) {
+                maxIterations.addEventListener('change', updateCostEstimate);
+            }
         }
 
         // Update cost estimate based on selection
         function updateCostEstimate() {
-            const provider = document.getElementById('modelProvider').value;
-            const modelId = document.getElementById('modelName').value;
+            if (!globalModelSelector) return; // Component not ready yet
+            
+            const provider = globalModelSelector.getCurrentProvider();
+            const modelId = globalModelSelector.getCurrentModel();
             const iterativeMode = document.getElementById('enableIterativeMode').checked;
             const maxIterations = parseInt(document.getElementById('maxIterations').value);
             const costDiv = document.getElementById('costEstimate');
             
-            const models = availableModels[provider] || [];
-            const selectedModel = models.find(m => m.id === modelId);
+            const selectedModel = globalModelSelector.getModelInfo(provider, modelId);
             
             if (selectedModel) {
                 let estimate = '';
@@ -1113,12 +1073,27 @@
 
         // Get selected model configuration
         function getModelConfig() {
-            return {
-                provider: document.getElementById('modelProvider').value,
-                model: document.getElementById('modelName').value,
-                iterative_mode: document.getElementById('enableIterativeMode').checked,
-                max_iterations: parseInt(document.getElementById('maxIterations').value)
-            };
+            if (globalModelSelector) {
+                const config = globalModelSelector.getCurrentConfig();
+                return {
+                    provider: config.provider,
+                    model: config.model,
+                    enable_thinking: config.enable_thinking,
+                    thinking_budget: config.thinking_budget,
+                    iterative_mode: document.getElementById('enableIterativeMode').checked,
+                    max_iterations: parseInt(document.getElementById('maxIterations').value)
+                };
+            } else {
+                // Fallback if component not ready
+                return {
+                    provider: document.getElementById('modelProvider').value,
+                    model: document.getElementById('modelName').value,
+                    enable_thinking: false,
+                    thinking_budget: 2048,
+                    iterative_mode: document.getElementById('enableIterativeMode').checked,
+                    max_iterations: parseInt(document.getElementById('maxIterations').value)
+                };
+            }
         }
 
         // Start analysis process

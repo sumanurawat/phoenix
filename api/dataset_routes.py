@@ -532,6 +532,7 @@ def analyze_step():
         model = model_config.get('model', 'gemini-2.5-flash')
         iterative_mode = model_config.get('iterative_mode', False)
         max_iterations = model_config.get('max_iterations', 5)
+        # Thinking mode parameters removed for simplicity
         
         logger.info(f"📊 Running analysis step {step} for {dataset_ref}: {description}")
         logger.info(f"🤖 Using {provider}:{model}, iterative: {iterative_mode}, max_iter: {max_iterations}")
@@ -543,7 +544,14 @@ def analyze_step():
             from services.dataset_discovery.temp_analysis_service import TempAnalysisService
             
             # Initialize enhanced LLM service
-            provider_enum = ModelProvider.GEMINI if provider == 'gemini' else ModelProvider.CLAUDE
+            if provider == 'gemini':
+                provider_enum = ModelProvider.GEMINI
+            elif provider == 'claude':
+                provider_enum = ModelProvider.CLAUDE
+            elif provider == 'grok':
+                provider_enum = ModelProvider.GROK
+            else:
+                provider_enum = ModelProvider.GEMINI  # Default fallback
             llm_service = EnhancedLLMService(provider=provider_enum, model=model)
             
             # Initialize iterative agent with conversation tracking enabled
@@ -563,15 +571,15 @@ def analyze_step():
             
             # Create task prompt for the step
             step_prompts = {
-                1: "Load and explore the dataset structure, showing basic information about the data",
-                2: "Perform statistical analysis and data exploration with descriptive statistics",
-                3: "Analyze each column individually, checking data types, distributions, and quality",
-                4: "Generate insights and recommendations based on the dataset analysis"
+                1: "Comprehensive Data Analysis: Load dataset, explore structure, perform statistical analysis, and analyze individual columns with data quality checks",
+                2: "Advanced Statistical Analysis: Perform correlation analysis, outlier detection, distribution analysis, and feature relationships", 
+                3: "Machine Learning Analysis: Build predictive models, feature importance analysis, and performance evaluation",
+                4: "Generate insights and recommendations based on the complete dataset analysis"
             }
             
             task_prompt = step_prompts.get(step, description)
             
-            # Run iterative agent
+            # Run iterative agent (thinking mode removed)
             result = agent.generate_and_refine_code(task_prompt, dataset_files)
             
             # Format result for API response
@@ -611,7 +619,14 @@ def analyze_step():
             from services.enhanced_llm_service import EnhancedLLMService, ModelProvider
             
             # Create enhanced LLM service for single shot
-            provider_enum = ModelProvider.GEMINI if provider == 'gemini' else ModelProvider.CLAUDE
+            if provider == 'gemini':
+                provider_enum = ModelProvider.GEMINI
+            elif provider == 'claude':
+                provider_enum = ModelProvider.CLAUDE
+            elif provider == 'grok':
+                provider_enum = ModelProvider.GROK
+            else:
+                provider_enum = ModelProvider.GEMINI  # Default fallback
             llm_service = EnhancedLLMService(provider=provider_enum, model=model)
             
             # Temporarily override the LLM service in temp analysis
@@ -668,14 +683,44 @@ def get_conversation_messages(conversation_id):
                 }
             }), 404
         
-        # Get messages
+        # Get messages and format them properly for frontend
         messages = tracker.get_messages()
+        
+        # Format messages to ensure consistent structure for debug display
+        formatted_messages = []
+        for msg in messages:
+            formatted_msg = {
+                "role": msg.get("role", "unknown"),
+                "content": msg.get("content", ""),
+                "timestamp": msg.get("timestamp", 0),
+                "message_id": msg.get("message_id", ""),
+                "conversation_id": msg.get("conversation_id", conversation_id),
+                "message_type": msg.get("metadata", {}).get("message_type", "unknown"),
+                
+                # Extract metadata fields for easier access
+                "model": msg.get("metadata", {}).get("model", ""),
+                "model_used": msg.get("metadata", {}).get("model_used", ""),
+                "tokens": msg.get("metadata", {}).get("tokens", {}),
+                "generation_time": msg.get("metadata", {}).get("generation_time", 0),
+                "duration": msg.get("metadata", {}).get("duration", 0),
+                "execution_time": msg.get("metadata", {}).get("execution_time", 0),
+                "code": msg.get("metadata", {}).get("code", ""),
+                "execution_result": msg.get("metadata", {}).get("execution_result", ""),
+                "error_message": msg.get("metadata", {}).get("error_message", ""),
+                "success": msg.get("metadata", {}).get("success", False),
+                "step": msg.get("metadata", {}).get("step", 0),
+                "iteration": msg.get("metadata", {}).get("iteration", 0),
+                
+                # Keep original metadata for any additional fields
+                "metadata": msg.get("metadata", {})
+            }
+            formatted_messages.append(formatted_msg)
         
         return jsonify({
             "success": True,
             "conversation_id": conversation_id,
-            "messages": messages,
-            "message_count": len(messages)
+            "messages": formatted_messages,
+            "message_count": len(formatted_messages)
         }), 200
         
     except Exception as e:

@@ -197,6 +197,229 @@ def create_app():
                            user_name=session.get('user_name'),
                            user_email=session.get('user_email'))
     
+    @app.route('/api/dataset-image/<path:filename>')
+    def serve_dataset_image(filename):
+        """Serve generated dataset analysis images."""
+        import os
+        from flask import send_file, abort
+        
+        app.logger.info(f"📊 FIGURE_DIKHA_SERVER_001: Requesting image: {filename}")
+        
+        # Look for the image in common analysis directories
+        import glob
+        
+        # First try exact paths we know
+        possible_paths = [
+            f"/private/var/folders/9g/xc39_69164346pmz81fs3g9m0000gn/T/phoenix_datasets/raw/arshid_iris-flower-dataset/{filename}",
+            f"/var/folders/9g/xc39_69164346pmz81fs3g9m0000gn/T/phoenix_coding_agent/{filename}",
+            f"/tmp/phoenix_coding_agent/{filename}",
+            f"./{filename}",  # Current directory
+        ]
+        
+        # Also search for the file in common temp directories
+        search_patterns = [
+            f"/private/var/folders/**/T/phoenix_datasets/**/{filename}",
+            f"/var/folders/**/phoenix_coding_agent/{filename}",
+            f"/tmp/**/{filename}",
+            f"/var/tmp/**/{filename}",
+        ]
+        
+        for pattern in search_patterns:
+            matches = glob.glob(pattern, recursive=True)
+            if matches:
+                possible_paths.extend(matches[:5])  # Add first 5 matches
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                app.logger.info(f"✅ FIGURE_DIKHA_SERVER_002: Found image at: {path}")
+                return send_file(path, mimetype='image/png')
+        
+        # Log all paths searched
+        app.logger.warning(f"❌ FIGURE_DIKHA_SERVER_003: Image not found. Searched paths: {possible_paths}")
+        
+        # If not found, return a placeholder or 404
+        abort(404)
+        
+    @app.route('/api/list-dataset-images')
+    def list_dataset_images():
+        """Debug endpoint to list available dataset images."""
+        import os
+        import glob
+        from flask import jsonify
+        
+        found_images = []
+        
+        # Search patterns for common image locations
+        search_patterns = [
+            "/private/var/folders/**/T/phoenix_datasets/**/*.png",
+            "/var/folders/**/phoenix_coding_agent/*.png", 
+            "/tmp/**/*.png",
+            "/var/tmp/**/*.png",
+            "./*.png",
+        ]
+        
+        for pattern in search_patterns:
+            matches = glob.glob(pattern, recursive=True)
+            for match in matches:
+                if os.path.exists(match):
+                    found_images.append({
+                        "filename": os.path.basename(match),
+                        "full_path": match,
+                        "size_kb": round(os.path.getsize(match) / 1024, 2)
+                    })
+        
+        return jsonify({
+            "success": True,
+            "images_found": len(found_images),
+            "images": found_images[:20]  # Limit to first 20
+        })
+        
+    @app.route('/api/chat/dataset', methods=['POST'])
+    def chat_dataset():
+        """Chat endpoint for dataset analysis continuation."""
+        try:
+            from flask import jsonify
+            from services.enhanced_llm_service import EnhancedLLMService, ModelProvider
+            import time
+            
+            data = request.get_json()
+            message = data.get('message', '')
+            dataset_ref = data.get('dataset_ref', '')
+            model_config = data.get('model_config', {})
+            
+            if not message:
+                return jsonify({"success": False, "error": "Message is required"}), 400
+            
+            # Extract model configuration
+            provider = model_config.get('provider', 'grok')
+            model = model_config.get('model', 'grok-2-1212')
+            enable_thinking = model_config.get('enable_thinking', False)
+            thinking_budget = model_config.get('thinking_budget', 2048)
+            
+            # Create enhanced LLM service with specified model
+            if provider == 'gemini':
+                provider_enum = ModelProvider.GEMINI
+            elif provider == 'claude':
+                provider_enum = ModelProvider.CLAUDE
+            elif provider == 'grok':
+                provider_enum = ModelProvider.GROK
+            else:
+                provider_enum = ModelProvider.GROK  # Default fallback
+            
+            llm_service = EnhancedLLMService(provider=provider_enum, model=model)
+            
+            # Create context-aware prompt for dataset analysis chat
+            prompt = f"""You are a dataset analysis assistant. The user has analyzed dataset "{dataset_ref}" and is asking: "{message}"
+
+Please provide a helpful response about the dataset analysis. You can:
+- Answer questions about the analysis results
+- Suggest additional analysis steps
+- Explain insights from the data
+- Recommend visualizations
+- Provide statistical interpretations
+
+Keep your response concise and actionable."""
+            
+            start_time = time.time()
+            response = llm_service.generate_text(
+                prompt,
+                enable_fallback=True,
+                enable_thinking=enable_thinking,
+                thinking_budget=thinking_budget
+            )
+            response_time = time.time() - start_time
+            
+            if response.get("success"):
+                return jsonify({
+                    "success": True,
+                    "response": response["text"],
+                    "tokens_used": {
+                        "input": response.get("usage", {}).get("input_tokens", 0),
+                        "output": response.get("usage", {}).get("output_tokens", 0)
+                    },
+                    "cost": 0,  # Will be calculated on frontend
+                    "response_time": response_time,
+                    "model_used": f"{provider}:{model}"
+                })
+            else:
+                return jsonify({
+                    "success": False,
+                    "error": response.get("error", "Failed to generate response")
+                }), 500
+                
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
+
+    @app.route('/api/test-grok', methods=['GET'])
+    def test_grok_api():
+        """Test endpoint to diagnose Grok API issues."""
+        try:
+            from flask import jsonify
+            from services.enhanced_llm_service import EnhancedLLMService, ModelProvider
+            import os
+            
+            # Check environment
+            grok_key = os.getenv('GROK_API_KEY')
+            
+            diagnostics = {
+                "grok_api_key_present": bool(grok_key),
+                "grok_api_key_length": len(grok_key) if grok_key else 0,
+                "grok_api_key_prefix": grok_key[:10] + "..." if grok_key else None
+            }
+            
+            # Try direct OpenAI client creation
+            try:
+                import openai
+                diagnostics["openai_version"] = openai.__version__
+                
+                # Test direct client creation
+                client = openai.OpenAI(
+                    api_key=grok_key,
+                    base_url="https://api.x.ai/v1"
+                )
+                diagnostics["direct_client_creation"] = "success"
+                
+                # Test API call
+                response = client.chat.completions.create(
+                    model="grok-2-1212",
+                    messages=[{"role": "user", "content": "Hello"}],
+                    max_tokens=5
+                )
+                diagnostics["api_call_test"] = "success"
+                diagnostics["response_content"] = response.choices[0].message.content
+                
+            except Exception as e:
+                diagnostics["direct_client_error"] = str(e)
+                diagnostics["error_type"] = type(e).__name__
+            
+            # Test via EnhancedLLMService
+            try:
+                service = EnhancedLLMService(provider=ModelProvider.GROK, model="grok-2-1212")
+                diagnostics["enhanced_service_init"] = "success"
+                diagnostics["grok_client_available"] = bool(service.grok_client)
+                
+                if service.grok_client:
+                    result = service.generate_text("Hello, respond with 'Hi'")
+                    diagnostics["enhanced_service_test"] = "success" if result.get("success") else "failed"
+                    diagnostics["enhanced_service_response"] = result.get("text", result.get("error"))
+            except Exception as e:
+                diagnostics["enhanced_service_error"] = str(e)
+            
+            return jsonify({
+                "success": True,
+                "diagnostics": diagnostics
+            })
+            
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "error": str(e),
+                "error_type": type(e).__name__
+            }), 500
+    
     return app
 
 # Create the application
