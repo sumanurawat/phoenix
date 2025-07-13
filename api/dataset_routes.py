@@ -500,7 +500,7 @@ def dataset_analyze():
     
     logger.info(f"📊 Dataset analysis page requested for {dataset_ref}")
     
-    return render_template('dataset_analysis.html', 
+    return render_template('dataset_analysis_chat.html', 
                          dataset_ref=dataset_ref,
                          file_count=file_count,
                          size_mb=size_mb)
