@@ -185,27 +185,29 @@
             margin: 0;
         }
         
-        /* Model selector styles - for future implementation
+        /* Model selector styles */
         .model-selector {
             position: relative;
             margin-right: 1rem;
         }
         
-        .model-selector-btn {
-            background: var(--sidebar-bg);
+        .model-selector select {
             border: 1px solid var(--border-color);
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            cursor: pointer;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            background: white;
         }
         
-        .model-option.premium {
-            opacity: 0.5;
-            color: var(--text-muted);
+        .model-selector select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
         }
-        */
+        
+        .model-selector select option:disabled {
+            background: #f3f4f6 !important;
+            color: #9ca3af !important;
+            font-style: italic;
+        }
         
         /* Messages Area */
         .messages-container {
@@ -519,7 +521,23 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <h1 class="chat-title" id="chatTitle">Welcome to Derplexity</h1>
-                <!-- Model selector will be added here in future for subscription-based model selection -->
+                
+                <!-- Model Selector -->
+                <div class="model-selector">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-robot text-muted"></i>
+                        <select id="modelProvider" class="form-select form-select-sm" onchange="updateAvailableModels()" style="width: auto; min-width: 100px;">
+                            <option value="gemini" selected>Gemini</option>
+                            <option value="claude" id="claudeOption">Claude</option>
+                            <option value="grok" id="grokOption">Grok</option>
+                        </select>
+                        <select id="modelName" class="form-select form-select-sm" style="width: auto; min-width: 180px;">
+                            <option value="gemini-1.5-flash-8b">Flash 8B (Fast)</option>
+                        </select>
+                        
+                        <!-- Thinking mode removed for simplicity - will be re-implemented later -->
+                    </div>
+                </div>
             </div>
             
             <!-- Messages -->
@@ -527,7 +545,7 @@
                 <div class="welcome-state" id="welcomeState">
                     <i class="fas fa-comments fa-3x mb-4 text-primary"></i>
                     <h3>Start a new conversation</h3>
-                    <p class="lead mb-4">Ask me anything! I'm powered by Google's Gemini AI models.</p>
+                    <p class="lead mb-4">Ask me anything! I'm powered by advanced AI models - choose your preferred model above.</p>
                     <div class="row g-3 w-100" style="max-width: 600px;">
                         <div class="col-md-6">
                             <div class="card h-100 border-0 shadow-sm">
@@ -591,6 +609,7 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/model-selector.js') }}"></script>
     
     <script>
         // Global state
@@ -610,10 +629,107 @@
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
         
+        // Model Management - Same as Dataset Analysis
+        const availableModels = {
+            gemini: [
+                {id: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash 8B (Fast & Cost-Effective)', cost: 'Very Low', prodAllowed: true},
+                {id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Highest Quality, $$$)', cost: 'High', prodAllowed: true},
+                {id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (High Quality, $)', cost: 'Low', prodAllowed: true},
+                {id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Good Quality, $$)', cost: 'Medium', prodAllowed: true},
+                {id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Good Quality, $)', cost: 'Low', prodAllowed: true}
+            ],
+            claude: [
+                {id: 'claude-opus-4-20250514', name: 'Claude 4 Opus (World\'s Best Coding Model, $$$$)', cost: 'Very High', prodAllowed: true},
+                {id: 'claude-sonnet-4-20250514', name: 'Claude 4 Sonnet (Latest & Best Balance, $$$)', cost: 'High', prodAllowed: true},
+                {id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (High Quality, $$)', cost: 'Medium', prodAllowed: true},
+                {id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku (Fast & Affordable, $)', cost: 'Low', prodAllowed: true},
+                {id: 'claude-3-opus-20240229', name: 'Claude 3 Opus (Premium, $$$)', cost: 'High', prodAllowed: true}
+            ],
+            grok: [
+                {id: 'grok-4', name: 'Grok 4 (Real-time Search, $$$)', cost: 'High', prodAllowed: true},
+                {id: 'grok-2-1212', name: 'Grok 2-1212 (Production Model, $$)', cost: 'Medium', prodAllowed: true},
+                {id: 'grok-2-vision-1212', name: 'Grok 2 Vision-1212 (Vision Support, $$)', cost: 'Medium', prodAllowed: true},
+                {id: 'grok-beta', name: 'Grok Beta (Latest Features, $$$)', cost: 'High', prodAllowed: true},
+                {id: 'grok-vision-beta', name: 'Grok Vision Beta (Vision Beta, $$$)', cost: 'High', prodAllowed: true}
+            ]
+        };
+
+        function updateAvailableModels() {
+            const provider = document.getElementById('modelProvider').value;
+            const modelSelect = document.getElementById('modelName');
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const isDev = window.location.hostname.includes('dev') || window.location.hostname.includes('staging');
+            const isDevOrLocal = isLocalhost || isDev;
+            
+            const models = availableModels[provider] || [];
+            modelSelect.innerHTML = '';
+            
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.id;
+                
+                // In production, grey out expensive models but still show them
+                if (!isDevOrLocal && !model.prodAllowed) {
+                    option.textContent = `${model.name} (Premium - Contact Admin)`;
+                    option.disabled = true;
+                    option.style.color = '#9ca3af';
+                    option.style.fontStyle = 'italic';
+                } else {
+                    option.textContent = model.name;
+                }
+                
+                modelSelect.appendChild(option);
+            });
+            
+            // Select the appropriate default model
+            if (provider === 'gemini') {
+                modelSelect.value = 'gemini-1.5-flash-8b';  // Always default to most cost-effective
+            } else if (provider === 'claude') {
+                modelSelect.value = 'claude-sonnet-4-20250514';  // Default to Claude 4 Sonnet
+            } else if (provider === 'grok') {
+                modelSelect.value = 'grok-2-1212';  // Default to Grok production model
+            }
+            
+            // Thinking mode control removed
+        }
+        
+        // updateThinkingVisibility(), updateThinkingBudget(), and updateBudgetDisplay() functions removed - thinking mode disabled
+
+        function initializeEnvironment() {
+            updateAvailableModels();
+            
+            // Thinking visibility event listener removed
+        }
+
+        // Get current model configuration for API calls
+        function getCurrentModelConfig() {
+            const config = {
+                provider: document.getElementById('modelProvider').value,
+                model: document.getElementById('modelName').value
+            };
+            
+            // Thinking parameters removed for simplicity
+            
+            return config;
+        }
+
+        // Validate model selection before API calls
+        function validateModelSelection() {
+            const modelSelect = document.getElementById('modelName');
+            const selectedOption = modelSelect.options[modelSelect.selectedIndex];
+            
+            if (selectedOption && selectedOption.disabled) {
+                alert('This model is not available in production. Please select an available model or contact your administrator for premium access.');
+                return false;
+            }
+            return true;
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             loadConversations();
             setupEventListeners();
+            initializeEnvironment();
         });
         
         function setupEventListeners() {
@@ -721,7 +837,7 @@
                 <div class="welcome-state" id="welcomeState">
                     <i class="fas fa-comments fa-3x mb-4 text-primary"></i>
                     <h3>Start a new conversation</h3>
-                    <p class="lead mb-4">Ask me anything! I'm powered by Google's Gemini AI models.</p>
+                    <p class="lead mb-4">Ask me anything! I'm powered by advanced AI models - choose your preferred model above.</p>
                     <div class="row g-3 w-100" style="max-width: 600px;">
                         <div class="col-md-6">
                             <div class="card h-100 border-0 shadow-sm">
@@ -793,6 +909,11 @@
         }
         
         async function startConversationWithMessage(message) {
+            // Validate model selection
+            if (!validateModelSelection()) {
+                return;
+            }
+
             isLoading = true;
             updateSendButton();
             
@@ -806,12 +927,15 @@
             const loadingMessage = addLoadingMessage();
             
             try {
+                const modelConfig = getCurrentModelConfig();
                 const response = await fetch('/api/chat/start-conversation', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         message: message,
-                        origin: 'derplexity'
+                        origin: 'derplexity',
+                        model_provider: modelConfig.provider,
+                        model_name: modelConfig.model
                     })
                 });
                 
@@ -827,8 +951,10 @@
                     // Remove loading message
                     loadingMessage.remove();
                     
-                    // Add AI response with message ID
-                    addMessage('assistant', data.assistant_message.content, data.assistant_message.model_used, true, data.assistant_message.message_id);
+                    // Check if fallback was used and if thinking content is available
+                    const fallbackUsed = data.assistant_message.model_info?.fallback_used || false;
+                    // Add AI response with message ID (thinking content removed)
+                    addMessage('assistant', data.assistant_message.content, data.assistant_message.model_used, true, data.assistant_message.message_id, fallbackUsed);
                     
                     // Update conversations list
                     conversations.unshift(data.conversation);
@@ -854,6 +980,11 @@
         }
         
         async function sendMessage(message) {
+            // Validate model selection
+            if (!validateModelSelection()) {
+                return;
+            }
+
             isLoading = true;
             updateSendButton();
             
@@ -864,10 +995,15 @@
             const loadingMessage = addLoadingMessage();
             
             try {
+                const modelConfig = getCurrentModelConfig();
                 const response = await fetch(`/api/conversations/${currentConversationId}/messages`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
+                    body: JSON.stringify({ 
+                        message: message,
+                        model_provider: modelConfig.provider,
+                        model_name: modelConfig.model
+                    })
                 });
                 
                 if (!response.ok) throw new Error('Failed to send message');
@@ -878,8 +1014,10 @@
                 loadingMessage.remove();
                 
                 if (data.success) {
-                    // Add AI response with message ID
-                    addMessage('assistant', data.assistant_message.content, data.assistant_message.model_used, true, data.assistant_message.message_id);
+                    // Check if fallback was used and if thinking content is available
+                    const fallbackUsed = data.assistant_message.model_info?.fallback_used || false;
+                    // Add AI response with message ID (thinking content removed)
+                    addMessage('assistant', data.assistant_message.content, data.assistant_message.model_used, true, data.assistant_message.message_id, fallbackUsed);
                     
                     // Update conversation in list
                     const conv = conversations.find(c => c.conversation_id === currentConversationId);
@@ -938,17 +1076,22 @@
             if (!messages || messages.length === 0) return;
             
             messages.forEach(message => {
-                addMessage(message.role, message.content, message.model_used, false, message.message_id);
+                const fallbackUsed = message.model_info?.fallback_used || false;
+                // Thinking content removed
+                addMessage(message.role, message.content, message.model_used, false, message.message_id, fallbackUsed);
             });
             
             scrollToBottom();
         }
         
-        function addMessage(role, content, modelUsed = null, shouldScroll = true, messageId = null) {
+        function addMessage(role, content, modelUsed = null, shouldScroll = true, messageId = null, fallbackUsed = false) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
             if (messageId) {
                 messageDiv.dataset.messageId = messageId;
+            }
+            if (fallbackUsed) {
+                messageDiv.dataset.fallbackUsed = 'true';
             }
             
             const avatar = document.createElement('div');
@@ -961,9 +1104,13 @@
             const messageText = document.createElement('div');
             messageText.className = 'message-text';
             
+            // Thinking content display removed for simplicity
+            
             // Convert markdown to HTML
             const htmlContent = marked.parse(content);
-            messageText.innerHTML = htmlContent;
+            const responseDiv = document.createElement('div');
+            responseDiv.innerHTML = htmlContent;
+            messageText.appendChild(responseDiv);
             
             const messageMeta = document.createElement('div');
             messageMeta.className = 'message-meta';
@@ -972,7 +1119,13 @@
             let metaContent = `<span>${timestamp}</span>`;
             
             if (role === 'assistant' && modelUsed) {
-                metaContent += `<span class="model-badge">${modelUsed}</span>`;
+                // Check if this is a fallback model
+                const isFallback = messageDiv.dataset.fallbackUsed === 'true';
+                if (isFallback) {
+                    metaContent += `<span class="model-badge" style="background-color: #f59e0b; color: white;">Fallback: ${modelUsed}</span>`;
+                } else {
+                    metaContent += `<span class="model-badge">${modelUsed}</span>`;
+                }
             }
             
             // Add delete button for messages with IDs
