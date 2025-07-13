@@ -586,7 +586,23 @@ def analyze_step():
                 "model_used": f"{provider}:{model}",
                 "iterative_mode": True,
                 "fallback_info": getattr(result, 'fallback_info', None),  # Include fallback details if used
-                "conversation_id": getattr(result, 'conversation_id', None)  # Include conversation ID
+                "conversation_id": getattr(result, 'conversation_id', None),  # Include conversation ID
+                "iterations": [
+                    {
+                        "iteration": iter.iteration,
+                        "success": iter.success,
+                        "prompt_tokens": iter.prompt_tokens,
+                        "completion_tokens": iter.completion_tokens,
+                        "generation_time": iter.generation_time,
+                        "execution_time": iter.execution_time,
+                        "model_used": iter.model_used,
+                        "phase_description": iter.phase_description,
+                        "execution_result": iter.execution_result[:500] if iter.execution_result else "",  # Truncate for size
+                        "error_message": iter.error_message,
+                        "code": iter.code[:200] if iter.code else ""  # Truncate code for size
+                    }
+                    for iter in result.iterations
+                ]  # Convert iterations to JSON-serializable format
             }
             
         else:
