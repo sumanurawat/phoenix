@@ -928,6 +928,10 @@
                     Model interactions will appear here...
                 </div>
             `;
+            
+            // Reset stats when clearing conversation
+            totalStats = { tokens: 0, cost: 0, iterations: 0, time: 0 };
+            updateStats(0, 0, 0, 0);
         }
         
         // Modern Split Panel Controls
@@ -1123,6 +1127,10 @@
             const loadingSpinner = document.getElementById('loadingSpinner');
             const generateBtn = document.getElementById('generateCode');
             const modelConfig = getModelConfig();
+            
+            // Reset stats for new analysis
+            totalStats = { tokens: 0, cost: 0, iterations: 0, time: 0 };
+            updateStats(0, 0, 0, 0);
             
             // Update UI
             startBtn.disabled = true;
@@ -1479,19 +1487,7 @@
             updateAvailableModels();
             updateCostEstimate();
             
-            // Add test message to make conversation panel visible
-            addConversationMessage('user', 'Test Message', 'This is a test to ensure the conversation panel is visible.', {
-                duration: 2.5,
-                tokens: { input: 10, output: 0 }
-            });
-            
-            addConversationMessage('assistant', 'System Ready', 'Conversation panel is now loaded and ready to track model interactions.', {
-                duration: 1.0,
-                tokens: { input: 0, output: 15, cost: 0.0001 }
-            });
-            
-            // Update stats to show they're working
-            updateStats(25, 0.0001, 0, 3.5);
+            // Chat panel starts empty - stats will update during actual analysis
         });
     </script>
 </body>
