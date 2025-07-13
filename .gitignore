@@ -42,6 +42,15 @@ temp_logs/
 experiments/population/data/
 experiments/population/outputs/
 
+# Dataset Discovery - temporary downloads
+temp_datasets/
+*.csv
+*.tsv
+*.zip
+*.parquet
+*.h5
+*.hdf5
+
 # Environment variables
 .env
 .env.*
