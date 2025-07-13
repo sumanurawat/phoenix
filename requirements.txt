@@ -19,4 +19,4 @@ matplotlib==3.8.2  # For data visualization in analysis
 seaborn==0.13.0  # For statistical data visualization
 numpy==1.26.2  # For numerical computing in analysis
 docker==7.1.0  # For Docker container execution in dataset analysis
-scikit-learn==1.7.0  # For machine learning algorithms in analysis
+scikit-learn==1.6.1  # For machine learning algorithms in analysis (Python 3.9 compatible)
