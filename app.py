@@ -51,6 +51,7 @@ from api.robin_routes import robin_bp
 from api.deeplink_routes import deeplink_bp
 from api.auth_routes import auth_bp, login_required
 from api.stats_routes import stats_bp
+from api.dataset_routes import dataset_bp
 
 # Import services (AFTER Firebase initialization)
 from services.chat_service import ChatService
@@ -121,6 +122,7 @@ def create_app():
     app.register_blueprint(deeplink_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(stats_bp)
+    app.register_blueprint(dataset_bp)
     
     # Define routes
     @app.route('/')
@@ -174,6 +176,11 @@ def create_app():
                            query=query,
                            category=category,
                            results=results)
+    
+    @app.route('/datasets')
+    def dataset_discovery():
+        """Render the Dataset Discovery page."""
+        return render_template('dataset_discovery.html', title='Dataset Discovery - Phoenix AI')
     
     @app.route('/blogs')
     def blogs():
