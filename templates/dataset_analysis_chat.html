@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset Analysis Chat - Phoenix</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --secondary-color: #667eea;
+            --user-bubble: #3b82f6;
+            --ai-bubble: #f8fafc;
+            --ai-border: #e2e8f0;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --chat-background: #ffffff;
+            --sidebar-background: #fafbfc;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--chat-background);
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Main Layout */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Top Control Bar */
+        .control-bar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-bar h1 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .control-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .model-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .model-selector select {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 0.875rem;
+        }
+
+        .model-selector select option {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            background: var(--sidebar-background);
+            padding: 0.75rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            flex-shrink: 0;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            font-family: 'Monaco', monospace;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Chat Messages Area */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background: var(--chat-background);
+        }
+
+        /* Message Bubbles */
+        .message {
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.user {
+            align-items: flex-end;
+        }
+
+        .message.ai {
+            align-items: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 85%;
+            border-radius: 18px;
+            padding: 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .message.user .message-bubble {
+            background: var(--user-bubble);
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+
+        .message.ai .message-bubble {
+            background: var(--ai-bubble);
+            border: 1px solid var(--ai-border);
+            color: #1f2937;
+            border-bottom-left-radius: 6px;
+        }
+
+        /* Message Header */
+        .message-header {
+            padding: 1rem 1.25rem 0.75rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .message.user .message-header {
+            background: rgba(255, 255, 255, 0.1);
+            border-bottom-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .message-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .message-meta {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .expand-icon {
+            transition: transform 0.2s ease;
+            font-size: 0.75rem;
+        }
+
+        .message-header.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Message Content */
+        .message-content {
+            padding: 1.25rem;
+            display: none;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .message-content.expanded {
+            display: block;
+            animation: expandContent 0.3s ease-out;
+        }
+
+        @keyframes expandContent {
+            from {
+                opacity: 0;
+                max-height: 0;
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 1000px;
+                padding-top: 1.25rem;
+                padding-bottom: 1.25rem;
+            }
+        }
+
+        /* Analysis Steps as Chat Cards */
+        .analysis-step-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .analysis-step-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+        }
+
+        .analysis-step-card.active {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .analysis-step-card.completed {
+            border-color: var(--success-color);
+        }
+
+        .analysis-step-card.error {
+            border-color: var(--error-color);
+        }
+
+        .step-header {
+            padding: 1rem 1.25rem;
+            background: #f8fafc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .step-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .step-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-badge.pending {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .status-badge.running {
+            background: #dbeafe;
+            color: var(--primary-color);
+        }
+
+        .status-badge.completed {
+            background: #d1fae5;
+            color: var(--success-color);
+        }
+
+        .status-badge.error {
+            background: #fee2e2;
+            color: var(--error-color);
+        }
+
+        /* Code Blocks */
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.875rem;
+            margin: 0.75rem 0;
+            overflow-x: auto;
+        }
+
+        /* Loading Animation */
+        .thinking-dots {
+            display: inline-flex;
+            gap: 0.25rem;
+            align-items: center;
+        }
+
+        .thinking-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            animation: thinking 1.4s infinite ease-in-out;
+        }
+
+        .thinking-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .thinking-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes thinking {
+            0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1); }
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            padding: 1rem 1.5rem;
+            background: var(--sidebar-background);
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            transform: none;
+            cursor: not-allowed;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .control-bar {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .control-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .message-bubble {
+                max-width: 95%;
+            }
+
+            .stats-bar {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .stat-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        /* Scrollbar Styling */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Top Control Bar -->
+        <div class="control-bar">
+            <div class="d-flex align-items-center gap-3">
+                <h1><i class="fas fa-chart-line me-2"></i>Dataset Analysis Chat</h1>
+                <div class="small opacity-75">{{ dataset_ref|e }}</div>
+            </div>
+            
+            <div class="control-actions">
+                <div class="model-selector">
+                    <i class="fas fa-robot me-2"></i>
+                    <select id="modelProvider" onchange="updateAvailableModels()">
+                        <option value="gemini" selected>Gemini</option>
+                        <option value="claude" id="claudeOption">Claude</option>
+                    </select>
+                    <select id="modelName" class="ms-2">
+                        <option value="gemini-1.5-flash-8b">Flash 8B</option>
+                    </select>
+                </div>
+                
+                <button class="btn btn-sm btn-outline-light" onclick="clearChat()">
+                    <i class="fas fa-trash me-1"></i>Clear
+                </button>
+                
+                <button class="btn btn-sm btn-outline-light" onclick="goBack()">
+                    <i class="fas fa-arrow-left me-1"></i>Back
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-label">Tokens</div>
+                <div class="stat-value" id="totalTokens">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Cost</div>
+                <div class="stat-value" id="totalCost">$0.00</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Iterations</div>
+                <div class="stat-value" id="totalIterations">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Time</div>
+                <div class="stat-value" id="totalTime">0s</div>
+            </div>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="chat-messages" id="chatMessages">
+            <!-- Welcome Message -->
+            <div class="message ai">
+                <div class="message-bubble">
+                    <div class="message-header" onclick="toggleMessage(this)">
+                        <div class="message-title">
+                            <i class="fas fa-robot"></i>
+                            Welcome to Dataset Analysis
+                        </div>
+                        <div class="message-meta">
+                            <span>Just now</span>
+                            <i class="fas fa-chevron-down expand-icon"></i>
+                        </div>
+                    </div>
+                    <div class="message-content">
+                        <p>I'll help you analyze your dataset <strong>{{ dataset_ref|e }}</strong> step by step. I'll run automated analysis and provide insights, visualizations, and recommendations.</p>
+                        <p><strong>Analysis includes:</strong></p>
+                        <ul>
+                            <li>📊 Data loading and structure exploration</li>
+                            <li>🔍 Statistical analysis and summaries</li>
+                            <li>📈 Column-by-column deep dive</li>
+                            <li>💡 AI-powered insights and recommendations</li>
+                        </ul>
+                        <p>Click "Start Analysis" below to begin!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn-primary" id="startAnalysis" onclick="startAnalysis()">
+                <i class="fas fa-play"></i>
+                Start Analysis
+            </button>
+            
+            <button class="btn btn-outline-secondary" id="regenerateBtn" onclick="regenerateAnalysis()" style="display: none;">
+                <i class="fas fa-redo"></i>
+                Regenerate
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        const datasetRef = '{{ dataset_ref|e }}';
+        const fileCount = {{ file_count|default(0) }};
+        const sizeMb = {{ size_mb|default(0) }};
+        let totalStats = { tokens: 0, cost: 0, iterations: 0, time: 0 };
+        let analysisInProgress = false;
+
+        // Toggle message expansion
+        function toggleMessage(header) {
+            const content = header.nextElementSibling;
+            const isExpanded = content.classList.contains('expanded');
+            
+            if (isExpanded) {
+                content.classList.remove('expanded');
+                header.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+                header.classList.add('expanded');
+            }
+        }
+
+        // Auto-expand welcome message on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const welcomeHeader = document.querySelector('.message-header');
+            const welcomeContent = welcomeHeader.nextElementSibling;
+            welcomeContent.classList.add('expanded');
+            welcomeHeader.classList.add('expanded');
+            
+            initializeEnvironment();
+        });
+
+        // Add message to chat
+        function addChatMessage(type, title, content, metadata = {}) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.id = messageId;
+            
+            const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            message.innerHTML = `
+                <div class="message-bubble">
+                    <div class="message-header" onclick="toggleMessage(this)">
+                        <div class="message-title">
+                            <i class="fas fa-${type === 'user' ? 'user' : 'robot'}"></i>
+                            ${title}
+                        </div>
+                        <div class="message-meta">
+                            <span>${timeStr}</span>
+                            ${metadata.duration ? `<span>${metadata.duration}s</span>` : ''}
+                            ${metadata.tokens ? `<span>${metadata.tokens.input + metadata.tokens.output} tokens</span>` : ''}
+                            <i class="fas fa-chevron-down expand-icon"></i>
+                        </div>
+                    </div>
+                    <div class="message-content">
+                        ${content}
+                    </div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(message);
+            
+            // Auto-scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            return messageId;
+        }
+
+        // Add analysis step card
+        function addAnalysisStep(stepNumber, title, status = 'pending') {
+            const stepId = `step-${stepNumber}`;
+            const statusIcons = {
+                pending: 'clock',
+                running: 'spinner fa-spin',
+                completed: 'check-circle',
+                error: 'exclamation-circle'
+            };
+            
+            const stepCard = `
+                <div class="analysis-step-card ${status}" id="${stepId}">
+                    <div class="step-header" onclick="toggleStep('${stepId}')">
+                        <div class="step-title">
+                            <i class="fas fa-${statusIcons[status]}"></i>
+                            Step ${stepNumber}: ${title}
+                        </div>
+                        <div class="step-status">
+                            <span class="status-badge ${status}">${status}</span>
+                            <i class="fas fa-chevron-down expand-icon"></i>
+                        </div>
+                    </div>
+                    <div class="message-content" id="${stepId}-content">
+                        ${status === 'running' ? '<div class="thinking-dots"><span></span><span></span><span></span></div> Processing...' : 'Waiting to start...'}
+                    </div>
+                </div>
+            `;
+            
+            return stepCard;
+        }
+
+        // Update stats
+        function updateStats(newTokens = 0, newCost = 0, newIterations = 0, newTime = 0) {
+            totalStats.tokens += newTokens;
+            totalStats.cost += newCost;
+            totalStats.iterations += newIterations;
+            totalStats.time += newTime;
+            
+            document.getElementById('totalTokens').textContent = totalStats.tokens.toLocaleString();
+            document.getElementById('totalCost').textContent = `$${totalStats.cost.toFixed(4)}`;
+            document.getElementById('totalIterations').textContent = totalStats.iterations;
+            document.getElementById('totalTime').textContent = `${totalStats.time.toFixed(1)}s`;
+        }
+
+        // Environment setup
+        function initializeEnvironment() {
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            
+            if (!isLocalhost) {
+                const claudeOption = document.getElementById('claudeOption');
+                if (claudeOption) {
+                    claudeOption.style.display = 'none';
+                }
+            }
+            
+            updateAvailableModels();
+        }
+
+        // Model management
+        const availableModels = {
+            gemini: [
+                {id: 'gemini-1.5-flash-8b', name: 'Flash 8B (Fast)'},
+                // Additional models for localhost
+            ],
+            claude: [
+                {id: 'claude-sonnet-4-20250514', name: 'Claude 4 Sonnet'},
+            ]
+        };
+
+        function updateAvailableModels() {
+            const provider = document.getElementById('modelProvider').value;
+            const modelSelect = document.getElementById('modelName');
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            
+            const models = availableModels[provider] || [];
+            modelSelect.innerHTML = '';
+            
+            models.forEach(model => {
+                if (provider === 'claude' && !isLocalhost) return; // Skip Claude in production
+                const option = document.createElement('option');
+                option.value = model.id;
+                option.textContent = model.name;
+                modelSelect.appendChild(option);
+            });
+        }
+
+        // Start analysis
+        async function startAnalysis() {
+            if (analysisInProgress) return;
+            
+            analysisInProgress = true;
+            const startBtn = document.getElementById('startAnalysis');
+            startBtn.disabled = true;
+            startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+            
+            // Reset stats
+            totalStats = { tokens: 0, cost: 0, iterations: 0, time: 0 };
+            updateStats(0, 0, 0, 0);
+            
+            // Add user message
+            addChatMessage('user', 'Start Dataset Analysis', `Please analyze the dataset <strong>${datasetRef}</strong> using the selected AI model. Provide comprehensive insights, visualizations, and recommendations.`);
+            
+            // Add analysis steps
+            const steps = [
+                'Data Loading & Overview',
+                'Statistical Analysis',
+                'Column Analysis',
+                'AI Insights & Recommendations'
+            ];
+            
+            let stepsContent = '<div class="mt-3">';
+            steps.forEach((title, index) => {
+                stepsContent += addAnalysisStep(index + 1, title);
+            });
+            stepsContent += '</div>';
+            
+            addChatMessage('ai', 'Analysis Plan', `I'll analyze your dataset in ${steps.length} comprehensive steps:${stepsContent}`);
+            
+            // Run analysis steps
+            try {
+                for (let i = 0; i < steps.length; i++) {
+                    await runAnalysisStep(i + 1, steps[i]);
+                }
+                
+                // Complete
+                addChatMessage('ai', 'Analysis Complete', 
+                    '<div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>Dataset analysis completed successfully! Review the results above and use the insights for your project.</div>');
+                
+                startBtn.innerHTML = '<i class="fas fa-check"></i> Analysis Complete';
+                document.getElementById('regenerateBtn').style.display = 'inline-block';
+                
+            } catch (error) {
+                addChatMessage('ai', 'Analysis Failed', 
+                    `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Analysis failed: ${error.message}</div>`);
+                
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Retry Analysis';
+                startBtn.disabled = false;
+            }
+            
+            analysisInProgress = false;
+        }
+
+        // Run individual analysis step
+        async function runAnalysisStep(stepNumber, description) {
+            const stepId = `step-${stepNumber}`;
+            const stepCard = document.getElementById(stepId);
+            const stepContent = document.getElementById(`${stepId}-content`);
+            
+            // Update step to running
+            stepCard.className = 'analysis-step-card running';
+            stepCard.querySelector('.status-badge').textContent = 'running';
+            stepCard.querySelector('.status-badge').className = 'status-badge running';
+            stepCard.querySelector('.step-title i').className = 'fas fa-spinner fa-spin';
+            stepContent.innerHTML = '<div class="thinking-dots"><span></span><span></span><span></span></div> Processing...';
+            
+            try {
+                const modelConfig = {
+                    provider: document.getElementById('modelProvider').value,
+                    model: document.getElementById('modelName').value,
+                    iterative_mode: true,
+                    max_iterations: 5
+                };
+                
+                const response = await fetch('/api/datasets/analyze/step', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        dataset_ref: datasetRef,
+                        step: stepNumber,
+                        description: description,
+                        model_config: modelConfig
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update stats from iterations
+                    if (data.result.iterations) {
+                        data.result.iterations.forEach(iteration => {
+                            const tokens = (iteration.prompt_tokens || 0) + (iteration.completion_tokens || 0);
+                            const cost = (iteration.prompt_tokens || 0) * 0.000003 + (iteration.completion_tokens || 0) * 0.000015;
+                            const time = (iteration.generation_time || 0) + (iteration.execution_time || 0);
+                            updateStats(tokens, cost, 1, time);
+                        });
+                    }
+                    
+                    // Update step to completed
+                    stepCard.className = 'analysis-step-card completed';
+                    stepCard.querySelector('.status-badge').textContent = 'completed';
+                    stepCard.querySelector('.status-badge').className = 'status-badge completed';
+                    stepCard.querySelector('.step-title i').className = 'fas fa-check-circle';
+                    
+                    // Add results
+                    let resultContent = '';
+                    if (data.result.output) {
+                        resultContent += `<div class="code-block">${data.result.output}</div>`;
+                    }
+                    if (data.result.insights && data.result.insights.length > 0) {
+                        resultContent += '<h6>Key Insights:</h6><ul>';
+                        data.result.insights.forEach(insight => {
+                            resultContent += `<li>${insight}</li>`;
+                        });
+                        resultContent += '</ul>';
+                    }
+                    
+                    stepContent.innerHTML = resultContent;
+                    
+                } else {
+                    throw new Error(data.error?.message || 'Step failed');
+                }
+                
+            } catch (error) {
+                // Update step to error
+                stepCard.className = 'analysis-step-card error';
+                stepCard.querySelector('.status-badge').textContent = 'error';
+                stepCard.querySelector('.status-badge').className = 'status-badge error';
+                stepCard.querySelector('.step-title i').className = 'fas fa-exclamation-circle';
+                stepContent.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+                
+                throw error;
+            }
+        }
+
+        // Utility functions
+        function clearChat() {
+            if (confirm('Are you sure you want to clear the chat?')) {
+                location.reload();
+            }
+        }
+
+        function goBack() {
+            window.history.back();
+        }
+
+        function regenerateAnalysis() {
+            if (confirm('Regenerate the analysis? This will clear current results.')) {
+                location.reload();
+            }
+        }
+
+        function toggleStep(stepId) {
+            const stepCard = document.getElementById(stepId);
+            const content = stepCard.querySelector('.message-content');
+            const header = stepCard.querySelector('.step-header');
+            
+            const isExpanded = content.classList.contains('expanded');
+            
+            if (isExpanded) {
+                content.classList.remove('expanded');
+                header.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+                header.classList.add('expanded');
+            }
+        }
+    </script>
+</body>
+</html>
