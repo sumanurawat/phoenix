@@ -654,7 +654,7 @@ pd.set_option('display.width', 1000)
             logger.info(f"✅ Code syntax validation passed")
         except SyntaxError as e:
             logger.warning(f"⚠️ Syntax error detected in extracted code: {e}")
-            logger.warning(f"🔍 Problematic line area: {code.split('\\n')[max(0, e.lineno-3):e.lineno+2] if e.lineno else 'Unknown'}")
+            logger.warning(f"🔍 Problematic line area: {code.split(chr(10))[max(0, e.lineno-3):e.lineno+2] if e.lineno else 'Unknown'}")
             
             # Try to fix common issues
             code = self._attempt_syntax_fixes(code)
