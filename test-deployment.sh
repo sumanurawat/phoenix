@@ -1,13 +1,29 @@
 #!/bin/bash
 
 # Phoenix Deployment Test Script
-# Tests deployment configuration before pushing to production
+# Tests deployment configuration for both production and dev environments
 
 set -e  # Exit on any error
 
 PROJECT_ID="phoenix-project-386"
 REGION="us-central1"
-SERVICE_NAME="phoenix"
+
+# Default to production, but allow override
+ENVIRONMENT="${1:-production}"
+
+if [ "$ENVIRONMENT" = "dev" ] || [ "$ENVIRONMENT" = "development" ]; then
+    SERVICE_NAME="phoenix-dev"
+    IMAGE_TAG="gcr.io/${PROJECT_ID}/phoenix-dev"
+    echo "🧪 Testing DEV environment deployment"
+elif [ "$ENVIRONMENT" = "prod" ] || [ "$ENVIRONMENT" = "production" ]; then
+    SERVICE_NAME="phoenix"
+    IMAGE_TAG="gcr.io/${PROJECT_ID}/phoenix"
+    echo "🚀 Testing PRODUCTION environment deployment"
+else
+    echo "❌ Invalid environment: $ENVIRONMENT"
+    echo "Usage: $0 [production|dev]"
+    exit 1
+fi
 
 echo "🚀 Phoenix Deployment Test Script"
 echo "=================================="
@@ -150,6 +166,37 @@ else
     echo "   gcloud iam service-accounts create phoenix-service-account --project=$PROJECT_ID"
 fi
 
+# Check if the Cloud Run service exists and validate its configuration
+if gcloud run services describe "$SERVICE_NAME" --region="$REGION" --project="$PROJECT_ID" >/dev/null 2>&1; then
+    echo "✅ Cloud Run service exists: $SERVICE_NAME"
+    
+    # Check resource configuration
+    MEMORY=$(gcloud run services describe "$SERVICE_NAME" --region="$REGION" --project="$PROJECT_ID" --format="value(spec.template.spec.containers[0].resources.limits.memory)")
+    CPU=$(gcloud run services describe "$SERVICE_NAME" --region="$REGION" --project="$PROJECT_ID" --format="value(spec.template.spec.containers[0].resources.limits.cpu)")
+    
+    echo "📊 Current resources: ${MEMORY:-default} memory, ${CPU:-default} CPU"
+    
+    # Validate minimum resources for ML workloads
+    if [ "$MEMORY" = "256Mi" ]; then
+        echo "⚠️  WARNING: 256MB memory may cause startup timeouts with ML libraries"
+        echo "🔧 Recommended: Increase to 512Mi with:"
+        echo "   gcloud run services update $SERVICE_NAME --memory=512Mi --region=$REGION --project=$PROJECT_ID"
+    elif [ -z "$MEMORY" ] || [ "$MEMORY" = "default" ]; then
+        echo "ℹ️  Using default memory (512Mi)"
+    else
+        echo "✅ Memory configuration looks good: $MEMORY"
+    fi
+    
+    if [ "$CPU" = "500m" ] && [[ "$MEMORY" == *"512"* ]]; then
+        echo "ℹ️  CPU at 0.5 cores - should be sufficient for most workloads"
+    elif [ -z "$CPU" ] || [ "$CPU" = "default" ]; then
+        echo "ℹ️  Using default CPU (1 core)"
+    fi
+else
+    echo "ℹ️  Cloud Run service doesn't exist yet: $SERVICE_NAME"
+    echo "   Will be created during deployment"
+fi
+
 echo ""
 echo "📊 Step 6: Summary..."
 echo "----------------------"
@@ -161,10 +208,17 @@ if [ ${#MISSING_SECRETS[@]} -eq 0 ]; then
     echo ""
     echo "🚀 Ready for deployment!"
     echo ""
-    echo "To deploy manually:"
-    echo "   gcloud builds submit --config cloudbuild.yaml --project=$PROJECT_ID"
-    echo ""
-    echo "Or push to main branch to trigger automatic deployment."
+    if [ "$ENVIRONMENT" = "dev" ] || [ "$ENVIRONMENT" = "development" ]; then
+        echo "To deploy to DEV manually:"
+        echo "   gcloud builds submit --config cloudbuild-dev.yaml --project=$PROJECT_ID"
+        echo ""
+        echo "Or create a dev branch and push to trigger dev deployment."
+    else
+        echo "To deploy to PRODUCTION manually:"
+        echo "   gcloud builds submit --config cloudbuild.yaml --project=$PROJECT_ID"
+        echo ""
+        echo "Or push to main branch to trigger automatic deployment."
+    fi
 else
     echo "❌ Deployment will fail due to missing secrets"
     echo "🔧 Fix the missing secrets first, then re-run this test"

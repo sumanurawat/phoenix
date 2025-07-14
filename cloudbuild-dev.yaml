@@ -1,5 +1,5 @@
 steps:
-  # Build the container image for staging
+  # Build the container image for dev
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/$PROJECT_ID/phoenix-dev', '.']
   
@@ -7,7 +7,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/phoenix-dev']
   
-  # Deploy container image to Cloud Run (staging)
+  # Deploy container image to Cloud Run (DEV environment)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -23,20 +23,18 @@ steps:
     - '--allow-unauthenticated'
     - '--service-account'
     - 'phoenix-service-account@phoenix-project-386.iam.gserviceaccount.com'
-    - '--cpu'
-    - '500m'
     - '--memory'
-    - '256Mi'
-    - '--max-instances'
-    - '3'
-    - '--timeout'
-    - '300'
-    - '--concurrency'
+    - '512Mi'
+    - '--cpu'
     - '1'
+    - '--max-instances'
+    - '5'
+    - '--concurrency'
+    - '10'
     - '--update-secrets'
-    - 'GEMINI_API_KEY=phoenix-gemini-api-key:latest,SECRET_KEY=phoenix-secret-key:latest,GOOGLE_API_KEY=phoenix-google-api-key:latest,GOOGLE_SEARCH_ENGINE_ID=phoenix-search-engine-id:latest,NEWSDATA_API_KEY=phoenix-newsdata-api-key:latest,FIREBASE_API_KEY=phoenix-firebase-api-key:latest,GOOGLE_CLIENT_ID=phoenix-google-client-id:latest,GOOGLE_CLIENT_SECRET=phoenix-google-client-secret:latest,KAGGLE_USERNAME=phoenix-kaggle-username:latest,KAGGLE_KEY=phoenix-kaggle-key:latest,GROK_API_KEY=phoenix-grok-api-key:latest'
+    - 'GEMINI_API_KEY=phoenix-gemini-api-key:latest,SECRET_KEY=phoenix-secret-key:latest,GOOGLE_API_KEY=phoenix-google-api-key:latest,GOOGLE_SEARCH_ENGINE_ID=phoenix-search-engine-id:latest,NEWSDATA_API_KEY=phoenix-newsdata-api-key:latest,KAGGLE_USERNAME=phoenix-kaggle-username:latest,KAGGLE_KEY=phoenix-kaggle-key:latest,CLAUDE_API_KEY=phoenix-claude-api-key:latest,GROK_API_KEY=phoenix-grok-api-key:latest'
     - '--update-env-vars'
-    - 'DEFAULT_MODEL=gemini-1.5-flash-8b,FALLBACK_MODEL=gemini-1.5-flash,PRODUCTION_URL=https://phoenix-dev-234619602247.us-central1.run.app'
+    - 'DEFAULT_MODEL=gemini-1.5-flash-8b,FALLBACK_MODEL=gemini-1.5-flash,FLASK_ENV=development'
 
 images:
   - 'gcr.io/$PROJECT_ID/phoenix-dev'
