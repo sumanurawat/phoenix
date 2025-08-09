@@ -420,6 +420,11 @@ Keep your response concise and actionable."""
                 "error_type": type(e).__name__
             }), 500
     
+    @app.route('/video-generation')
+    def video_generation():
+        """Render the Video Generation page (placeholder)."""
+        return render_template('video_generation.html', title='Video Generation - Phoenix AI')
+    
     return app
 
 # Create the application
