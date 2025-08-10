@@ -52,6 +52,7 @@ from api.deeplink_routes import deeplink_bp
 from api.auth_routes import auth_bp, login_required
 from api.stats_routes import stats_bp
 from api.dataset_routes import dataset_bp
+from api.video_routes import video_bp
 
 # Import services (AFTER Firebase initialization)
 from services.chat_service import ChatService
@@ -123,6 +124,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(stats_bp)
     app.register_blueprint(dataset_bp)
+    app.register_blueprint(video_bp)
     
     # Define routes
     @app.route('/')
@@ -419,6 +421,24 @@ Keep your response concise and actionable."""
                 "error": str(e),
                 "error_type": type(e).__name__
             }), 500
+
+    @app.route('/videos/<path:relpath>')
+    def serve_generated_video(relpath: str):
+        """Serve locally generated video files saved under VIDEO_OUTPUT_DIR (default generated_videos).
+
+        Security: ensures the resolved absolute path stays within the base directory to prevent traversal.
+        """
+        from flask import abort, send_file
+        base_dir = os.getenv('VIDEO_OUTPUT_DIR', 'generated_videos')
+        # Normalize paths
+        base_abs = os.path.abspath(base_dir)
+        target_abs = os.path.abspath(os.path.join(base_dir, relpath))
+        if not target_abs.startswith(base_abs):
+            abort(403)
+        if not os.path.exists(target_abs):
+            abort(404)
+        # Basic content type assumption (could inspect)
+        return send_file(target_abs, mimetype='video/mp4')
     
     @app.route('/video-generation')
     def video_generation():

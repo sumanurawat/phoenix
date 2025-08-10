@@ -72,3 +72,6 @@ temp_client_secret.txt
 # Log files (for local analysis only)
 temp_logs/
 !temp_logs/.gitkeep
+
+# Generated video assets (do not commit large binary outputs)
+generated_videos/
