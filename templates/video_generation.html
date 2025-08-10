@@ -14,13 +14,212 @@
 <div class="container py-4">
     <a href="/" class="btn btn-link mb-3"><i class="fas fa-arrow-left"></i> Back</a>
     <h1 class="mb-3">AI Video Generation (Beta)</h1>
-    <p class="text-muted">This page is a placeholder. The multi-prompt video generation UI will be implemented here.</p>
+    <p class="text-muted">Paste a JSON array of prompt strings. We'll validate it and prepare a table for generation.</p>
 
-    <div class="placeholder-box mt-4">
-        <p class="mb-2"><i class="fas fa-video fa-2x mb-3"></i></p>
-        <h5 class="mb-3">Coming Soon</h5>
-        <p class="mb-0">An interface to submit multiple prompts, watch real-time generation progress, and preview resulting clips.</p>
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <label for="promptJson" class="form-label fw-semibold">Prompt JSON Input</label>
+            <textarea id="promptJson" class="form-control" rows="14" placeholder='[\n  "A cat playing piano",\n  "A sunset over cyberpunk city"\n]'></textarea>
+            <div class="d-flex gap-2 mt-3">
+                <button id="validateBtn" class="btn btn-primary"><i class="fas fa-check"></i> Validate & Prepare</button>
+                <button id="startBtn" class="btn btn-success d-none"><i class="fas fa-play"></i> Start Generation</button>
+                <button id="loadSampleBtn" class="btn btn-outline-secondary"><i class="fas fa-paste"></i> Load Sample</button>
+                <button id="clearBtn" class="btn btn-outline-danger"><i class="fas fa-eraser"></i> Clear</button>
+            </div>
+            <div id="errorBox" class="alert alert-danger mt-3 d-none small"></div>
+            <div id="successBox" class="alert alert-success mt-3 d-none small"></div>
+        </div>
+        <div class="col-lg-7">
+            <div id="tableContainer" class="d-none">
+                <h5 class="mb-3">Prompt Batch</h5>
+                <div class="table-responsive">
+                    <table class="table table-dark table-sm align-middle" id="promptTable">
+                        <thead>
+                            <tr>
+                                <th style="width:35%">Prompt</th>
+                                <th style="width:12%">Status</th>
+                                <th style="width:33%">Video / Preview</th>
+                                <th style="width:20%">Path</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="placeholderPanel" class="placeholder-box mt-2">
+                <p class="mb-2"><i class="fas fa-video fa-2x mb-3"></i></p>
+                <h5 class="mb-3">Awaiting Valid Prompts</h5>
+                <p class="mb-0">Enter a JSON array like:<br><code>["prompt1", "prompt2", "prompt3"]</code></p>
+            </div>
+        </div>
     </div>
 </div>
+<script>
+    (function(){
+        const promptInput = document.getElementById('promptJson');
+    const validateBtn = document.getElementById('validateBtn');
+    const startBtn = document.getElementById('startBtn');
+        const loadSampleBtn = document.getElementById('loadSampleBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const errorBox = document.getElementById('errorBox');
+        const successBox = document.getElementById('successBox');
+        const tableContainer = document.getElementById('tableContainer');
+        const placeholderPanel = document.getElementById('placeholderPanel');
+        const promptTableBody = document.querySelector('#promptTable tbody');
+
+        const sample = [
+            "A cat playing piano in a jazz bar, cinematic lighting",
+            "Slow orbital shot of a futuristic eco city at sunrise",
+            "Drone flyover of terraced rice fields with morning mist"
+        ];
+
+        loadSampleBtn.addEventListener('click', () => {
+            promptInput.value = JSON.stringify(sample, null, 2);
+            hideMsg(errorBox); hideMsg(successBox);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            promptInput.value = '';
+            promptTableBody.innerHTML = '';
+            tableContainer.classList.add('d-none');
+            placeholderPanel.classList.remove('d-none');
+            hideMsg(errorBox); hideMsg(successBox);
+        });
+
+        function showMsg(el, html){ el.innerHTML = html; el.classList.remove('d-none'); }
+        function hideMsg(el){ el.classList.add('d-none'); }
+
+        function validatePrompts(raw){
+            if(!raw || !raw.trim()) return { ok:false, reason:'Input is empty.' };
+            let data;
+            try { data = JSON.parse(raw); } catch(e){ return { ok:false, reason:'Invalid JSON: ' + e.message }; }
+            if(!Array.isArray(data)) return { ok:false, reason:'JSON must be an array of strings.' };
+            if(data.length === 0) return { ok:false, reason:'Array is empty. Provide at least one prompt.' };
+            if(data.length > 50) return { ok:false, reason:'Too many prompts ('+data.length+'). Limit to 50 for now.' };
+            for(let i=0;i<data.length;i++){
+                if(typeof data[i] !== 'string' || !data[i].trim()){
+                    return { ok:false, reason:`Element at index ${i} is not a non-empty string.` };
+                }
+                if(data[i].length > 400){
+                    return { ok:false, reason:`Prompt at index ${i} exceeds 400 characters.` };
+                }
+            }
+            return { ok:true, prompts:data };
+        }
+
+        let currentPrompts = [];
+        let currentJobId = null;
+
+        function renderTable(prompts){
+            promptTableBody.innerHTML = '';
+            prompts.forEach((p, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="small"><div class="text-wrap" style="white-space:pre-wrap;">${escapeHtml(p)}</div></td>
+                    <td><span class="badge bg-secondary" id="status-${idx}">Pending</span></td>
+                    <td>
+                        <div class="video-slot" id="video-${idx}">
+                            <div class="text-muted small">No video yet</div>
+                        </div>
+                    </td>
+                    <td class="small" id="path-${idx}"><span class="text-muted">—</span></td>`;
+                promptTableBody.appendChild(tr);
+            });
+            currentPrompts = prompts;
+            startBtn.classList.remove('d-none');
+        }
+
+        function escapeHtml(str){
+            return str.replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+        }
+
+        validateBtn.addEventListener('click', () => {
+            hideMsg(errorBox); hideMsg(successBox);
+            const result = validatePrompts(promptInput.value);
+            if(!result.ok){
+                showMsg(errorBox, `<strong>Invalid Input:</strong> ${result.reason}<br><br>Sample Format:<pre class='mb-0'>[\n  "prompt1",\n  "prompt2",\n  "prompt3"\n]</pre>`);
+                return;
+            }
+            renderTable(result.prompts);
+            placeholderPanel.classList.add('d-none');
+            tableContainer.classList.remove('d-none');
+            showMsg(successBox, `Validated ${result.prompts.length} prompt(s). Ready for generation.`);
+        });
+
+        startBtn.addEventListener('click', async () => {
+            hideMsg(errorBox); hideMsg(successBox);
+            startBtn.disabled = true;
+            startBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Starting...';
+            try {
+                const resp = await fetch('/api/video/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompts: currentPrompts, options: { model: 'veo-3.0-fast-generate-001', aspect_ratio: '16:9', duration_seconds: 8 } })
+                });
+                const data = await resp.json();
+                if(!data.success){
+                    throw new Error(data.error || 'Failed to start job');
+                }
+                currentJobId = data.job_id;
+                showMsg(successBox, 'Job started: ' + currentJobId);
+                listenToStream(currentJobId);
+            } catch(e){
+                showMsg(errorBox, 'Error starting generation: ' + e.message);
+                startBtn.disabled = false;
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Start Generation';
+            }
+        });
+
+        function listenToStream(jobId){
+            const es = new EventSource(`/api/video/stream/${jobId}`);
+            es.addEventListener('prompt.started', (ev) => {
+                const d = JSON.parse(ev.data); const i = d.prompt_index; setStatus(i, 'Generating', 'info');
+            });
+            es.addEventListener('prompt.completed', (ev) => {
+                const d = JSON.parse(ev.data); const i = d.prompt_index; setStatus(i, 'Completed', 'success');
+                const slot = document.getElementById('video-' + i);
+                const pathCell = document.getElementById('path-' + i);
+                let displayPath = null;
+                if(pathCell){
+                    if(d.gcs_uris && d.gcs_uris.length){
+                        displayPath = d.gcs_uris[0];
+                    } else if(d.local_paths && d.local_paths.length){
+                        displayPath = d.local_paths[0];
+                    } else if(d.video_url){
+                        displayPath = d.video_url;
+                    }
+                    if(displayPath) pathCell.textContent = displayPath;
+                }
+                if(d.video_url){
+                    if(d.video_url.startsWith('gs://')){
+                        slot.innerHTML = `<div class='text-muted small'>Stored in GCS</div>`;
+                    } else {
+                        // If it's a local filesystem-relative path (generated_videos/...), rewrite to /videos/ endpoint
+                        let src = d.video_url;
+                        if(!/^https?:\/\//.test(src) && !src.startsWith('/')){
+                            // assume relative path under generated_videos
+                            const rel = src.replace(/^generated_videos\/?/, '');
+                            src = '/videos/' + rel;
+                        }
+                        slot.innerHTML = `<video src="${src}" controls style="max-width:100%; height:auto;"></video>`;
+                    }
+                }
+            });
+            es.addEventListener('prompt.failed', (ev) => {
+                const d = JSON.parse(ev.data); const i = d.prompt_index; setStatus(i, 'Failed', 'danger');
+            });
+            es.addEventListener('job.completed', () => {
+                showMsg(successBox, 'Job completed.');
+                startBtn.disabled = false;
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Restart Generation';
+            });
+        }
+
+        function setStatus(idx, text, color){
+            const el = document.getElementById('status-' + idx);
+            if(el){ el.className = 'badge bg-' + color; el.textContent = text; }
+        }
+    })();
+</script>
 </body>
 </html>
