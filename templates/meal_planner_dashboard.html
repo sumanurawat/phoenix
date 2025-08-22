@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Phoenix AI Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .meal-planner-dashboard {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+        .conversations-panel, .right-panel {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .conversation-card {
+            border: 1px solid #e9ecef;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .conversation-card:hover {
+            border-color: #0d6efd;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+    </style>
+</head>
+<body>
+    <!-- A simplified nav bar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-robot"></i> Phoenix AI
+            </a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.profile') }}">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="meal-planner-dashboard">
+        <header class="dashboard-header">
+            <h1>Meal Planner</h1>
+            <a href="{{ url_for('meal_planner.new_chat') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Start New Planning Session
+            </a>
+        </header>
+
+        <div class="dashboard-grid">
+            <main class="conversations-panel">
+                <h2>Recent Conversations</h2>
+                <!-- Placeholder for conversation list -->
+                <div class="conversation-card" onclick="window.location.href='{{ url_for('meal_planner.show_chat', conversation_id='sample123') }}'">
+                    <h5>Week of Aug 25th Planning</h5>
+                    <p class="text-muted small">Last message: 2 hours ago</p>
+                </div>
+                <div class="text-center text-muted mt-4">
+                    <p>No recent conversations. Start a new one!</p>
+                </div>
+            </main>
+
+            <aside class="right-panel">
+                <section class="quick-stats mb-4">
+                    <h2>Your Progress</h2>
+                    <!-- Placeholder for stats -->
+                    <p class="text-muted">Analytics will be shown here.</p>
+                </section>
+
+                <section class="upcoming-meals">
+                    <h2>This Week's Plan</h2>
+                    <!-- Placeholder for meal plan preview -->
+                    <p class="text-muted">This week's meal plan will appear here.</p>
+                </section>
+            </aside>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

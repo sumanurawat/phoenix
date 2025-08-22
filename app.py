@@ -53,6 +53,7 @@ from api.auth_routes import auth_bp, login_required
 from api.stats_routes import stats_bp
 from api.dataset_routes import dataset_bp
 from api.video_routes import video_bp
+from api.meal_planner_routes import meal_planner_bp
 
 # Import services (AFTER Firebase initialization)
 from services.chat_service import ChatService
@@ -125,6 +126,7 @@ def create_app():
     app.register_blueprint(stats_bp)
     app.register_blueprint(dataset_bp)
     app.register_blueprint(video_bp)
+    app.register_blueprint(meal_planner_bp)
     
     # Define routes
     @app.route('/')
