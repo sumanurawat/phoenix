@@ -7,6 +7,22 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
     
+    // Specific rules for users collection
+    match /users/{userId} {
+      allow read, write: if request.auth != null 
+        && request.auth.uid == userId;
+      allow create: if request.auth != null 
+        && request.auth.uid == request.resource.data.firebase_uid;
+    }
+    
+    // Specific rules for user subscriptions
+    match /user_subscriptions/{subscriptionId} {
+      allow read, write: if request.auth != null 
+        && request.auth.uid == resource.data.firebase_uid;
+      allow create: if request.auth != null 
+        && request.auth.uid == request.resource.data.firebase_uid;
+    }
+    
     // Specific rules for chat conversations
     match /conversations/{conversationId} {
       allow read, write: if request.auth != null 

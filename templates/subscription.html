@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Phoenix AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        .subscription-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+        .subscription-card:hover {
+            border-color: #007bff;
+            box-shadow: 0 8px 25px rgba(0,123,255,.15);
+        }
+        .subscription-card.current {
+            border-color: #28a745;
+            background: linear-gradient(135deg, #f8fff9 0%, #e8f5e8 100%);
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        .feature-list i {
+            color: #28a745;
+            margin-right: 10px;
+        }
+        .price-badge {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .status-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .loading {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">Phoenix AI</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/profile">Profile</a>
+                <a class="nav-link" href="/logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <h1 class="text-center mb-4">
+                    <i class="fas fa-crown text-warning"></i>
+                    Subscription Management
+                </h1>
+                
+                <!-- Current Status -->
+                <div id="current-status" class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Current Status</h5>
+                        <div class="d-flex justify-content-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Premium Plan -->
+                <div class="row">
+                    <div class="col-md-6 mx-auto">
+                        <div class="subscription-card card position-relative">
+                            <div class="card-body text-center p-4">
+                                <h3 class="card-title">Premium Monthly</h3>
+                                <div class="price-badge mb-3">$5.00<small class="text-muted">/month</small></div>
+                                
+                                <ul class="feature-list mb-4">
+                                    <li><i class="fas fa-check"></i>Unlimited AI conversations</li>
+                                    <li><i class="fas fa-check"></i>Advanced analytics dashboard</li>
+                                    <li><i class="fas fa-check"></i>Premium AI models access</li>
+                                    <li><i class="fas fa-check"></i>Priority support</li>
+                                    <li><i class="fas fa-check"></i>Export conversation history</li>
+                                    <li><i class="fas fa-check"></i>Custom AI personalities</li>
+                                </ul>
+                                
+                                <button id="subscribe-btn" class="btn btn-primary btn-lg w-100" disabled>
+                                    <span class="loading">
+                                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                                    </span>
+                                    <span class="btn-text">Subscribe Now</span>
+                                </button>
+                                
+                                <button id="cancel-btn" class="btn btn-outline-danger btn-lg w-100 mt-2" style="display: none;">
+                                    Cancel Subscription
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Free Plan Info -->
+                <div class="row mt-4">
+                    <div class="col-md-6 mx-auto">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h4 class="card-title">Free Plan</h4>
+                                <p class="text-muted">Limited features for casual users</p>
+                                <ul class="feature-list">
+                                    <li><i class="fas fa-check text-secondary"></i>5 AI conversations per day</li>
+                                    <li><i class="fas fa-check text-secondary"></i>Basic search features</li>
+                                    <li><i class="fas fa-check text-secondary"></i>Standard AI models</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let stripe;
+        let subscriptionStatus = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSubscriptionStatus();
+            loadStripeConfig();
+        });
+
+        async function loadStripeConfig() {
+            try {
+                const response = await fetch('/api/stripe/config');
+                if (response.ok) {
+                    const config = await response.json();
+                    stripe = Stripe(config.publishable_key);
+                    
+                    // Enable subscribe button
+                    const subscribeBtn = document.getElementById('subscribe-btn');
+                    subscribeBtn.disabled = false;
+                    subscribeBtn.addEventListener('click', handleSubscribe);
+                } else {
+                    showError('Stripe configuration not available');
+                }
+            } catch (error) {
+                console.error('Error loading Stripe config:', error);
+                showError('Failed to load payment configuration');
+            }
+        }
+
+        async function loadSubscriptionStatus() {
+            try {
+                const response = await fetch('/api/stripe/subscription/status');
+                if (response.ok) {
+                    subscriptionStatus = await response.json();
+                    updateUI();
+                } else {
+                    console.error('Failed to load subscription status');
+                    showBasicUI();
+                }
+            } catch (error) {
+                console.error('Error loading subscription status:', error);
+                showBasicUI();
+            }
+        }
+
+        function updateUI() {
+            const statusCard = document.getElementById('current-status');
+            const subscribeBtn = document.getElementById('subscribe-btn');
+            const cancelBtn = document.getElementById('cancel-btn');
+            const premiumCard = document.querySelector('.subscription-card');
+
+            if (subscriptionStatus.is_premium) {
+                // User has premium subscription
+                const subscription = subscriptionStatus.subscription;
+                const endDate = new Date(subscription.current_period_end * 1000);
+                const willCancel = subscription.cancel_at_period_end;
+
+                statusCard.innerHTML = `
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-crown text-warning"></i>
+                            Premium Active
+                        </h5>
+                        <p class="text-success">You have an active premium subscription!</p>
+                        <p><strong>Status:</strong> ${subscription.status}</p>
+                        <p><strong>Current period ends:</strong> ${endDate.toLocaleDateString()}</p>
+                        ${willCancel ? '<p class="text-warning"><i class="fas fa-exclamation-triangle"></i> Will cancel at period end</p>' : ''}
+                    </div>
+                `;
+
+                premiumCard.classList.add('current');
+                premiumCard.innerHTML = `
+                    <div class="status-badge bg-success text-white">Current Plan</div>
+                    <div class="card-body text-center p-4">
+                        <h3 class="card-title">Premium Monthly</h3>
+                        <div class="price-badge mb-3">$5.00<small class="text-muted">/month</small></div>
+                        <p class="text-success"><i class="fas fa-check-circle"></i> You're subscribed!</p>
+                        ${!willCancel ? '<button id="cancel-btn" class="btn btn-outline-danger">Cancel Subscription</button>' : '<p class="text-warning">Canceling at period end</p>'}
+                    </div>
+                `;
+
+                if (!willCancel) {
+                    document.getElementById('cancel-btn').addEventListener('click', handleCancel);
+                }
+
+                subscribeBtn.style.display = 'none';
+            } else {
+                // User doesn't have premium
+                statusCard.innerHTML = `
+                    <div class="card-body">
+                        <h5 class="card-title">Free Plan</h5>
+                        <p class="text-muted">Upgrade to premium for unlimited access!</p>
+                    </div>
+                `;
+
+                subscribeBtn.style.display = 'block';
+                cancelBtn.style.display = 'none';
+            }
+        }
+
+        function showBasicUI() {
+            const statusCard = document.getElementById('current-status');
+            statusCard.innerHTML = `
+                <div class="card-body">
+                    <h5 class="card-title">Free Plan</h5>
+                    <p class="text-muted">Upgrade to premium for unlimited access!</p>
+                </div>
+            `;
+        }
+
+        async function handleSubscribe() {
+            const subscribeBtn = document.getElementById('subscribe-btn');
+            const btnText = subscribeBtn.querySelector('.btn-text');
+            const loading = subscribeBtn.querySelector('.loading');
+
+            try {
+                // Show loading state
+                btnText.style.display = 'none';
+                loading.style.display = 'inline';
+                subscribeBtn.disabled = true;
+
+                // Create checkout session
+                const response = await fetch('/api/stripe/create-checkout-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        plan_id: 'premium_monthly'
+                    })
+                });
+
+                if (response.ok) {
+                    const session = await response.json();
+                    
+                    // Redirect to Stripe Checkout
+                    const result = await stripe.redirectToCheckout({
+                        sessionId: session.session_id
+                    });
+
+                    if (result.error) {
+                        showError(result.error.message);
+                    }
+                } else {
+                    const error = await response.json();
+                    showError(error.error || 'Failed to create checkout session');
+                }
+            } catch (error) {
+                console.error('Error creating checkout session:', error);
+                showError('Failed to start checkout process');
+            } finally {
+                // Reset button state
+                btnText.style.display = 'inline';
+                loading.style.display = 'none';
+                subscribeBtn.disabled = false;
+            }
+        }
+
+        async function handleCancel() {
+            if (!confirm('Are you sure you want to cancel your subscription? It will remain active until the end of your current billing period.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/stripe/subscription/cancel', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.ok) {
+                    showSuccess('Subscription will be canceled at the end of your billing period.');
+                    loadSubscriptionStatus(); // Refresh status
+                } else {
+                    const error = await response.json();
+                    showError(error.error || 'Failed to cancel subscription');
+                }
+            } catch (error) {
+                console.error('Error canceling subscription:', error);
+                showError('Failed to cancel subscription');
+            }
+        }
+
+        function showError(message) {
+            const alert = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle"></i> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            document.querySelector('.container').insertAdjacentHTML('afterbegin', alert);
+        }
+
+        function showSuccess(message) {
+            const alert = `
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle"></i> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            document.querySelector('.container').insertAdjacentHTML('afterbegin', alert);
+        }
+    </script>
+</body>
+</html>

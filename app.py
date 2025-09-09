@@ -53,11 +53,13 @@ from api.auth_routes import auth_bp, login_required
 from api.stats_routes import stats_bp
 from api.dataset_routes import dataset_bp
 from api.video_routes import video_bp
+from api.stripe_routes import stripe_bp
 
 # Import services (AFTER Firebase initialization)
 from services.chat_service import ChatService
 from services.enhanced_chat_service import EnhancedChatService
 from services.search_service import SearchService
+from services.subscription_middleware import get_user_subscription_context
 
 # Configure logging
 logging.basicConfig(
@@ -125,6 +127,17 @@ def create_app():
     app.register_blueprint(stats_bp)
     app.register_blueprint(dataset_bp)
     app.register_blueprint(video_bp)
+    app.register_blueprint(stripe_bp)
+    
+    # Define context processor for subscription status
+    @app.context_processor
+    def inject_subscription_context():
+        """Inject subscription context into all templates."""
+        firebase_uid = session.get('user_id')
+        if firebase_uid:
+            subscription_context = get_user_subscription_context(firebase_uid)
+            return {'subscription': subscription_context}
+        return {'subscription': {'is_premium': False, 'subscription': None, 'stripe_configured': False}}
     
     # Define routes
     @app.route('/')
