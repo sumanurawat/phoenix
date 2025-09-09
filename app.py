@@ -53,11 +53,16 @@ from api.auth_routes import auth_bp, login_required
 from api.stats_routes import stats_bp
 from api.dataset_routes import dataset_bp
 from api.video_routes import video_bp
+from api.stripe_routes import stripe_bp, subscription_bp
 
 # Import services (AFTER Firebase initialization)
 from services.chat_service import ChatService
 from services.enhanced_chat_service import EnhancedChatService
 from services.search_service import SearchService
+from services.subscription_middleware import (
+    init_subscription_context, 
+    subscription_context_processor
+)
 
 # Configure logging
 logging.basicConfig(
@@ -125,6 +130,17 @@ def create_app():
     app.register_blueprint(stats_bp)
     app.register_blueprint(dataset_bp)
     app.register_blueprint(video_bp)
+    app.register_blueprint(stripe_bp)
+    app.register_blueprint(subscription_bp)
+    
+    # Setup subscription middleware
+    @app.before_request
+    def setup_subscription_context():
+        """Initialize subscription context for each request."""
+        init_subscription_context()
+    
+    # Add subscription context processor for templates
+    app.context_processor(subscription_context_processor)
     
     # Define routes
     @app.route('/')
