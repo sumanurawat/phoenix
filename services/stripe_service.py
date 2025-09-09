@@ -32,9 +32,9 @@ class StripeService:
             self.is_configured = True
             logger.info("Stripe service initialized successfully")
             if self.premium_price_id:
-                logger.info(f"Using price ID: {self.premium_price_id}")
+                logger.info("✅ Price ID configured")
             else:
-                logger.warning("No price ID configured - checkout will fail")
+                logger.warning("❌ No price ID configured - checkout will fail")
         else:
             self.is_configured = False
             logger.warning("Stripe not configured - subscription features disabled")

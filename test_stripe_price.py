@@ -15,7 +15,7 @@ price_id = os.getenv('STRIPE_PRICE_ID') or os.getenv('STRIPE_PRO_PRICE_ID')
 print("=" * 50)
 print("Testing Stripe Price Configuration")
 print("=" * 50)
-print(f"Using Stripe Key: {stripe_key[:8]}...{stripe_key[-4:]}" if stripe_key else "Not set")
+print(f"Stripe API Key: {'✅ Configured' if stripe_key else '❌ Not configured'}")
 print(f"Using Price ID: {price_id}")
 print()
 

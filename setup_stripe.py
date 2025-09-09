@@ -83,8 +83,7 @@ def test_configuration():
         if value:
             # Mask sensitive values
             if 'SECRET' in var or 'KEY' in var:
-                masked = value[:8] + '...' + value[-4:] if len(value) > 12 else '***'
-                print(f"✅ {var}: {masked}")
+                print(f"✅ {var}: {'Configured' if value else 'Not set'}")
             else:
                 print(f"✅ {var}: {value}")
         else:

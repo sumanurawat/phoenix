@@ -39,12 +39,13 @@ def initialize_services():
         stripe_key = os.getenv('STRIPE_SECRET_KEY')
         if stripe_key:
             stripe.api_key = stripe_key
-            print("✅ Stripe initialized")
+            print("✅ Stripe initialized successfully")
+            stripe_configured = True
         else:
             print("⚠️  Stripe not configured - will only show local data")
-            stripe_key = None
+            stripe_configured = False
         
-        return db, stripe_key
+        return db, stripe_configured
         
     except Exception as e:
         print(f"❌ Failed to initialize services: {e}")

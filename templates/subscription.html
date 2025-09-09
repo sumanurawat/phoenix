@@ -547,6 +547,7 @@
     </script>
 
     <!-- Test Card Information (only shown in development) -->
+    {% if config.ENV == 'development' or config.DEBUG %}
     <div class="subscription-card mt-4" style="border-left: 4px solid #ffc107;">
         <h4 class="text-warning mb-3">
             <i class="fas fa-credit-card me-2"></i>
@@ -574,5 +575,6 @@
             Use the test card numbers above when making payments.
         </div>
     </div>
+    {% endif %}
 </body>
 </html>

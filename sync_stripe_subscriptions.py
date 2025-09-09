@@ -32,7 +32,7 @@ def initialize_services():
         return False
     
     stripe.api_key = stripe_key
-    print(f"✅ Stripe initialized with key: {stripe_key[:8]}...{stripe_key[-4:]}")
+    print("✅ Stripe API initialized successfully")
     
     # Initialize Firebase
     try:
