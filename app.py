@@ -10,6 +10,7 @@ import secrets
 from functools import wraps
 from flask import Flask, render_template, session, request, redirect, url_for, flash, abort
 from flask_session import Session
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Set up logging first
 logging.basicConfig(level=logging.INFO)
@@ -103,6 +104,12 @@ def create_app():
     """Create and configure the Flask application."""
     # Initialize Flask app
     app = Flask(__name__)
+
+    # Ensure Flask generates correct external URLs behind a proxy (Cloud Run)
+    # This makes url_for(..., _external=True) use the forwarded scheme/host
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+    # Prefer HTTPS for external URLs
+    app.config['PREFERRED_URL_SCHEME'] = 'https'
     
     # Configure application - Set ENV first
     app.config["ENV"] = FLASK_ENV
