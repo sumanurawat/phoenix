@@ -26,6 +26,35 @@
         .edit-btn {
             float: right;
         }
+        .subscription-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .subscription-badge.premium {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .subscription-badge.free {
+            background: #f0f0f0;
+            color: #666;
+        }
+        .btn-membership {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-membership:hover {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -38,9 +67,26 @@
             {% endif %}
             
             <h2 class="mb-1">Welcome{% if user_name %}, {{ user_name }}{% elif user_email %}, {{ user_email }}{% endif %}</h2>
-            <p class="text-muted mb-3">{{ user_email }}</p>
+            <p class="text-muted mb-2">{{ user_email }}</p>
+            
+            <!-- Subscription Status Badge -->
+            {% if subscription and subscription.is_premium %}
+                <div class="subscription-badge premium">
+                    <i class="fas fa-crown"></i>
+                    <span>Premium Member</span>
+                </div>
+            {% else %}
+                <div class="subscription-badge free">
+                    <i class="fas fa-user"></i>
+                    <span>Free Plan</span>
+                </div>
+            {% endif %}
 
             <div class="d-grid gap-2 mt-4">
+                <!-- Manage Membership Button -->
+                <a href="{{ url_for('subscription.manage') }}" class="btn btn-membership">
+                    <i class="fas fa-credit-card me-2"></i>Manage Membership
+                </a>
                 <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
                     <i class="fas fa-home me-2"></i>Back to Main Page
                 </a>

@@ -32,5 +32,29 @@ service cloud.firestore {
       allow create: if request.auth != null 
         && request.auth.uid == request.resource.data.user_id;
     }
+    
+    // Subscription-related collections
+    
+    // Users collection - stores Stripe customer IDs
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      // Allow webhook to write (webhook bypasses auth with signature verification)
+      allow write: if request.auth == null && request.resource.data.keys().hasAll(['stripe_customer_id']);
+    }
+    
+    // User subscriptions collection - stores subscription details
+    match /user_subscriptions/{subscriptionId} {
+      allow read: if request.auth != null 
+        && request.auth.uid == resource.data.firebase_uid;
+      allow write: if false; // Only allow writes from backend/webhooks
+    }
+    
+    // User usage collection - tracks daily usage
+    match /user_usage/{usageId} {
+      allow read: if request.auth != null 
+        && request.auth.uid == resource.data.firebase_uid;
+      allow write: if false; // Only allow writes from backend
+    }
   }
 }
