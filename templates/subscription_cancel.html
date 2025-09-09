@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Cancelled - Phoenix AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .cancel-card {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+        .cancel-icon {
+            color: #6c757d;
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+        .benefit-item {
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+        .benefit-item i {
+            color: #007bff;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="cancel-card">
+            <i class="fas fa-times-circle cancel-icon"></i>
+            
+            <h1 class="h3 mb-3">Subscription Not Completed</h1>
+            <p class="lead text-muted mb-4">
+                You cancelled the subscription process. No charges have been made to your account.
+            </p>
+            
+            <div class="alert alert-info mb-4" role="alert">
+                <i class="fas fa-info-circle me-2"></i>
+                You can continue using Phoenix AI with the free plan features.
+            </div>
+            
+            <h5 class="mb-3">Consider the benefits of upgrading:</h5>
+            <div class="text-start">
+                <div class="benefit-item">
+                    <i class="fas fa-infinity"></i>
+                    <strong>Unlimited AI Conversations</strong> - No daily limits on chat interactions
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-brain"></i>
+                    <strong>Premium AI Models</strong> - Access to the most advanced AI capabilities
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-chart-line"></i>
+                    <strong>Advanced Analytics</strong> - Detailed insights and usage reports
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-download"></i>
+                    <strong>Export Features</strong> - Save and export your conversation history
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-headset"></i>
+                    <strong>Priority Support</strong> - Get help faster with dedicated support
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                <a href="{{ url_for('subscription_page') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-crown me-2"></i>Try Again - Upgrade to Premium
+                </a>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-home me-2"></i>Continue with Free Plan
+                </a>
+            </div>
+            
+            <hr class="my-4">
+            
+            <div class="text-muted">
+                <p class="mb-2">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    Your payment information is secure and processed by Stripe.
+                </p>
+                <p class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>
+                    Questions? <a href="mailto:support@phoenixai.com" class="text-decoration-none">Contact our support team</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

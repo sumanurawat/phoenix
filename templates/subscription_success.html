@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Successful - Phoenix AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .success-card {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+        .success-icon {
+            color: #28a745;
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .feature-item {
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            text-align: center;
+        }
+        .feature-item i {
+            color: #007bff;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="success-card">
+            <i class="fas fa-check-circle success-icon"></i>
+            
+            <h1 class="h3 mb-3">Welcome to Phoenix AI Premium!</h1>
+            <p class="lead text-muted mb-4">
+                Your subscription has been activated successfully. You now have unlimited access to all premium features.
+            </p>
+            
+            <div class="alert alert-success mb-4" role="alert">
+                <i class="fas fa-crown me-2"></i>
+                <strong>Premium Active:</strong> Your subscription is now active and will renew automatically each month.
+            </div>
+            
+            <h5 class="mb-3">What's unlocked for you:</h5>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <i class="fas fa-infinity"></i>
+                    <h6>Unlimited Conversations</h6>
+                    <small class="text-muted">Chat with AI without daily limits</small>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-brain"></i>
+                    <h6>Premium AI Models</h6>
+                    <small class="text-muted">Access to advanced AI capabilities</small>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-chart-line"></i>
+                    <h6>Advanced Analytics</h6>
+                    <small class="text-muted">Detailed insights and reports</small>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-download"></i>
+                    <h6>Export Conversations</h6>
+                    <small class="text-muted">Save your chat history</small>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-link"></i>
+                    <h6>Unlimited Short Links</h6>
+                    <small class="text-muted">Create as many links as you need</small>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-headset"></i>
+                    <h6>Priority Support</h6>
+                    <small class="text-muted">Get help when you need it</small>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-home me-2"></i>Start Using Phoenix AI
+                </a>
+                <a href="{{ url_for('subscription_page') }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-cog me-2"></i>Manage Subscription
+                </a>
+            </div>
+            
+            <hr class="my-4">
+            
+            <div class="text-muted">
+                <p class="mb-2">
+                    <i class="fas fa-envelope me-2"></i>
+                    You will receive a confirmation email shortly with your subscription details.
+                </p>
+                <p class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>
+                    Need help? <a href="mailto:support@phoenixai.com" class="text-decoration-none">Contact our support team</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

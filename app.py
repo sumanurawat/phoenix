@@ -53,6 +53,7 @@ from api.auth_routes import auth_bp, login_required
 from api.stats_routes import stats_bp
 from api.dataset_routes import dataset_bp
 from api.video_routes import video_bp
+from api.stripe_routes import stripe_bp
 
 # Import services (AFTER Firebase initialization)
 from services.chat_service import ChatService
@@ -125,6 +126,11 @@ def create_app():
     app.register_blueprint(stats_bp)
     app.register_blueprint(dataset_bp)
     app.register_blueprint(video_bp)
+    app.register_blueprint(stripe_bp)
+    
+    # Register subscription context processor
+    from services.subscription_middleware import subscription_context_processor
+    app.context_processor(subscription_context_processor)
     
     # Define routes
     @app.route('/')
@@ -198,6 +204,28 @@ def create_app():
                            title='My Dashboards',
                            user_name=session.get('user_name'),
                            user_email=session.get('user_email'))
+    
+    @app.route('/subscription')
+    @login_required
+    def subscription_page():
+        """Render the Subscription Management page."""
+        return render_template('subscription.html', 
+                           title='Subscription Management',
+                           user_name=session.get('user_name'),
+                           user_email=session.get('user_email'))
+    
+    @app.route('/subscription/success')
+    @login_required  
+    def subscription_success():
+        """Render the Subscription Success page."""
+        return render_template('subscription_success.html', 
+                           title='Subscription Successful')
+    
+    @app.route('/subscription/cancel')
+    def subscription_cancel():
+        """Render the Subscription Cancel page."""
+        return render_template('subscription_cancel.html', 
+                           title='Subscription Cancelled')
     
     @app.route('/api/dataset-image/<path:filename>')
     def serve_dataset_image(filename):

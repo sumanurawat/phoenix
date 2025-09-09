@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Management - Phoenix AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .subscription-card {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 2rem;
+        }
+        .plan-card {
+            border: 2px solid #e9ecef;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        .plan-card:hover {
+            border-color: #007bff;
+            box-shadow: 0 4px 12px rgba(0,123,255,0.15);
+        }
+        .plan-card.active {
+            border-color: #28a745;
+            background-color: #f8fff9;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        .feature-list .icon {
+            color: #28a745;
+            margin-right: 0.5rem;
+        }
+        .usage-card {
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .usage-progress {
+            height: 8px;
+            border-radius: 4px;
+        }
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .status-badge {
+            font-size: 0.875rem;
+            padding: 0.25rem 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="subscription-card">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">Subscription Management</h1>
+                    <p class="text-muted mb-0">Manage your Phoenix AI subscription</p>
+                </div>
+                <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Profile
+                </a>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 text-muted">Loading subscription information...</p>
+            </div>
+
+            <!-- Main Content -->
+            <div id="main-content" style="display: none;">
+                <!-- Current Subscription Status -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title d-flex align-items-center">
+                            <i class="fas fa-crown me-2"></i>Current Subscription
+                        </h5>
+                        
+                        <div id="subscription-status">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Usage Statistics (for free users) -->
+                <div id="usage-stats" class="card mb-4" style="display: none;">
+                    <div class="card-body">
+                        <h5 class="card-title d-flex align-items-center">
+                            <i class="fas fa-chart-bar me-2"></i>Usage Statistics
+                        </h5>
+                        <div id="usage-content">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Plan Options -->
+                <div class="row">
+                    <!-- Free Plan -->
+                    <div class="col-md-6">
+                        <div class="plan-card" id="free-plan">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="mb-1">Free Plan</h5>
+                                    <p class="text-muted mb-0">Basic features for getting started</p>
+                                </div>
+                                <span class="badge bg-secondary status-badge">Current</span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <span class="h4">$0</span>
+                                <span class="text-muted">/month</span>
+                            </div>
+                            
+                            <ul class="feature-list">
+                                <li><i class="fas fa-check icon"></i>5 AI conversations per day</li>
+                                <li><i class="fas fa-check icon"></i>Basic search features</li>
+                                <li><i class="fas fa-check icon"></i>Standard AI models</li>
+                                <li><i class="fas fa-check icon"></i>10 short links</li>
+                                <li><i class="fas fa-times text-muted me-2"></i>Export conversations</li>
+                                <li><i class="fas fa-times text-muted me-2"></i>Premium AI models</li>
+                                <li><i class="fas fa-times text-muted me-2"></i>Priority support</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Premium Plan -->
+                    <div class="col-md-6">
+                        <div class="plan-card" id="premium-plan">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="mb-1">Premium Plan</h5>
+                                    <p class="text-muted mb-0">Unlock the full potential of Phoenix AI</p>
+                                </div>
+                                <span class="badge bg-primary status-badge">Recommended</span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <span class="h4">$5</span>
+                                <span class="text-muted">/month</span>
+                            </div>
+                            
+                            <ul class="feature-list">
+                                <li><i class="fas fa-check icon"></i>Unlimited AI conversations</li>
+                                <li><i class="fas fa-check icon"></i>Advanced analytics dashboard</li>
+                                <li><i class="fas fa-check icon"></i>Premium AI models access</li>
+                                <li><i class="fas fa-check icon"></i>Unlimited short links</li>
+                                <li><i class="fas fa-check icon"></i>Export conversation history</li>
+                                <li><i class="fas fa-check icon"></i>Custom AI personalities</li>
+                                <li><i class="fas fa-check icon"></i>Priority support</li>
+                            </ul>
+                            
+                            <button id="subscribe-btn" class="btn btn-primary w-100 mt-3">
+                                <i class="fas fa-crown me-2"></i>Upgrade to Premium
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subscription Management Actions -->
+                <div id="subscription-actions" class="mt-4" style="display: none;">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Manage Subscription</h5>
+                            <div class="d-grid gap-2 d-md-flex">
+                                <button id="cancel-subscription-btn" class="btn btn-outline-danger">
+                                    <i class="fas fa-times me-2"></i>Cancel Subscription
+                                </button>
+                                <button id="reactivate-subscription-btn" class="btn btn-success" style="display: none;">
+                                    <i class="fas fa-undo me-2"></i>Reactivate Subscription
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="error-state" class="alert alert-danger" style="display: none;">
+                <h5 class="alert-heading">Error</h5>
+                <p id="error-message">Failed to load subscription information. Please try again later.</p>
+                <button class="btn btn-outline-danger" onclick="location.reload()">
+                    <i class="fas fa-redo me-2"></i>Retry
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Success</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center">
+                        <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+                        <p id="success-message">Operation completed successfully!</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Action</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirm-message">Are you sure you want to proceed?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirm-action-btn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let subscriptionData = null;
+        let stripeConfig = null;
+        let confirmActionCallback = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSubscriptionData();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Subscribe button
+            document.getElementById('subscribe-btn').addEventListener('click', handleSubscribe);
+            
+            // Cancel subscription button
+            document.getElementById('cancel-subscription-btn').addEventListener('click', handleCancelSubscription);
+            
+            // Reactivate subscription button
+            document.getElementById('reactivate-subscription-btn').addEventListener('click', handleReactivateSubscription);
+            
+            // Confirm action button
+            document.getElementById('confirm-action-btn').addEventListener('click', function() {
+                if (confirmActionCallback) {
+                    confirmActionCallback();
+                }
+                bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+            });
+        }
+
+        async function loadSubscriptionData() {
+            try {
+                // Load Stripe config
+                const configResponse = await fetch('/api/stripe/config');
+                stripeConfig = await configResponse.json();
+                
+                // Load subscription status
+                const statusResponse = await fetch('/api/stripe/subscription/status');
+                subscriptionData = await statusResponse.json();
+                
+                updateUI();
+                
+            } catch (error) {
+                console.error('Failed to load subscription data:', error);
+                showError('Failed to load subscription information. Please try again later.');
+            }
+        }
+
+        function updateUI() {
+            // Hide loading state
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            
+            updateSubscriptionStatus();
+            updatePlanCards();
+            updateUsageStats();
+            updateSubscriptionActions();
+        }
+
+        function updateSubscriptionStatus() {
+            const statusContainer = document.getElementById('subscription-status');
+            
+            if (subscriptionData.is_premium) {
+                statusContainer.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-success me-2">Premium Active</span>
+                            <span class="text-muted">Plan: ${subscriptionData.plan_id || 'Premium Monthly'}</span>
+                        </div>
+                        <div class="text-end">
+                            ${subscriptionData.cancel_at_period_end ? 
+                                '<span class="badge bg-warning">Cancelling at period end</span>' : 
+                                '<span class="badge bg-success">Auto-renewing</span>'
+                            }
+                        </div>
+                    </div>
+                    ${subscriptionData.current_period_end ? 
+                        `<p class="text-muted mt-2 mb-0">
+                            ${subscriptionData.cancel_at_period_end ? 'Expires' : 'Renews'} on: 
+                            ${new Date(subscriptionData.current_period_end * 1000).toLocaleDateString()}
+                        </p>` : ''
+                    }
+                `;
+            } else {
+                statusContainer.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-secondary me-2">Free Plan</span>
+                            <span class="text-muted">Basic features with usage limits</span>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-2 mb-0">Upgrade to Premium for unlimited access to all features.</p>
+                `;
+            }
+        }
+
+        function updatePlanCards() {
+            const freePlan = document.getElementById('free-plan');
+            const premiumPlan = document.getElementById('premium-plan');
+            const subscribeBtn = document.getElementById('subscribe-btn');
+            
+            if (subscriptionData.is_premium) {
+                freePlan.classList.remove('active');
+                premiumPlan.classList.add('active');
+                
+                // Update badges
+                freePlan.querySelector('.status-badge').textContent = '';
+                freePlan.querySelector('.status-badge').style.display = 'none';
+                premiumPlan.querySelector('.status-badge').textContent = 'Current';
+                premiumPlan.querySelector('.status-badge').className = 'badge bg-success status-badge';
+                
+                // Hide subscribe button
+                subscribeBtn.style.display = 'none';
+            } else {
+                freePlan.classList.add('active');
+                premiumPlan.classList.remove('active');
+                
+                // Show subscribe button if Stripe is configured
+                if (stripeConfig && stripeConfig.configured) {
+                    subscribeBtn.style.display = 'block';
+                } else {
+                    subscribeBtn.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Payment not configured';
+                    subscribeBtn.disabled = true;
+                    subscribeBtn.className = 'btn btn-warning w-100 mt-3';
+                }
+            }
+        }
+
+        function updateUsageStats() {
+            const usageStatsCard = document.getElementById('usage-stats');
+            
+            if (!subscriptionData.is_premium) {
+                // Show usage stats for free users
+                usageStatsCard.style.display = 'block';
+                
+                const usageContent = document.getElementById('usage-content');
+                usageContent.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="usage-card">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>AI Conversations</small>
+                                    <small>3/5 today</small>
+                                </div>
+                                <div class="progress usage-progress">
+                                    <div class="progress-bar bg-primary" style="width: 60%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="usage-card">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Search Queries</small>
+                                    <small>7/10 today</small>
+                                </div>
+                                <div class="progress usage-progress">
+                                    <div class="progress-bar bg-info" style="width: 70%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-3 mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Upgrade to Premium for unlimited usage of all features.
+                    </p>
+                `;
+            } else {
+                usageStatsCard.style.display = 'none';
+            }
+        }
+
+        function updateSubscriptionActions() {
+            const actionsCard = document.getElementById('subscription-actions');
+            const cancelBtn = document.getElementById('cancel-subscription-btn');
+            const reactivateBtn = document.getElementById('reactivate-subscription-btn');
+            
+            if (subscriptionData.is_premium && stripeConfig && stripeConfig.configured) {
+                actionsCard.style.display = 'block';
+                
+                if (subscriptionData.cancel_at_period_end) {
+                    cancelBtn.style.display = 'none';
+                    reactivateBtn.style.display = 'block';
+                } else {
+                    cancelBtn.style.display = 'block';
+                    reactivateBtn.style.display = 'none';
+                }
+            } else {
+                actionsCard.style.display = 'none';
+            }
+        }
+
+        async function handleSubscribe() {
+            if (!stripeConfig || !stripeConfig.configured) {
+                showError('Payment processing is not configured. Please contact support.');
+                return;
+            }
+            
+            try {
+                setLoading(true);
+                
+                const response = await fetch('/api/stripe/create-checkout-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        success_url: window.location.origin + '/subscription/success',
+                        cancel_url: window.location.origin + '/subscription'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.checkout_url) {
+                    window.location.href = data.checkout_url;
+                } else {
+                    throw new Error(data.error || 'Failed to create checkout session');
+                }
+                
+            } catch (error) {
+                console.error('Subscription error:', error);
+                showError('Failed to start subscription process. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function handleCancelSubscription() {
+            showConfirmation(
+                'Are you sure you want to cancel your subscription? You will continue to have access until the end of your current billing period.',
+                async function() {
+                    try {
+                        setLoading(true);
+                        
+                        const response = await fetch('/api/stripe/subscription/cancel', {
+                            method: 'POST'
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            showSuccess('Subscription cancelled successfully. You will retain access until the end of your billing period.');
+                            await loadSubscriptionData();
+                        } else {
+                            throw new Error(data.error || 'Failed to cancel subscription');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Cancel error:', error);
+                        showError('Failed to cancel subscription. Please try again.');
+                    } finally {
+                        setLoading(false);
+                    }
+                }
+            );
+        }
+
+        function handleReactivateSubscription() {
+            showConfirmation(
+                'Reactivate your subscription? Your subscription will continue as normal.',
+                async function() {
+                    try {
+                        setLoading(true);
+                        
+                        const response = await fetch('/api/stripe/subscription/reactivate', {
+                            method: 'POST'
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            showSuccess('Subscription reactivated successfully!');
+                            await loadSubscriptionData();
+                        } else {
+                            throw new Error(data.error || 'Failed to reactivate subscription');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Reactivate error:', error);
+                        showError('Failed to reactivate subscription. Please try again.');
+                    } finally {
+                        setLoading(false);
+                    }
+                }
+            );
+        }
+
+        function showSuccess(message) {
+            document.getElementById('success-message').textContent = message;
+            new bootstrap.Modal(document.getElementById('successModal')).show();
+        }
+
+        function showError(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-state').style.display = 'block';
+            document.getElementById('main-content').style.display = 'none';
+            document.getElementById('loading-state').style.display = 'none';
+        }
+
+        function showConfirmation(message, callback) {
+            document.getElementById('confirm-message').textContent = message;
+            confirmActionCallback = callback;
+            new bootstrap.Modal(document.getElementById('confirmModal')).show();
+        }
+
+        function setLoading(loading) {
+            const elements = document.querySelectorAll('button, .plan-card');
+            elements.forEach(el => {
+                if (loading) {
+                    el.classList.add('loading');
+                } else {
+                    el.classList.remove('loading');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
