@@ -6,8 +6,9 @@ registers routes, and initializes services.
 """
 import os
 import logging
+import secrets
 from functools import wraps
-from flask import Flask, render_template, session, request, redirect, url_for, flash
+from flask import Flask, render_template, session, request, redirect, url_for, flash, abort
 from flask_session import Session
 
 # Set up logging first
@@ -119,6 +120,50 @@ def create_app():
     app.config["SESSION_FILE_DIR"] = SESSION_FILE_DIR
     app.config["SESSION_FILE_THRESHOLD"] = SESSION_FILE_THRESHOLD
     Session(app)
+
+    # --- Basic CSRF Protection (custom lightweight implementation) ---
+    # Generates a per-session token and validates it on form POSTs.
+    # Skips validation when explicitly disabled via env (e.g., tests) or for safe/whitelisted endpoints.
+    def _ensure_csrf_token():
+        if 'csrf_token' not in session:
+            session['csrf_token'] = secrets.token_urlsafe(32)
+
+    @app.before_request
+    def _csrf_protect():
+        # Always ensure a token exists for any sessioned visitor
+        _ensure_csrf_token()
+
+        if os.getenv('DISABLE_CSRF', '0') == '1':
+            return  # Explicitly disabled (e.g., test harness)
+
+        # Only enforce on state‑changing methods
+        if request.method not in ('POST', 'PUT', 'PATCH', 'DELETE'):
+            return
+
+        # Whitelist endpoints that are OAuth callbacks or external provider exchanges (GET only anyway)
+        path = request.path
+        oauth_whitelist = (
+            '/login/google/callback',
+        )
+        if path in oauth_whitelist:
+            return
+
+        # Accept token from form field or header
+        sent_token = request.form.get('csrf_token') or request.headers.get('X-CSRF-Token')
+        session_token = session.get('csrf_token')
+
+        if not sent_token or not session_token or sent_token != session_token:
+            app.logger.warning('CSRF validation failed', extra={
+                'path': path,
+                'method': request.method,
+                'sent_token_present': bool(sent_token),
+            })
+            return abort(400, description='Invalid or missing CSRF token')
+
+    # Make token accessible in templates
+    @app.context_processor
+    def inject_csrf_token():
+        return {'csrf_token': lambda: session.get('csrf_token')}
     
     # Register blueprints
     app.register_blueprint(chat_bp)
