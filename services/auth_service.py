@@ -1,7 +1,16 @@
-"""Service for handling authentication via Firebase Identity Platform."""
+"""Service for handling authentication via Firebase Identity Platform.
+
+Enhancements:
+ - Properly URL-encode Google OAuth parameters (previous manual join could cause
+     redirect_uri_mismatch if characters weren't encoded exactly as Google expects).
+ - Add structured debug logging for the computed redirect_uri and state to help
+     diagnose production issues (e.g., mismatched domains, missing HTTPS, trailing slash).
+"""
 import os
 import json
+import logging
 import requests
+import urllib.parse
 import firebase_admin
 from firebase_admin import auth, credentials
 
@@ -65,14 +74,30 @@ class AuthService:
         # Generate state token to prevent CSRF
         import secrets
         state = secrets.token_urlsafe(16)
-        
-        # Build the Google OAuth URL
+        client_id = os.getenv("GOOGLE_CLIENT_ID")
+        if not client_id:
+            logging.error("GOOGLE_CLIENT_ID not set; Google OAuth cannot proceed")
+            raise RuntimeError("Missing GOOGLE_CLIENT_ID env var")
+
+        # Use v2 endpoint (recommended). Add 'openid' scope for ID token clarity.
         params = {
-            "client_id": os.getenv("GOOGLE_CLIENT_ID"),
+            "client_id": client_id,
             "redirect_uri": redirect_uri,
             "response_type": "code",
-            "scope": "email profile",
+            "scope": "openid email profile",
             "state": state,
+            # Optional UX improvements (uncomment if needed):
+            # "prompt": "select_account",
+            # "access_type": "offline",
         }
-        param_str = "&".join([f"{k}={v}" for k, v in params.items() if v])
-        return f"https://accounts.google.com/o/oauth2/auth?{param_str}", state
+
+        # Proper URL encoding (was previously manual concatenation)
+        encoded = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None}, quote_via=urllib.parse.quote)
+
+        # Log (info) the redirect base for debugging redirect_uri_mismatch (exclude state in normal logs?)
+        logging.info("Generating Google OAuth URL", extra={
+            "oauth_redirect_uri": redirect_uri,
+            "oauth_client_id_suffix": client_id[-12:] if len(client_id or '') > 12 else client_id,
+        })
+
+        return f"https://accounts.google.com/o/oauth2/v2/auth?{encoded}", state
