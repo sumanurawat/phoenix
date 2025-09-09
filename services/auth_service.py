@@ -94,10 +94,10 @@ class AuthService:
         # Proper URL encoding (was previously manual concatenation)
         encoded = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None}, quote_via=urllib.parse.quote)
 
-        # Log (info) the redirect base for debugging redirect_uri_mismatch (exclude state in normal logs?)
-        logging.info("Generating Google OAuth URL", extra={
-            "oauth_redirect_uri": redirect_uri,
-            "oauth_client_id_suffix": client_id[-12:] if len(client_id or '') > 12 else client_id,
-        })
+        # Log the computed redirect_uri and a masked client_id suffix for debugging
+        client_suffix = client_id[-12:] if len(client_id or '') > 12 else client_id
+        logging.info(
+            f"Generating Google OAuth URL | redirect_uri={redirect_uri} | client_id_suffix={client_suffix}"
+        )
 
         return f"https://accounts.google.com/o/oauth2/v2/auth?{encoded}", state

@@ -107,7 +107,7 @@ class CloudRunLogFetcher:
         
         return " AND ".join(filter_parts), start_time, end_time
     
-    def fetch_logs(self, hours=2, severity_levels=None, search_keyword=None, limit=500):
+    def fetch_logs(self, hours=2, severity_levels=None, search_keyword=None, limit=500, impersonate_sa=None):
         """Fetch logs from GCP Cloud Logging."""
         if severity_levels is None:
             severity_levels = ["ERROR", "WARNING"]
@@ -124,6 +124,9 @@ class CloudRunLogFetcher:
             f"--project={self.project_id}",
             "--freshness=1d"  # Look back up to 1 day for logs
         ]
+        # Optionally impersonate a service account for log access
+        if impersonate_sa:
+            cmd.insert(1, f"--impersonate-service-account={impersonate_sa}")
         
         try:
             print(f"📡 Running: gcloud logs read (with {len(severity_levels)} severity filters)")
@@ -425,6 +428,16 @@ Examples:
         action='store_true',
         help='Skip log analysis and just save raw logs'
     )
+    parser.add_argument(
+        '--impersonate-service-account',
+        type=str,
+        help='Service account email to impersonate for gcloud commands'
+    )
+    parser.add_argument(
+        '--key-file',
+        type=str,
+        help='Path to a service account key JSON; Will activate this account before reading logs'
+    )
     
     args = parser.parse_args()
     
@@ -434,6 +447,18 @@ Examples:
     
     # Initialize log fetcher with environment
     fetcher = CloudRunLogFetcher(environment=args.environment)
+    
+    # Optionally activate a service account from key file
+    if args.key_file:
+        print(f"🔐 Activating service account from key file: {args.key_file}")
+        try:
+            subprocess.run([
+                "gcloud", "auth", "activate-service-account",
+                "--key-file", args.key_file
+            ], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Failed to activate service account: {e}")
+            sys.exit(1)
     
     # Check authentication
     if not fetcher.check_gcloud_auth():
@@ -451,7 +476,8 @@ Examples:
         hours=args.hours,
         severity_levels=args.severity,
         search_keyword=args.search,
-        limit=args.limit
+        limit=args.limit,
+        impersonate_sa=args.impersonate_service_account
     )
     
     if not logs:
