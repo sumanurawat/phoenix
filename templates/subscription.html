@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Phoenix AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .subscription-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header-section {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .header-section h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subscription-card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .status-badge.active {
+            background: var(--success-gradient);
+            color: white;
+        }
+        
+        .status-badge.free {
+            background: #f0f0f0;
+            color: #666;
+        }
+        
+        .pricing-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .pricing-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            position: relative;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .pricing-card.recommended {
+            border: 2px solid #667eea;
+            transform: scale(1.05);
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+        
+        .pricing-card.recommended:hover {
+            transform: scale(1.05) translateY(-5px);
+        }
+        
+        .recommended-badge {
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            background: var(--primary-gradient);
+            color: white;
+            padding: 0.25rem 1rem;
+            border-radius: 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .plan-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .plan-price {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .plan-price .currency {
+            font-size: 1.5rem;
+        }
+        
+        .plan-price .period {
+            font-size: 1rem;
+            color: #999;
+        }
+        
+        .features-list {
+            list-style: none;
+            padding: 0;
+            margin: 2rem 0;
+        }
+        
+        .features-list li {
+            padding: 0.75rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .features-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .features-list i {
+            color: #84fab0;
+            font-size: 1.2rem;
+        }
+        
+        .btn-subscribe {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn-subscribe:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-manage {
+            padding: 0.75rem 1.5rem;
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-manage:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .usage-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .usage-item {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+        
+        .usage-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .usage-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        
+        .progress {
+            height: 8px;
+            margin-top: 0.5rem;
+        }
+        
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            transition: gap 0.2s;
+        }
+        
+        .back-button:hover {
+            gap: 0.75rem;
+            color: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="subscription-container">
+        <a href="{{ url_for('auth.profile') }}" class="back-button">
+            <i class="fas fa-arrow-left"></i> Back to Profile
+        </a>
+        
+        <div class="header-section">
+            <h1>Manage Your Subscription</h1>
+            <p class="text-muted">Choose the plan that works best for you</p>
+        </div>
+        
+        <!-- Current Status Card -->
+        <div class="subscription-card">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3>Current Plan</h3>
+                    {% if subscription.is_premium %}
+                        <span class="status-badge active">
+                            <i class="fas fa-crown"></i> Premium Member
+                        </span>
+                    {% else %}
+                        <span class="status-badge free">
+                            <i class="fas fa-user"></i> Free Plan
+                        </span>
+                    {% endif %}
+                </div>
+                
+                {% if subscription.is_premium %}
+                    <div class="text-end">
+                        {% if subscription.cancel_at_period_end %}
+                            <p class="text-warning mb-2">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                Cancels on {{ subscription.current_period_end.strftime('%B %d, %Y') if subscription.current_period_end else 'N/A' }}
+                            </p>
+                            <button class="btn-manage" onclick="reactivateSubscription()">
+                                <i class="fas fa-redo"></i> Reactivate
+                            </button>
+                        {% else %}
+                            <p class="text-muted mb-2">
+                                Renews on {{ subscription.current_period_end.strftime('%B %d, %Y') if subscription.current_period_end else 'N/A' }}
+                            </p>
+                            <button class="btn-manage" onclick="cancelSubscription()">
+                                <i class="fas fa-times"></i> Cancel Subscription
+                            </button>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Usage Statistics -->
+            <h4>Today's Usage</h4>
+            <div class="usage-stats">
+                <div class="usage-item">
+                    <div class="usage-value">{{ usage.chat_messages|default(0) }}</div>
+                    <div class="usage-label">Chat Messages</div>
+                    {% if not subscription.is_premium %}
+                        <div class="progress">
+                            <div class="progress-bar" style="width: {{ (usage.chat_messages|default(0) / 5 * 100)|int }}%"></div>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="usage-item">
+                    <div class="usage-value">{{ usage.searches|default(0) }}</div>
+                    <div class="usage-label">Searches</div>
+                    {% if not subscription.is_premium %}
+                        <div class="progress">
+                            <div class="progress-bar" style="width: {{ (usage.searches|default(0) / 10 * 100)|int }}%"></div>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="usage-item">
+                    <div class="usage-value">{{ usage.datasets_analyzed|default(0) }}</div>
+                    <div class="usage-label">Datasets Analyzed</div>
+                    {% if not subscription.is_premium %}
+                        <div class="progress">
+                            <div class="progress-bar" style="width: {{ (usage.datasets_analyzed|default(0) / 2 * 100)|int }}%"></div>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="usage-item">
+                    <div class="usage-value">{{ usage.videos_generated|default(0) }}</div>
+                    <div class="usage-label">Videos Generated</div>
+                    {% if not subscription.is_premium %}
+                        <div class="progress">
+                            <div class="progress-bar" style="width: {{ (usage.videos_generated|default(0) / 1 * 100)|int }}%"></div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pricing Plans -->
+        <div class="pricing-cards">
+            <!-- Free Plan -->
+            <div class="pricing-card">
+                <div class="plan-name">Free</div>
+                <div class="plan-price">
+                    <span class="currency">$</span>0
+                    <span class="period">/ month</span>
+                </div>
+                <ul class="features-list">
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>5 AI conversations per day</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>10 searches per day</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>2 dataset analyses per day</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>1 video generation per day</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>Basic AI models</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-times-circle" style="color: #ccc;"></i>
+                        <span style="color: #999;">Export conversations</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-times-circle" style="color: #ccc;"></i>
+                        <span style="color: #999;">Advanced analytics</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-times-circle" style="color: #ccc;"></i>
+                        <span style="color: #999;">Priority support</span>
+                    </li>
+                </ul>
+                {% if subscription.is_premium %}
+                    <button class="btn-subscribe" disabled style="opacity: 0.5;">
+                        Current Plan
+                    </button>
+                {% else %}
+                    <button class="btn-subscribe" disabled style="opacity: 0.5;">
+                        Current Plan
+                    </button>
+                {% endif %}
+            </div>
+            
+            <!-- Premium Plan -->
+            <div class="pricing-card recommended">
+                <span class="recommended-badge">RECOMMENDED</span>
+                <div class="plan-name">Premium</div>
+                <div class="plan-price">
+                    <span class="currency">$</span>5
+                    <span class="period">/ month</span>
+                </div>
+                <ul class="features-list">
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong>Unlimited</strong> AI conversations</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong>Unlimited</strong> searches</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong>Unlimited</strong> dataset analyses</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>10 video generations per day</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong>All premium AI models</strong></span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>Export conversations</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>Advanced analytics dashboard</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>Priority support</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>Custom AI personalities</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span>Early access to new features</span>
+                    </li>
+                </ul>
+                {% if subscription.is_premium and not subscription.cancel_at_period_end %}
+                    <button class="btn-subscribe" disabled style="opacity: 0.5;">
+                        <i class="fas fa-check"></i> Current Plan
+                    </button>
+                {% else %}
+                    <button class="btn-subscribe" onclick="startCheckout()">
+                        <i class="fas fa-rocket"></i> Upgrade to Premium
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        let stripe = null;
+        
+        // Initialize Stripe if configured
+        {% if stripe_config.is_configured %}
+            stripe = Stripe('{{ stripe_config.publishable_key }}');
+        {% endif %}
+        
+        async function startCheckout() {
+            if (!stripe) {
+                alert('Payment system is not configured. Please contact support.');
+                return;
+            }
+            
+            try {
+                // Show loading state
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                
+                // Create checkout session
+                const response = await fetch('/api/stripe/create-checkout-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                // Redirect to Stripe Checkout
+                window.location.href = data.url;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to start checkout: ' + error.message);
+                
+                // Restore button state
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                }
+            }
+        }
+        
+        async function cancelSubscription() {
+            if (!confirm('Are you sure you want to cancel your subscription? You will retain access until the end of your billing period.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/stripe/subscription/cancel', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                alert('Your subscription has been scheduled for cancellation.');
+                location.reload();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to cancel subscription: ' + error.message);
+            }
+        }
+        
+        async function reactivateSubscription() {
+            try {
+                const response = await fetch('/api/stripe/subscription/reactivate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                alert('Your subscription has been reactivated!');
+                location.reload();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to reactivate subscription: ' + error.message);
+            }
+        }
+    </script>
+
+    <!-- Test Card Information (only shown in development) -->
+    {% if config.ENV == 'development' or config.DEBUG %}
+    <div class="subscription-card mt-4" style="border-left: 4px solid #ffc107;">
+        <h4 class="text-warning mb-3">
+            <i class="fas fa-credit-card me-2"></i>
+            Test Mode - Use These Test Cards
+        </h4>
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="fw-bold text-success">✅ Successful Payment</h6>
+                <p class="mb-1"><strong>Card Number:</strong> <code>4242 4242 4242 4242</code></p>
+                <p class="mb-1"><strong>Expiry:</strong> Any future date (e.g., 12/25)</p>
+                <p class="mb-1"><strong>CVC:</strong> Any 3 digits (e.g., 123)</p>
+                <p class="mb-3"><strong>Name:</strong> Any name</p>
+            </div>
+            <div class="col-md-6">
+                <h6 class="fw-bold text-danger">❌ Failed Payment</h6>
+                <p class="mb-1"><strong>Card Number:</strong> <code>4000 0000 0000 0002</code></p>
+                <p class="mb-1"><strong>Expiry:</strong> Any future date</p>
+                <p class="mb-1"><strong>CVC:</strong> Any 3 digits</p>
+                <p class="mb-3"><strong>Name:</strong> Any name</p>
+            </div>
+        </div>
+        <div class="alert alert-info mb-0">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Note:</strong> This is Stripe's test environment. No real charges will be made. 
+            Use the test card numbers above when making payments.
+        </div>
+    </div>
+    {% endif %}
+</body>
+</html>
