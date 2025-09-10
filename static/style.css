@@ -308,7 +308,7 @@ body {
 /* Inline mini cards to the right of each app row */
 .inline-mini-cards {
   display: grid;
-  grid-template-columns: repeat(2, minmax(110px, 1fr));
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
   gap: 0.5rem;
   margin-left: auto;
 }
@@ -325,6 +325,12 @@ body {
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   min-height: 60px;
+}
+
+/* Placeholder mini-cards (no border emphasis) */
+.mini-card.placeholder {
+  background: transparent;
+  border-color: #eef2f7;
 }
 
 .mini-number {
@@ -1031,7 +1037,7 @@ body {
 .stats-icon {
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
   border-radius: 15px;
   display: flex;
   align-items: center;
@@ -1191,4 +1197,38 @@ body {
     font-size: 0.7rem;
     padding: 0.25rem 0.4rem;
   }
+}
+
+/* Helper layout for an app row with inline mini-cards to the right */
+.compact-app-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.compact-app-row .compact-project-item {
+  flex: 1 1 auto;
+  min-height: 90px;
+}
+
+/* Tweak mini-cards for tighter inline look */
+.inline-mini-cards {
+  align-self: center;
+  grid-auto-rows: 1fr;
+  width: 320px; /* keeps left app button width consistent across rows */
+}
+
+.mini-card {
+  min-width: 140px;
+}
+
+@media (max-width: 992px) {
+  .compact-app-row {
+    flex-direction: column;
+  }
+  .inline-mini-cards { 
+    width: 100%;
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .inline-mini-cards.single { grid-template-columns: 1fr; }
 }
