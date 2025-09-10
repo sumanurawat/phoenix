@@ -7,6 +7,7 @@ import logging
 from typing import Dict, Any, List
 
 from services.llm_service import LLMService
+from services.website_stats_service import WebsiteStatsService
 from services.utils import format_timestamp
 
 # Configure logging
@@ -18,6 +19,7 @@ class ChatService:
     def __init__(self):
         """Initialize the chat service."""
         self.llm_service = LLMService()
+        self.website_stats_service = WebsiteStatsService()
     
     def start_new_chat(self) -> Dict[str, Any]:
         """
@@ -26,6 +28,12 @@ class ChatService:
         Returns:
             Dictionary with new chat session info
         """
+        # Increment global counter for conversations
+        try:
+            self.website_stats_service.increment_conversations_started(1)
+        except Exception:
+            logger.exception("Failed to increment conversations counter")
+
         return {
             "id": f"chat_{int(time.time())}",
             "created_at": format_timestamp(),
@@ -55,6 +63,11 @@ class ChatService:
             "content": message,
             "timestamp": format_timestamp()
         })
+        # Increment messages exchanged (user message)
+        try:
+            self.website_stats_service.increment_messages_exchanged(1)
+        except Exception:
+            logger.exception("Failed to increment messages counter (user)")
         
         return updated_chat
     
@@ -161,6 +174,11 @@ class ChatService:
                     "timestamp": format_timestamp(),
                     "error": True
                 })
+            # Increment messages exchanged (assistant/system reply)
+            try:
+                self.website_stats_service.increment_messages_exchanged(1)
+            except Exception:
+                logger.exception("Failed to increment messages counter (assistant)")
             
             # Update model info
             updated_chat["model_info"] = self.llm_service.get_model_info()
@@ -174,6 +192,10 @@ class ChatService:
                 "timestamp": format_timestamp(),
                 "error": True
             })
+            try:
+                self.website_stats_service.increment_messages_exchanged(1)
+            except Exception:
+                logger.exception("Failed to increment messages counter (error case)")
         
         return updated_chat
     

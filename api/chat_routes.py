@@ -28,7 +28,7 @@ def chat_message():
     if not message.strip():
         return jsonify({"error": "Message cannot be empty"}), 400
     
-    # Process the message and get a response
+    # Process the message and get a response (counts handled in service)
     updated_chat = chat_service.process_user_message(session["chat"], message)
     session["chat"] = updated_chat
     

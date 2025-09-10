@@ -4,10 +4,12 @@ Robin News Routes: Routes for the Robin News reporter.
 from flask import Blueprint, render_template, request, jsonify
 from services.robin_service import RobinService
 from services.llm_service import LLMService
+from services.website_stats_service import WebsiteStatsService
 
 robin_bp = Blueprint("robin", __name__)
 robin_service = RobinService()
 llm_service = LLMService()
+website_stats_service = WebsiteStatsService()
 
 @robin_bp.route("/robin", methods=["GET"])
 def robin_page():
@@ -100,6 +102,8 @@ def generate_summary():
             "error": "Failed to generate summary: " + llm_response.get("error", "Unknown error")
         })
     
+    # Count a successfully answered Robin query
+    website_stats_service.increment_robin_queries(1)
     return jsonify({
         "success": True,
         "summary": llm_response.get("text", ""),
