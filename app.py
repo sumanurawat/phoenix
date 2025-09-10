@@ -172,6 +172,11 @@ def create_app():
     def inject_csrf_token():
         return {'csrf_token': lambda: session.get('csrf_token')}
     
+    # Make session accessible in templates
+    @app.context_processor
+    def inject_session():
+        return {'session': session}
+    
     # Register blueprints
     app.register_blueprint(chat_bp)
     app.register_blueprint(enhanced_chat_bp)
