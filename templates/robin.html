@@ -495,7 +495,13 @@
         .robin-search-form {
             max-width: 300px;
         }
-        
+    }
+    
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
         function fetchArticleContent(articleUrl) {
             return fetch('/api/robin/article_content', {
                 method: 'POST',
@@ -718,5 +724,6 @@
             `;
         }
     </script>
+{% endblock %}
 </body>
 </html>
