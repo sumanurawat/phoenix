@@ -6,6 +6,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 import requests
 
 from services.auth_service import AuthService
+from services.stripe_service import StripeService
+from firebase_admin import firestore
 
 auth_bp = Blueprint('auth', __name__)
 auth_service = AuthService()
@@ -47,6 +49,20 @@ def signup():
             session['user_email'] = data.get('email')
             session['user_id'] = data.get('localId')
             
+            # Ensure user record and free subscription exist
+            try:
+                StripeService().ensure_free_subscription(session['user_id'], session.get('user_email'))
+                # also ensure a minimal users collection record
+                try:
+                    db = firestore.client()
+                    db.collection('users').document(session['user_id']).set({
+                        'firebase_uid': session['user_id'],
+                        'email': session.get('user_email')
+                    }, merge=True)
+                except Exception:
+                    pass
+            except Exception:
+                pass
             # Redirect to intended page or default
             if next_url and is_safe_url(next_url):
                 return redirect(next_url)
@@ -71,6 +87,19 @@ def login():
             session['user_email'] = data.get('email')
             session['user_id'] = data.get('localId')
             
+            # Ensure user record and free subscription exist
+            try:
+                StripeService().ensure_free_subscription(session['user_id'], session.get('user_email'))
+                try:
+                    db = firestore.client()
+                    db.collection('users').document(session['user_id']).set({
+                        'firebase_uid': session['user_id'],
+                        'email': session.get('user_email')
+                    }, merge=True)
+                except Exception:
+                    pass
+            except Exception:
+                pass
             # Redirect to intended page or default
             if next_url and is_safe_url(next_url):
                 return redirect(next_url)
@@ -164,6 +193,21 @@ def google_callback():
         session['user_name'] = userinfo.get('name')
         session['user_picture'] = userinfo.get('picture')
 
+        # Ensure user record and free subscription exist
+        try:
+            StripeService().ensure_free_subscription(session['user_id'], session.get('user_email'))
+            try:
+                db = firestore.client()
+                db.collection('users').document(session['user_id']).set({
+                    'firebase_uid': session['user_id'],
+                    'email': session.get('user_email'),
+                    'name': session.get('user_name'),
+                    'picture': session.get('user_picture')
+                }, merge=True)
+            except Exception:
+                pass
+        except Exception:
+            pass
         # Handle redirect after OAuth
         next_url = session.pop('oauth_next_url', None)
         if next_url and is_safe_url(next_url):

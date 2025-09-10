@@ -17,69 +17,75 @@
 <body class="{% block body_class %}{% endblock %}">
     {% block header %}
     <!-- Standard Header -->
-    <header class="phoenix-header">
+    <header class="phoenix-header bg-white shadow-sm">
         <div class="container-fluid">
-            <div class="row align-items-center">
-                <!-- Brand Logo -->
-                <div class="col-auto">
-                    <a href="{{ url_for('index') }}" class="phoenix-brand">
-                        <i class="fas fa-brain me-2"></i>
-                        <span>Phoenix AI</span>
+            <div class="row align-items-center py-2">
+                <!-- Brand + App Name -->
+                <div class="col d-flex align-items-center gap-2">
+                    <a href="{{ url_for('index') }}" class="phoenix-brand text-decoration-none">
+                        <i class="fas fa-brain me-2 text-primary"></i>
+                        <span class="fw-bold text-dark">Phoenix AI</span>
                     </a>
+                    {% if app_display_name %}
+                        <span class="text-muted">|</span>
+                        <span class="text-muted app-name-small">{{ app_display_name }}</span>
+                    {% endif %}
                 </div>
-                
-                <!-- Spacer -->
-                <div class="col"></div>
                 
                 <!-- User Section -->
                 <div class="col-auto">
                     {% if session.get('user_id') %}
                         <!-- Logged In User -->
-                        <div class="user-menu-container">
-                            <div class="dropdown">
-                                <button class="btn btn-outline-primary dropdown-toggle user-menu-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <div class="user-info">
-                                        {% if session.get('user_picture') %}
-                                            <img src="{{ session.get('user_picture') }}" alt="User" class="user-avatar">
-                                        {% else %}
-                                            <i class="fas fa-user-circle me-2"></i>
-                                        {% endif %}
-                                        <div class="user-details">
-                                            <div class="user-name">{{ session.get('user_name') or session.get('user_email', 'User') }}</div>
-                                            {% if subscription %}
-                                                <div class="user-subscription">
-                                                    {% if subscription.is_premium %}
-                                                        <span class="badge bg-gradient-premium">Premium</span>
-                                                    {% else %}
-                                                        <span class="badge bg-secondary">Free</span>
-                                                    {% endif %}
-                                                </div>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary btn-sm dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                {% if session.get('user_picture') %}
+                                    <img src="{{ session.get('user_picture') }}" alt="User" class="rounded-circle me-2" style="width: 24px; height: 24px;">
+                                {% else %}
+                                    <i class="fas fa-user-circle me-2"></i>
+                                {% endif %}
+                                <span class="d-none d-md-inline">{{ session.get('user_name') or session.get('user_email', 'User') }}</span>
+                                {% if subscription %}
+                                    {% if subscription.is_premium %}
+                                        <span class="badge bg-warning text-dark ms-2 d-none d-md-inline">{{ subscription.plan_id or 'five' }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary ms-2 d-none d-md-inline">{{ subscription.plan_id or 'zero' }}</span>
+                                    {% endif %}
+                                {% endif %}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><h6 class="dropdown-header">
+                                    {{ session.get('user_name') or session.get('user_email', 'User') }}
+                                    {% if subscription %}
+                                        <div class="small">
+                                            {% if subscription.is_premium %}
+                                                <span class="badge bg-warning text-dark">Plan: {{ subscription.plan_id or 'five' }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Plan: {{ subscription.plan_id or 'zero' }}</span>
                                             {% endif %}
                                         </div>
-                                    </div>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="{{ url_for('profile') }}">
-                                        <i class="fas fa-user me-2"></i>Profile
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('subscription.manage') }}">
-                                        <i class="fas fa-credit-card me-2"></i>Subscription
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('dashboard_page') }}">
-                                        <i class="fas fa-chart-bar me-2"></i>Dashboard
-                                    </a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
-                                        <i class="fas fa-sign-out-alt me-2"></i>Logout
-                                    </a></li>
-                                </ul>
-                            </div>
+                                    {% endif %}
+                                </h6></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                    <i class="fas fa-user me-2"></i>Profile
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('subscription.manage') }}">
+                                    <i class="fas fa-credit-card me-2"></i>Subscription
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('dashboard_page') }}">
+                                    <i class="fas fa-chart-bar me-2"></i>Dashboard
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a></li>
+                            </ul>
                         </div>
                     {% else %}
                         <!-- Not Logged In -->
                         <div class="auth-buttons">
-                            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary me-2">Log In</a>
-                            <a href="{{ url_for('auth.signup') }}" class="btn btn-primary">Sign Up</a>
+                            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-sm me-2">Log In</a>
+                            <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-sm">Sign Up</a>
                         </div>
                     {% endif %}
                 </div>
@@ -96,15 +102,50 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     {% block extra_js %}{% endblock %}
+        <script>
+            // Keep the header height CSS variable in sync with the actual header height
+            (function() {
+                const root = document.documentElement;
+                const header = document.querySelector('.phoenix-header');
+                if (!header) return;
+                const setHeaderHeight = () => {
+                    const h = header.getBoundingClientRect().height;
+                    if (h && Math.abs(parseInt(getComputedStyle(root).getPropertyValue('--header-height')) - h) > 1) {
+                        root.style.setProperty('--header-height', h + 'px');
+                    }
+                };
+                // Initial set
+                setHeaderHeight();
+                // On window resize
+                window.addEventListener('resize', setHeaderHeight, { passive: true });
+                // On content changes inside header (e.g., user menu loads)
+                if ('ResizeObserver' in window) {
+                    const ro = new ResizeObserver(setHeaderHeight);
+                    ro.observe(header);
+                }
+            })();
+        </script>
     
     <style>
+        :root {
+            /* Unified header height for consistent spacing calculations */
+            --header-height: 76px;
+        }
+        
+        /* Reserve space for the fixed header globally */
+        html { scroll-padding-top: var(--header-height); }
+        body { padding-top: var(--header-height); }
+
         /* Phoenix Header Styles */
         .phoenix-header {
             background: white;
             border-bottom: 1px solid #e9ecef;
             padding: 0.75rem 0;
-            position: sticky;
+            position: fixed; /* fixed so it doesn't consume layout height */
             top: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
             z-index: 1000;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
@@ -188,6 +229,22 @@
                 font-size: 0.875rem;
             }
         }
+
+        .app-name-small {
+            font-size: 0.9rem;
+        }
+        
+    /* Main no longer needs padding; body handles the offset */
+    main { padding-top: 0; }
+        
+    /* Special handling for portfolio layout (index page) */
+    main.portfolio-layout { padding-top: 0; }
+        
+    /* For pages that explicitly want no top padding */
+    main.pt-0 { padding-top: 0 !important; }
+        
+    /* Utility: make an element sticky below the app header */
+    .sticky-after-header { position: sticky; top: var(--header-height); }
     </style>
 </body>
 </html>

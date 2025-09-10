@@ -41,12 +41,18 @@ def init_subscription_context():
         g.subscription = {
             'is_premium': False,
             'status': 'none',
+            'plan_id': 'zero',
             'limits': FEATURE_LIMITS['free']
         }
         return
     
     stripe_service = StripeService()
     firebase_uid = session.get('user_id')
+    # Ensure a free subscription record exists for visibility/analytics
+    try:
+        stripe_service.ensure_free_subscription(firebase_uid, session.get('user_email'))
+    except Exception:
+        logger.debug("Unable to ensure free subscription record for user", exc_info=True)
     
     # Get subscription status
     subscription_status = stripe_service.get_subscription_status(firebase_uid)
@@ -60,6 +66,7 @@ def init_subscription_context():
         'status': subscription_status.get('status', 'none'),
         'current_period_end': subscription_status.get('current_period_end'),
         'cancel_at_period_end': subscription_status.get('cancel_at_period_end', False),
+        'plan_id': subscription_status.get('plan_id', 'zero'),
         'limits': FEATURE_LIMITS['premium'] if subscription_status.get('is_premium') else FEATURE_LIMITS['free'],
         'usage': usage_stats
     }

@@ -45,6 +45,69 @@ class StripeService:
         except Exception as e:
             logger.error(f"Failed to initialize Firestore: {e}")
             self.db = None
+
+    @staticmethod
+    def normalize_plan_id(plan_id: Optional[str], price_id: Optional[str] = None) -> str:
+        """Normalize various plan identifiers to enum values like 'zero' (free) and 'five' (paid).
+
+        - Free tier -> 'zero'
+        - Any paid monthly plan at $5 -> 'five'
+        - Legacy values like 'premium_monthly', 'premium', 'pro', or Stripe price IDs -> 'five'
+        """
+        if not plan_id and not price_id:
+            return 'zero'
+
+        # Explicit free markers
+        lowered = (plan_id or '').lower()
+        if lowered in {'zero', 'free', 'free_tier'}:
+            return 'zero'
+
+        # Any price id from Stripe indicates paid plan
+        if price_id and price_id.startswith('price_'):
+            return 'five'
+
+        # Map legacy/known paid identifiers to 'five'
+        if lowered in {'premium_monthly', 'premium', 'pro', 'plus', 'five'}:
+            return 'five'
+
+        # If it's not clearly free, treat as paid baseline
+        return 'five'
+
+    def ensure_free_subscription(self, firebase_uid: str, email: Optional[str] = None) -> bool:
+        """Ensure a free subscription record exists for the user in Firestore.
+
+        Creates a lightweight document for visibility and analytics. This will not
+        interfere with premium checks which look for status in ['active','trialing'].
+        Document ID convention: f"free_{firebase_uid}".
+        """
+        if not self.db or not firebase_uid:
+            return False
+        try:
+            doc_id = f"free_{firebase_uid}"
+            sub_ref = self.db.collection('user_subscriptions').document(doc_id)
+            doc = sub_ref.get()
+            if doc.exists:
+                # Keep the record updated but don't overwrite timestamps unnecessarily
+                sub_ref.set({
+                    'firebase_uid': firebase_uid,
+                    'email': email,
+                    'status': 'free',
+                    'plan_id': 'zero',
+                    'updated_at': firestore.SERVER_TIMESTAMP
+                }, merge=True)
+            else:
+                sub_ref.set({
+                    'firebase_uid': firebase_uid,
+                    'email': email,
+                    'status': 'free',
+                    'plan_id': 'zero',
+                    'created_at': firestore.SERVER_TIMESTAMP,
+                    'updated_at': firestore.SERVER_TIMESTAMP
+                })
+            return True
+        except Exception as e:
+            logger.error(f"Failed to ensure free subscription for {firebase_uid}: {e}")
+            return False
     
     def get_config(self) -> Dict[str, Any]:
         """Get Stripe configuration for frontend."""
@@ -172,7 +235,7 @@ class StripeService:
             'status': 'none',
             'current_period_end': None,
             'cancel_at_period_end': False,
-            'plan_id': None
+            'plan_id': 'zero'
         }
         
         if not self.is_configured or not self.db:
@@ -187,12 +250,15 @@ class StripeService:
             
             if sub_docs:
                 sub_data = sub_docs[0].to_dict()
+                normalized_plan = self.normalize_plan_id(
+                    sub_data.get('plan_id'), sub_data.get('price_id')
+                )
                 result.update({
                     'is_premium': True,
                     'status': sub_data.get('status', 'none'),
                     'current_period_end': sub_data.get('current_period_end'),
                     'cancel_at_period_end': sub_data.get('cancel_at_period_end', False),
-                    'plan_id': sub_data.get('plan_id')
+                    'plan_id': normalized_plan
                 })
             
             return result
@@ -465,7 +531,9 @@ class StripeService:
                     'firebase_uid': firebase_uid,
                     'stripe_customer_id': customer_id,
                     'stripe_subscription_id': subscription_id,
-                    'plan_id': price_id or 'premium_monthly',
+                    # Enum plan id for $5 plan
+                    'plan_id': self.normalize_plan_id('five', price_id),
+                    'price_id': price_id,
                     'price_id': price_id,
                     'amount': amount,
                     'interval': interval,

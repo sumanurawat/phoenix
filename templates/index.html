@@ -2,11 +2,7 @@
 
 {% block title %}{{ title }}{% endblock %}
 
-{% block header %}
-<!-- Index page uses a special header within the portfolio layout -->
-{% endblock %}
-
-{% block main_class %}portfolio-layout{% endblock %}
+{% block main_class %}portfolio-layout pt-0{% endblock %}
 
 {% block content %}
     <!-- Sidebar -->
@@ -15,46 +11,6 @@
             <div class="profile">
                 <h1 class="name">Sumanu Rawat</h1>
                 <p class="title">AI Engineer & Developer</p>
-            </div>
-            
-            <!-- User Status Section in Sidebar -->
-            <div class="sidebar-user-section">
-                {% if session.get('user_id') %}
-                    <div class="user-status-card">
-                        <div class="user-info">
-                            {% if session.get('user_picture') %}
-                                <img src="{{ session.get('user_picture') }}" alt="User" class="user-avatar-small">
-                            {% else %}
-                                <i class="fas fa-user-circle"></i>
-                            {% endif %}
-                            <div class="user-details">
-                                <div class="user-name">{{ session.get('user_name') or session.get('user_email', 'User') }}</div>
-                                {% if subscription %}
-                                    <div class="user-subscription">
-                                        {% if subscription.is_premium %}
-                                            <span class="badge bg-gradient-premium">Premium</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">Free</span>
-                                        {% endif %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="user-actions">
-                            <a href="{{ url_for('profile') }}" class="btn btn-sm btn-outline-primary">Profile</a>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="auth-section">
-                        <div class="auth-message">
-                            <p>Join Phoenix AI to access powerful tools</p>
-                        </div>
-                        <div class="auth-buttons-sidebar">
-                            <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-sm w-100 mb-2">Log In</a>
-                            <a href="{{ url_for('auth.signup') }}" class="btn btn-outline-primary btn-sm w-100">Sign Up</a>
-                        </div>
-                    </div>
-                {% endif %}
             </div>
             
             <nav class="sidebar-nav">
@@ -323,20 +279,20 @@
 
 {% block extra_js %}
 <script>
-    // Load stats from API
-    fetch('/api/stats')
+    // Load global stats from public API (works when logged out)
+    fetch('/api/website-stats')
         .then(response => response.json())
         .then(data => {
-            const stats = data.stats || {};
-            Object.entries({
-                'chat-sessions': stats.total_conversations,
-                'chat-messages': stats.total_messages,
-                'doogle-searches': stats.total_searches,
-                'robin-answers': stats.total_robin_queries,
-                'total-links': stats.total_links,
-                'total-clicks': stats.total_clicks,
-                'videos-generated': stats.total_videos
-            }).forEach(([id, val]) => {
+            const map = {
+                'chat-sessions': data.conversations_started,
+                'chat-messages': data.messages_exchanged,
+                'doogle-searches': data.doogle_searches_made,
+                'robin-answers': data.robin_queries_answered,
+                'total-links': data.total_links,
+                'total-clicks': data.total_clicks,
+                'videos-generated': data.videos_generated
+            };
+            Object.entries(map).forEach(([id, val]) => {
                 const el = document.getElementById(id);
                 if (el) el.textContent = val || '0';
             });
