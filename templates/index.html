@@ -64,209 +64,168 @@
                 <div class="container">
                     <div class="row">
                         <!-- Apps Column -->
-                        <div class="col-lg-7 col-md-6 mb-4">
+                        <div class="col-lg-12 col-md-12 mb-4">
                             <div class="section-header mb-4">
                                 <h3 class="section-title">AI Applications</h3>
                                 <p class="section-subtitle">Practical tools for creators and productivity</p>
                             </div>
                             <div class="compact-project-grid">
-                                <!-- Derplexity with inline mini cards -->
-                                <a href="{{ url_for('derplexity') }}" class="text-decoration-none">
-                                    <div class="compact-project-item">
-                                        <div class="compact-project-icon">
-                                            <i class="fas fa-robot"></i>
-                                        </div>
-                                        <div class="compact-project-content">
-                                            <div class="compact-project-title">Derplexity</div>
-                                            <div class="compact-project-desc">Conversational AI powered by Gemini</div>
-                                        </div>
-                                        <div class="inline-mini-cards">
-                                            <div class="mini-card">
-                                                <div class="mini-number" id="derp-conversations">-</div>
-                                                <div class="mini-label">Conversations Started</div>
+                                <!-- Derplexity row -->
+                                <div class="compact-app-row">
+                                    <a href="{{ url_for('derplexity') }}" class="text-decoration-none flex-grow-1">
+                                        <div class="compact-project-item">
+                                            <div class="compact-project-icon">
+                                                <i class="fas fa-robot"></i>
                                             </div>
-                                            <div class="mini-card">
-                                                <div class="mini-number" id="derp-messages">-</div>
-                                                <div class="mini-label">Messages Exchanged</div>
+                                            <div class="compact-project-content">
+                                                <div class="compact-project-title">Derplexity</div>
+                                                <div class="compact-project-desc">Conversational AI powered by Gemini</div>
                                             </div>
+                                        </div>
+                                    </a>
+                                    <div class="inline-mini-cards">
+                                        <div class="mini-card">
+                                            <div class="mini-number" id="chat-sessions">-</div>
+                                            <div class="mini-label">Conversations Started</div>
+                                        </div>
+                                        <div class="mini-card">
+                                            <div class="mini-number" id="chat-messages">-</div>
+                                            <div class="mini-label">Messages Exchanged</div>
                                         </div>
                                     </div>
-                                </a>
+                                </div>
 
-                                <!-- Doogle with a single card -->
-                                <a href="{{ url_for('doogle') }}" class="text-decoration-none">
-                                    <div class="compact-project-item">
-                                        <div class="compact-project-icon">
-                                            <i class="fas fa-search"></i>
-                                        </div>
-                                        <div class="compact-project-content">
-                                            <div class="compact-project-title">Doogle</div>
-                                            <div class="compact-project-desc">AI-powered intelligent search engine</div>
-                                        </div>
-                                        <div class="inline-mini-cards single">
-                                            <div class="mini-card">
-                                                <div class="mini-number" id="doogle-searches">-</div>
-                                                <div class="mini-label">Searches Made</div>
+                                <!-- Doogle row -->
+                                <div class="compact-app-row">
+                                    <a href="{{ url_for('doogle') }}" class="text-decoration-none flex-grow-1">
+                                        <div class="compact-project-item">
+                                            <div class="compact-project-icon">
+                                                <i class="fas fa-search"></i>
+                                            </div>
+                                            <div class="compact-project-content">
+                                                <div class="compact-project-title">Doogle</div>
+                                                <div class="compact-project-desc">AI-powered intelligent search engine</div>
                                             </div>
                                         </div>
+                                    </a>
+                                    <div class="inline-mini-cards">
+                                        <div class="mini-card">
+                                            <div class="mini-number" id="doogle-searches">-</div>
+                                            <div class="mini-label">Searches Made</div>
+                                        </div>
+                                        <div class="mini-card placeholder"></div>
                                     </div>
-                                </a>
+                                </div>
 
-                                <!-- Robin with a single card -->
-                                <a href="{{ url_for('robin.robin_page') }}" class="text-decoration-none">
-                                    <div class="compact-project-item">
-                                        <div class="compact-project-icon">
-                                            <i class="far fa-newspaper"></i>
-                                        </div>
-                                        <div class="compact-project-content">
-                                            <div class="compact-project-title">Robin</div>
-                                            <div class="compact-project-desc">AI news summarizer and aggregator</div>
-                                        </div>
-                                        <div class="inline-mini-cards single">
-                                            <div class="mini-card">
-                                                <div class="mini-number" id="robin-answers">-</div>
-                                                <div class="mini-label">New Queries Answered</div>
+                                <!-- Robin row -->
+                                <div class="compact-app-row">
+                                    <a href="{{ url_for('robin.robin_page') }}" class="text-decoration-none flex-grow-1">
+                                        <div class="compact-project-item">
+                                            <div class="compact-project-icon">
+                                                <i class="far fa-newspaper"></i>
+                                            </div>
+                                            <div class="compact-project-content">
+                                                <div class="compact-project-title">Robin</div>
+                                                <div class="compact-project-desc">AI news summarizer and aggregator</div>
                                             </div>
                                         </div>
+                                    </a>
+                                    <div class="inline-mini-cards">
+                                        <div class="mini-card">
+                                            <div class="mini-number" id="robin-answers">-</div>
+                                            <div class="mini-label">News Queries Answered</div>
+                                        </div>
+                                        <div class="mini-card placeholder"></div>
                                     </div>
-                                </a>
+                                </div>
 
-                                <a href="{{ url_for('dataset_discovery') }}" class="text-decoration-none">
-                                    <div class="compact-project-item">
-                                        <div class="compact-project-icon">
-                                            <i class="fas fa-database"></i>
+                                <!-- Dataset Discovery row (placeholders) -->
+                                <div class="compact-app-row">
+                                    <a href="{{ url_for('dataset_discovery') }}" class="text-decoration-none flex-grow-1">
+                                        <div class="compact-project-item">
+                                            <div class="compact-project-icon">
+                                                <i class="fas fa-database"></i>
+                                            </div>
+                                            <div class="compact-project-content">
+                                                <div class="compact-project-title">Dataset Discovery</div>
+                                                <div class="compact-project-desc">AI-powered dataset search and evaluation</div>
+                                            </div>
                                         </div>
-                                        <div class="compact-project-content">
-                                            <div class="compact-project-title">Dataset Discovery</div>
-                                            <div class="compact-project-desc">AI-powered dataset search and evaluation</div>
-                                        </div>
+                                    </a>
+                                    <div class="inline-mini-cards">
+                                        <div class="mini-card placeholder"></div>
+                                        <div class="mini-card placeholder"></div>
                                     </div>
-                                </a>
+                                </div>
 
-                                <!-- URL Shortener with two mini cards -->
-                                <a href="{{ url_for('deeplink.manage_short_links_page') }}" class="text-decoration-none">
-                                    <div class="compact-project-item">
-                                        <div class="compact-project-icon">
-                                            <i class="fas fa-link"></i>
-                                        </div>
-                                        <div class="compact-project-content">
-                                            <div class="compact-project-title">URL Shortener</div>
-                                            <div class="compact-project-desc">Create trackable short links with analytics</div>
-                                        </div>
-                                        <div class="inline-mini-cards">
-                                            <div class="mini-card">
-                                                <div class="mini-number" id="links-created">-</div>
-                                                <div class="mini-label">Links Created</div>
+                                <!-- URL Shortener row -->
+                                <div class="compact-app-row">
+                                    <a href="{{ url_for('deeplink.manage_short_links_page') }}" class="text-decoration-none flex-grow-1">
+                                        <div class="compact-project-item">
+                                            <div class="compact-project-icon">
+                                                <i class="fas fa-link"></i>
                                             </div>
-                                            <div class="mini-card">
-                                                <div class="mini-number" id="links-clicked">-</div>
-                                                <div class="mini-label">Link Clicks</div>
+                                            <div class="compact-project-content">
+                                                <div class="compact-project-title">URL Shortener</div>
+                                                <div class="compact-project-desc">Create trackable short links with analytics</div>
                                             </div>
+                                        </div>
+                                    </a>
+                                    <div class="inline-mini-cards">
+                                        <div class="mini-card">
+                                            <div class="mini-number" id="total-links">-</div>
+                                            <div class="mini-label">Links Created</div>
+                                        </div>
+                                        <div class="mini-card">
+                                            <div class="mini-number" id="total-clicks">-</div>
+                                            <div class="mini-label">Link Clicks</div>
                                         </div>
                                     </div>
-                                </a>
+                                </div>
 
-                                <!-- Video Generation with single card -->
-                                <a href="{{ url_for('video_generation') }}" class="text-decoration-none">
-                                    <div class="compact-project-item">
-                                        <div class="compact-project-icon">
-                                            <i class="fas fa-video"></i>
-                                        </div>
-                                        <div class="compact-project-content">
-                                            <div class="compact-project-title">Video Generation</div>
-                                            <div class="compact-project-desc">Create AI-generated videos from prompts (beta)</div>
-                                        </div>
-                                        <div class="inline-mini-cards single">
-                                            <div class="mini-card">
-                                                <div class="mini-number" id="videos-generated">-</div>
-                                                <div class="mini-label">Videos Generated</div>
+                                <!-- Video Generation row -->
+                                <div class="compact-app-row">
+                                    <a href="{{ url_for('video_generation') }}" class="text-decoration-none flex-grow-1">
+                                        <div class="compact-project-item">
+                                            <div class="compact-project-icon">
+                                                <i class="fas fa-video"></i>
+                                            </div>
+                                            <div class="compact-project-content">
+                                                <div class="compact-project-title">Video Generation</div>
+                                                <div class="compact-project-desc">Create AI-generated videos from prompts (beta)</div>
                                             </div>
                                         </div>
-                                    </div>
-                                </a>
-                                <a href="{{ url_for('dashboard_page') }}" class="text-decoration-none">
-                                    <div class="compact-project-item">
-                                        <div class="compact-project-icon">
-                                            <i class="fas fa-chart-bar"></i>
+                                    </a>
+                                    <div class="inline-mini-cards">
+                                        <div class="mini-card">
+                                            <div class="mini-number" id="videos-generated">-</div>
+                                            <div class="mini-label">Videos Generated</div>
                                         </div>
-                                        <div class="compact-project-content">
-                                            <div class="compact-project-title">Dashboards</div>
-                                            <div class="compact-project-desc">Create dashboards, charts and graphs... for anything.</div>
-                                        </div>
+                                        <div class="mini-card placeholder"></div>
                                     </div>
-                                </a>
+                                </div>
+
+                                <!-- Dashboards row (placeholders) -->
+                                <div class="compact-app-row">
+                                    <a href="{{ url_for('dashboard_page') }}" class="text-decoration-none flex-grow-1">
+                                        <div class="compact-project-item">
+                                            <div class="compact-project-icon">
+                                                <i class="fas fa-chart-bar"></i>
+                                            </div>
+                                            <div class="compact-project-content">
+                                                <div class="compact-project-title">Dashboards</div>
+                                                <div class="compact-project-desc">Create dashboards, charts and graphs... for anything.</div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                    <div class="inline-mini-cards">
+                                        <div class="mini-card placeholder"></div>
+                                        <div class="mini-card placeholder"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
-                        <!-- Stats Column -->
-                        <div class="col-lg-5 col-md-6 mb-4">
-                            <div class="section-header mb-4">
-                                <h3 class="section-title">Feature Analytics</h3>
-                                <p class="section-subtitle">Real-time performance metrics by feature</p>
-                            </div>
-                            <div class="compact-stats-grid">
-                                <!-- URL Shortener Stats -->
-                                <div class="compact-stats-card">
-                                    <div class="compact-stats-icon">
-                                        <i class="fas fa-link"></i>
-                                    </div>
-                                    <div class="compact-stats-content">
-                                        <div class="compact-stats-number" id="total-links">-</div>
-                                        <div class="compact-stats-label">Links Created</div>
-                                    </div>
-                                </div>
-                                <div class="compact-stats-card">
-                                    <div class="compact-stats-icon">
-                                        <i class="fas fa-mouse-pointer"></i>
-                                    </div>
-                                    <div class="compact-stats-content">
-                                        <div class="compact-stats-number" id="total-clicks">-</div>
-                                        <div class="compact-stats-label">Link Clicks</div>
-                                    </div>
-                                </div>
-                                
-                                <!-- AI Chat Stats -->
-                                <div class="compact-stats-card">
-                                    <div class="compact-stats-icon">
-                                        <i class="fas fa-robot"></i>
-                                    </div>
-                                    <div class="compact-stats-content">
-                                        <div class="compact-stats-number" id="chat-sessions">-</div>
-                                        <div class="compact-stats-label">AI Sessions</div>
-                                    </div>
-                                </div>
-                                <div class="compact-stats-card">
-                                    <div class="compact-stats-icon">
-                                        <i class="fas fa-comments"></i>
-                                    </div>
-                                    <div class="compact-stats-content">
-                                        <div class="compact-stats-number" id="chat-messages">-</div>
-                                        <div class="compact-stats-label">Messages</div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Search & Discovery Stats -->
-                                <div class="compact-stats-card">
-                                    <div class="compact-stats-icon">
-                                        <i class="fas fa-search"></i>
-                                    </div>
-                                    <div class="compact-stats-content">
-                                        <div class="compact-stats-number" id="search-queries">-</div>
-                                        <div class="compact-stats-label">Searches</div>
-                                    </div>
-                                </div>
-                                <div class="compact-stats-card">
-                                    <div class="compact-stats-icon">
-                                        <i class="fas fa-database"></i>
-                                    </div>
-                                    <div class="compact-stats-content">
-                                        <div class="compact-stats-number" id="datasets-found">-</div>
-                                        <div class="compact-stats-label">Datasets Found</div>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
+                        
                     </div>
                 </div>
             </section>
@@ -288,30 +247,18 @@
             this.classList.toggle('active');
         });
 
-        // Fetch and display website stats
+    // Fetch and display website stats (inline mini-cards)
         fetch('/api/website-stats')
             .then(response => response.json())
             .then(data => {
-                // Inline cards next to items
-                document.getElementById('links-created').textContent = data.total_links || '0';
-                document.getElementById('links-clicked').textContent = data.total_clicks || '0';
-
-                document.getElementById('derp-conversations').textContent = data.conversations_started || '0';
-                document.getElementById('derp-messages').textContent = data.messages_exchanged || '0';
-
-                document.getElementById('doogle-searches').textContent = data.doogle_searches_made || '0';
-                document.getElementById('robin-answers').textContent = data.robin_queries_answered || '0';
-
-                document.getElementById('videos-generated').textContent = data.videos_generated || '0';
-
-                // Also hydrate right-column cards to keep visual parity
                 const elMap = {
-                    'total-links': data.total_links,
-                    'total-clicks': data.total_clicks,
                     'chat-sessions': data.conversations_started,
                     'chat-messages': data.messages_exchanged,
-                    'search-queries': data.doogle_searches_made,
-                    'datasets-found': data.robin_queries_answered
+                    'doogle-searches': data.doogle_searches_made,
+                    'robin-answers': data.robin_queries_answered,
+                    'total-links': data.total_links,
+                    'total-clicks': data.total_clicks,
+                    'videos-generated': data.videos_generated
                 };
                 Object.entries(elMap).forEach(([id, val]) => {
                     const el = document.getElementById(id);
@@ -320,9 +267,7 @@
             })
             .catch(error => {
                 console.error('Error fetching stats:', error);
-                const ids = [
-                    'links-created','links-clicked','derp-conversations','derp-messages','doogle-searches','robin-answers','videos-generated'
-                ];
+                const ids = ['chat-sessions','chat-messages','doogle-searches','robin-answers','total-links','total-clicks','videos-generated'];
                 ids.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '0'; });
             });
     </script>
