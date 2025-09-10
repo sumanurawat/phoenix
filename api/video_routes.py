@@ -5,11 +5,13 @@ import logging
 import threading
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 from services.veo_video_generation_service import VeoGenerationParams, veo_video_service
+from services.website_stats_service import WebsiteStatsService
 from services.realtime_event_bus import realtime_event_bus
 
 logger = logging.getLogger(__name__)
 
 video_bp = Blueprint('video', __name__, url_prefix='/api/video')
+website_stats_service = WebsiteStatsService()
 
 _jobs = {}
 
@@ -36,6 +38,11 @@ def _run_generation(job_id: str, prompts, base_options):
 				_jobs[job_id]['prompts'][idx]['video_url'] = uri
 				_jobs[job_id]['prompts'][idx]['gcs_uris'] = result.gcs_uris
 				_jobs[job_id]['prompts'][idx]['local_paths'] = result.local_paths
+				# Increment videos generated per successful prompt
+				try:
+					website_stats_service.increment_videos_generated(1)
+				except Exception:
+					logger.exception('Failed to increment videos generated counter')
 			else:
 				realtime_event_bus.publish(evt_topic, 'prompt.failed', {"prompt_index": idx, "error": result.error})
 				_jobs[job_id]['prompts'][idx]['status'] = 'failed'

@@ -4,9 +4,11 @@ API endpoints for search functionality.
 from flask import Blueprint, jsonify, request
 
 from services.search_service import SearchService
+from services.website_stats_service import WebsiteStatsService
 
 # Initialize service
 search_service = SearchService()
+website_stats_service = WebsiteStatsService()
 
 # Create Blueprint
 search_bp = Blueprint('search', __name__, url_prefix='/api/search')
@@ -26,6 +28,9 @@ def search():
     
     # Process the search query
     search_results = search_service.search(query, category, page, results_per_page)
+    # Increment Doogle searches when a non-empty query is made
+    if isinstance(query, str) and query.strip():
+        website_stats_service.increment_doogle_searches(1)
     
     # Return the search results
     return jsonify(search_results)

@@ -274,7 +274,7 @@ body {
   box-shadow: 0 2px 6px rgba(0,0,0,0.03);
   padding: 1rem 1.25rem;
   transition: all 0.2s ease;
-  min-height: 70px;
+  min-height: 90px;
 }
 
 .compact-project-item:hover {
@@ -303,6 +303,43 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
+}
+
+/* Inline mini cards to the right of each app row */
+.inline-mini-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(110px, 1fr));
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.inline-mini-cards.single { grid-template-columns: 1fr; }
+
+.mini-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  min-height: 60px;
+}
+
+.mini-number {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-color);
+  margin-bottom: 0.15rem;
+}
+
+.mini-label {
+  font-size: 0.7rem;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 .compact-project-title {

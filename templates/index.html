@@ -70,6 +70,7 @@
                                 <p class="section-subtitle">Practical tools for creators and productivity</p>
                             </div>
                             <div class="compact-project-grid">
+                                <!-- Derplexity with inline mini cards -->
                                 <a href="{{ url_for('derplexity') }}" class="text-decoration-none">
                                     <div class="compact-project-item">
                                         <div class="compact-project-icon">
@@ -79,8 +80,20 @@
                                             <div class="compact-project-title">Derplexity</div>
                                             <div class="compact-project-desc">Conversational AI powered by Gemini</div>
                                         </div>
+                                        <div class="inline-mini-cards">
+                                            <div class="mini-card">
+                                                <div class="mini-number" id="derp-conversations">-</div>
+                                                <div class="mini-label">Conversations Started</div>
+                                            </div>
+                                            <div class="mini-card">
+                                                <div class="mini-number" id="derp-messages">-</div>
+                                                <div class="mini-label">Messages Exchanged</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </a>
+
+                                <!-- Doogle with a single card -->
                                 <a href="{{ url_for('doogle') }}" class="text-decoration-none">
                                     <div class="compact-project-item">
                                         <div class="compact-project-icon">
@@ -90,8 +103,16 @@
                                             <div class="compact-project-title">Doogle</div>
                                             <div class="compact-project-desc">AI-powered intelligent search engine</div>
                                         </div>
+                                        <div class="inline-mini-cards single">
+                                            <div class="mini-card">
+                                                <div class="mini-number" id="doogle-searches">-</div>
+                                                <div class="mini-label">Searches Made</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </a>
+
+                                <!-- Robin with a single card -->
                                 <a href="{{ url_for('robin.robin_page') }}" class="text-decoration-none">
                                     <div class="compact-project-item">
                                         <div class="compact-project-icon">
@@ -101,8 +122,15 @@
                                             <div class="compact-project-title">Robin</div>
                                             <div class="compact-project-desc">AI news summarizer and aggregator</div>
                                         </div>
+                                        <div class="inline-mini-cards single">
+                                            <div class="mini-card">
+                                                <div class="mini-number" id="robin-answers">-</div>
+                                                <div class="mini-label">New Queries Answered</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </a>
+
                                 <a href="{{ url_for('dataset_discovery') }}" class="text-decoration-none">
                                     <div class="compact-project-item">
                                         <div class="compact-project-icon">
@@ -114,6 +142,8 @@
                                         </div>
                                     </div>
                                 </a>
+
+                                <!-- URL Shortener with two mini cards -->
                                 <a href="{{ url_for('deeplink.manage_short_links_page') }}" class="text-decoration-none">
                                     <div class="compact-project-item">
                                         <div class="compact-project-icon">
@@ -123,8 +153,20 @@
                                             <div class="compact-project-title">URL Shortener</div>
                                             <div class="compact-project-desc">Create trackable short links with analytics</div>
                                         </div>
+                                        <div class="inline-mini-cards">
+                                            <div class="mini-card">
+                                                <div class="mini-number" id="links-created">-</div>
+                                                <div class="mini-label">Links Created</div>
+                                            </div>
+                                            <div class="mini-card">
+                                                <div class="mini-number" id="links-clicked">-</div>
+                                                <div class="mini-label">Link Clicks</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </a>
+
+                                <!-- Video Generation with single card -->
                                 <a href="{{ url_for('video_generation') }}" class="text-decoration-none">
                                     <div class="compact-project-item">
                                         <div class="compact-project-icon">
@@ -133,6 +175,12 @@
                                         <div class="compact-project-content">
                                             <div class="compact-project-title">Video Generation</div>
                                             <div class="compact-project-desc">Create AI-generated videos from prompts (beta)</div>
+                                        </div>
+                                        <div class="inline-mini-cards single">
+                                            <div class="mini-card">
+                                                <div class="mini-number" id="videos-generated">-</div>
+                                                <div class="mini-label">Videos Generated</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </a>
@@ -244,27 +292,38 @@
         fetch('/api/website-stats')
             .then(response => response.json())
             .then(data => {
-                // URL Shortener stats
-                document.getElementById('total-links').textContent = data.total_links || '0';
-                document.getElementById('total-clicks').textContent = data.total_clicks || '0';
-                
-                // AI Chat stats (placeholder values for now)
-                document.getElementById('chat-sessions').textContent = data.chat_sessions || '0';
-                document.getElementById('chat-messages').textContent = data.chat_messages || '0';
-                
-                // Search & Discovery stats (placeholder values for now)
-                document.getElementById('search-queries').textContent = data.search_queries || '0';
-                document.getElementById('datasets-found').textContent = data.datasets_found || '0';
+                // Inline cards next to items
+                document.getElementById('links-created').textContent = data.total_links || '0';
+                document.getElementById('links-clicked').textContent = data.total_clicks || '0';
+
+                document.getElementById('derp-conversations').textContent = data.conversations_started || '0';
+                document.getElementById('derp-messages').textContent = data.messages_exchanged || '0';
+
+                document.getElementById('doogle-searches').textContent = data.doogle_searches_made || '0';
+                document.getElementById('robin-answers').textContent = data.robin_queries_answered || '0';
+
+                document.getElementById('videos-generated').textContent = data.videos_generated || '0';
+
+                // Also hydrate right-column cards to keep visual parity
+                const elMap = {
+                    'total-links': data.total_links,
+                    'total-clicks': data.total_clicks,
+                    'chat-sessions': data.conversations_started,
+                    'chat-messages': data.messages_exchanged,
+                    'search-queries': data.doogle_searches_made,
+                    'datasets-found': data.robin_queries_answered
+                };
+                Object.entries(elMap).forEach(([id, val]) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = val || '0';
+                });
             })
             .catch(error => {
                 console.error('Error fetching stats:', error);
-                // Set default values on error
-                document.getElementById('total-links').textContent = '0';
-                document.getElementById('total-clicks').textContent = '0';
-                document.getElementById('chat-sessions').textContent = '0';
-                document.getElementById('chat-messages').textContent = '0';
-                document.getElementById('search-queries').textContent = '0';
-                document.getElementById('datasets-found').textContent = '0';
+                const ids = [
+                    'links-created','links-clicked','derp-conversations','derp-messages','doogle-searches','robin-answers','videos-generated'
+                ];
+                ids.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '0'; });
             });
     </script>
 </body>
