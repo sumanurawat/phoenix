@@ -103,11 +103,23 @@ def sync_checkout_session(db, session_id):
             return False
         
         # Create/update subscription record
+        # Try to extract price_id
+        price_id = None
+        try:
+            if subscription.items and subscription.items.data:
+                first_item = subscription.items.data[0]
+                price_obj = getattr(first_item, 'price', None) or getattr(first_item, 'plan', None)
+                if price_obj:
+                    price_id = getattr(price_obj, 'id', None)
+        except Exception:
+            pass
+
         subscription_data = {
             'firebase_uid': firebase_uid,
             'stripe_customer_id': session.customer,
             'stripe_subscription_id': session.subscription,
-            'plan_id': 'premium_monthly',
+            'plan_id': 'five',
+            'price_id': price_id,
             'status': subscription.status,
             'current_period_start': datetime.fromtimestamp(
                 subscription.current_period_start, tz=timezone.utc
@@ -172,11 +184,23 @@ def sync_customer_subscriptions(db, email):
             if subscription.status in ['active', 'trialing']:
                 active_count += 1
                 
+                # Try to extract price_id
+                price_id = None
+                try:
+                    if subscription.items and subscription.items.data:
+                        first_item = subscription.items.data[0]
+                        price_obj = getattr(first_item, 'price', None) or getattr(first_item, 'plan', None)
+                        if price_obj:
+                            price_id = getattr(price_obj, 'id', None)
+                except Exception:
+                    pass
+
                 subscription_data = {
                     'firebase_uid': firebase_uid,
                     'stripe_customer_id': customer.id,
                     'stripe_subscription_id': subscription.id,
-                    'plan_id': 'premium_monthly',
+                    'plan_id': 'five',
+                    'price_id': price_id,
                     'status': subscription.status,
                     'current_period_start': datetime.fromtimestamp(
                         subscription.current_period_start, tz=timezone.utc

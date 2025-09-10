@@ -12,7 +12,11 @@
   --transition-speed: 0.3s;
   --border-radius: 12px;
   --font-family: 'Poppins', sans-serif;
+  /* Shared header height (can be overridden by inline style in base.html) */
+  --header-height: 76px;
 }
+
+html { scroll-padding-top: var(--header-height); }
 
 body {
   min-height: 100vh;
@@ -21,8 +25,37 @@ body {
   font-family: var(--font-family);
   margin: 0;
   padding: 0;
+  /* Reserve space for the fixed header so content starts below */
+  padding-top: var(--header-height);
   overflow-x: hidden;
 }
+
+/* Phoenix universal header */
+.phoenix-header {
+  background: #fff;
+  border-bottom: 1px solid #e9ecef;
+  padding: 0.5rem 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 1020;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.phoenix-brand {
+  text-decoration: none;
+  color: var(--primary-color, #667eea);
+  font-weight: 600;
+  font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.phoenix-brand:hover { color: var(--primary-dark, #5a67d8); }
+
+.user-avatar-tiny { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
 
 /* Portfolio Layout */
 .portfolio-layout {
@@ -36,9 +69,10 @@ body {
   background-color: var(--sidebar-bg);
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
   position: fixed;
-  top: 0;
+  /* Sit below the fixed header */
+  top: var(--header-height);
   left: 0;
-  height: 100vh;
+  height: calc(100vh - var(--header-height));
   z-index: 100;
   transition: transform var(--transition-speed);
 }
@@ -973,7 +1007,8 @@ body {
   /* Fix iOS input issues */
   textarea, input[type="text"] {
     font-size: 16px;
-    -webkit-appearance: none;
+  -webkit-appearance: none;
+  appearance: none;
   }
 }
 

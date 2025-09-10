@@ -1,855 +1,228 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Robin News Reporter</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Custom styles -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Robin-specific styles */
-        .robin-container {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-        
-        .robin-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            border-bottom: 1px solid #e0e0e0;
-            background-color: #fff;
-        }
-        
-        .robin-header-left {
-            display: flex;
-            align-items: center;
-        }
-        
-        .robin-header-right {
-            display: flex;
-            align-items: center;
-        }
-        
-        .robin-logo {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #FF6B6B;
-            margin-right: 1rem;
-        }
-        
-        .back-button {
-            color: #555;
-            text-decoration: none;
-            margin-right: 1rem;
-            font-size: 1.2rem;
-        }
-        
-        .robin-search-form {
-            flex-grow: 1;
-            max-width: 800px;
-            margin: 0 1rem;
-        }
-        
-        .search-input-container {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        
-        .search-input {
-            width: 100%;
-            padding: 0.8rem 1rem 0.8rem 3rem;
-            border: 1px solid #dfe1e5;
-            border-radius: 24px;
-            font-size: 1rem;
-            background-color: #fff;
-            box-shadow: 0 1px 6px rgba(32, 33, 36, 0.1);
-            outline: none;
-            transition: box-shadow 0.2s;
-        }
-        
-        .search-input:focus {
-            box-shadow: 0 1px 10px rgba(32, 33, 36, 0.2);
-            border-color: #dfe1e5;
-        }
-        
-        .search-icon {
-            position: absolute;
-            left: 1rem;
-            color: #555;
-        }
-        
-        .search-button {
-            background-color: #FF6B6B;
-            color: white;
-            border: 1px solid #FF6B6B;
-            border-radius: 5px;
-            margin-left: 10px;
-            padding: 0.7rem 1.5rem;
-            transition: background-color 0.2s;
-        }
-        
-        .search-button:hover {
-            background-color: #ff5252;
-            border-color: #ff5252;
-        }
-        
-        .news-container {
-            margin-top: 2rem;
-            padding: 0 1rem;
-        }
-        
-        .news-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            padding: 1.5rem;
-            transition: box-shadow 0.3s;
-        }
-        
-        .news-card:hover {
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .news-title {
-            font-size: 1.25rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-        
-        .news-meta {
-            display: flex;
-            gap: 1rem;
-            font-size: 0.875rem;
-            color: #666;
-            margin-bottom: 1rem;
-        }
-        
-        .content-spinner {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 15px 0;
-            height: 50px;
-        }
-        
-        .content-loading-indicator {
-            font-size: 0.9rem;
-            color: #666;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .news-content {
-            font-size: 1rem;
-            line-height: 1.6;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-            position: relative;
-        }
-        
-        .news-content.collapsed {
-            max-height: 120px; /* Height when collapsed */
-        }
-        
-        .news-content.expanded {
-            max-height: 5000px; /* Large enough for most articles */
-        }
-        
-        .content-fade {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,1));
-            pointer-events: none;
-            display: none;
-        }
-        
-        .news-content.collapsed .content-fade {
-            display: block;
-        }
-        
-        .expand-btn {
-            margin-top: 10px;
-            margin-bottom: 5px;
-            background-color: #f8f9fa;
-            border: 1px solid #e0e0e0;
-            color: #555;
-            border-radius: 15px;
-            padding: 3px 12px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-        }
-        
-        .expand-btn:hover {
-            background-color: #FF6B6B;
-            color: white;
-            border-color: #FF6B6B;
-        }
-        
-        .expand-btn i {
-            transition: transform 0.3s;
-            margin-right: 4px;
-        }
-        
-        .expand-btn.expanded i {
-            transform: rotate(180deg);
-        }
-        
-        .loading-spinner {
-            display: none;
-            justify-content: center;
-            margin: 2rem 0;
-        }
-        
-        .pagination-container {
-            display: flex;
-            justify-content: center;
-            margin: 2rem 0;
-        }
-        
-        #load-more-btn {
-            background-color: #FF6B6B;
-            color: white;
-            border: none;
-            padding: 0.5rem 1.5rem;
-            border-radius: 5px;
-            cursor: pointer;
-            display: none;
-        }
-        
-        #load-more-btn:hover {
-            background-color: #ff5252;
-        }
-        
-        .no-results {
-            text-align: center;
-            padding: 2rem;
-            color: #666;
-        }
-        
-        /* AI Summary Panel Styles */
-        .ai-summary-panel {
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 1.5rem;
-            background-color: #fff;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 1.5rem;
-        }
-        
-        .ai-summary-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .ai-summary-header h4 {
-            margin: 0;
-            font-size: 1.2rem;
-            color: #FF6B6B;
-        }
-        
-        .ai-summary-header .ai-icon {
-            margin-right: 10px;
-            color: #FF6B6B;
-        }
-        
-        .ai-summary-content {
-            font-size: 0.95rem;
-            line-height: 1.5;
-            min-height: 100px;
-        }
-        
-        .ai-summary-footer {
-            margin-top: 1rem;
-            font-size: 0.8rem;
-            color: #888;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .summary-loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 150px;
-            color: #666;
-            text-align: center;
-        }
-        
-        .summary-loading i {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            color: #FF6B6B;
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
-        }
-        
-        .summary-placeholder {
-            text-align: center;
-            padding: 1rem 0;
-        }
-    </style>
-</head>
-<body>
-    <div class="robin-container">
-        <header class="robin-header">
-            <div class="robin-header-left">
-                <a href="{{ url_for('index') }}" class="back-button">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <div class="robin-logo">
-                    <i class="fas fa-newspaper"></i> Robin
-                </div>
-            </div>
-            <div class="robin-search-form">
-                <form id="search-form">
-                    <div class="search-input-container">
-                        <i class="fas fa-search search-icon"></i>
-                        <input type="text" id="search-input" class="search-input" placeholder="Search for news..." required>
-                        <button type="submit" class="search-button">Search</button>
-                    </div>
-                </form>
-            </div>
-            <div class="robin-header-right">
-                <!-- Additional header elements could go here -->
-            </div>
-        </header>
+{% extends 'base.html' %}
 
-        <main class="container py-4">
-            <div id="loading-spinner" class="loading-spinner">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
+{% block title %}{{ title or 'Robin News Reporter - Phoenix AI' }}{% endblock %}
 
-            <div class="row">
-                <!-- News Articles Column -->
-                <div class="col-lg-8">
-                    <div id="news-container" class="news-container">
-                        <!-- News articles will be displayed here -->
-                        <div class="initial-message text-center mt-5">
-                            <i class="fas fa-newspaper fa-4x mb-3" style="color: #FF6B6B;"></i>
-                            <h2>Robin News Reporter</h2>
-                            <p class="lead">Search for the latest news on any topic</p>
-                        </div>
-                    </div>
-
-                    <div class="pagination-container">
-                        <button id="load-more-btn">Load More</button>
-                    </div>
-                </div>
-                
-                <!-- AI Summary Column -->
-                <div class="col-lg-4">
-                    <div class="ai-summary-panel">
-                        <div class="ai-summary-header">
-                            <i class="fas fa-chart-line ai-icon"></i>
-                            <h4>Economic Analysis & Forecast</h4>
-                        </div>
-                        <div id="ai-summary-content" class="ai-summary-content">
-                            <div class="summary-placeholder">
-                                <p>After searching, click the button below to generate a summary column from all results.</p>
-                                <button id="generate-summary-btn" class="btn btn-primary mt-3" disabled>
-                                    <i class="fas fa-magic me-2"></i>Generate Summary
-                                </button>
-                            </div>
-                        </div>
-                        <div class="ai-summary-footer">
-                            <span id="summary-model">Powered by AI</span>
-                            <span id="summary-timestamp"></span>
-                        </div>
-                    </div>
-                </div>
+{% block content %}
+    <!-- Robin sub-header sticks below the Phoenix header -->
+    <div class="robin-header sticky-after-header">
+        <div class="robin-header-left">
+            <a href="{{ url_for('index') }}" class="back-button" title="Back to Home">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div class="robin-logo">
+                <i class="fas fa-newspaper"></i>
+                <span>Robin</span>
             </div>
-        </main>
+        </div>
 
-        <footer class="mt-auto py-3 bg-light">
-            <div class="container text-center">
-                <p><small>Phoenix AI Platform | Robin News Reporter</small></p>
+        <form id="search-form" class="robin-search-form" role="search">
+            <div class="search-input-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="search-input" class="search-input" placeholder="Search for news..." required>
+                <button type="submit" class="search-button">Search</button>
             </div>
-        </footer>
+        </form>
+
+        <div class="robin-header-right"><!-- reserved --></div>
     </div>
 
-    <!-- Bootstrap JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Marked.js for Markdown parsing -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
-    <script>
-        let currentPage = 1;
-        let currentQuery = '';
-        let hasMoreResults = false;
-        let allFetchedArticles = [];
-        
-        document.getElementById('search-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            currentQuery = document.getElementById('search-input').value.trim();
-            currentPage = 1;
-            
-            if(currentQuery) {
-                searchNews(currentQuery, currentPage);
-            }
-        });
-        
-        document.getElementById('load-more-btn').addEventListener('click', function() {
-            if(hasMoreResults) {
-                currentPage++;
-                searchNews(currentQuery, currentPage);
-            }
-        });
-        
-        function searchNews(query, page) {
-            const spinner = document.getElementById('loading-spinner');
-            const newsContainer = document.getElementById('news-container');
-            const loadMoreBtn = document.getElementById('load-more-btn');
-            const generateSummaryBtn = document.getElementById('generate-summary-btn');
-            
-            spinner.style.display = 'flex';
-            
-            if(page === 1) {
-                newsContainer.innerHTML = '';
-                loadMoreBtn.style.display = 'none';
-                allFetchedArticles = []; // Reset articles array on new search
-                
-                // Reset summary panel
-                const summaryContent = document.getElementById('ai-summary-content');
-                summaryContent.innerHTML = `
-                <div class="summary-placeholder text-center">
-                    <p>After searching, click the button below to generate a summary column from all the search results.</p>
-                    <button id="generate-summary-btn" class="btn btn-primary mt-3" disabled>
-                        <i class="fas fa-magic me-2"></i>Generate Summary
-                    </button>
-                </div>`;
-                
-                // Re-attach event listener to the newly created button
-                document.getElementById('generate-summary-btn').addEventListener('click', generateAllArticlesSummary);
-            }
-            
-            fetch('/api/robin/search', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    query: query,
-                    page: page
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                spinner.style.display = 'none';
-                
-                if(!data.success) {
-                    newsContainer.innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
-                    return;
-                }
-                
-                if(data.articles.length === 0 && page === 1) {
-                    newsContainer.innerHTML = `<div class="no-results">No news found for "${query}"</div>`;
-                    return;
-                }
-                
-                // Store articles for summary generation
-                allFetchedArticles = [...allFetchedArticles, ...data.articles];
-                
-                data.articles.forEach(article => {
-                    const articleElement = createArticleElement(article);
-                    newsContainer.appendChild(articleElement);
-                });
-                
-                hasMoreResults = data.has_more;
-                loadMoreBtn.style.display = hasMoreResults ? 'block' : 'none';
-                
-                // Enable the generate summary button if we have articles
-                if (allFetchedArticles.length > 0) {
-                    const generateSummaryBtn = document.getElementById('generate-summary-btn');
-                    generateSummaryBtn.disabled = false;
-                }
-            })
-            .catch(error => {
-                spinner.style.display = 'none';
-                newsContainer.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
-            });
-        }
-        
-        function createArticleElement(article) {
-            const articleDiv = document.createElement('div');
-            articleDiv.className = 'news-card';
-            articleDiv.dataset.articleUrl = article.link;
-            
-            const title = document.createElement('h3');
-            title.className = 'news-title';
-            title.textContent = article.title || 'No Title';
-            
-            const meta = document.createElement('div');
-            meta.className = 'news-meta';
-            
-            const source = document.createElement('span');
-            source.innerHTML = `<i class="fas fa-globe"></i> ${article.source || 'Unknown Source'}`;
-            
-            const date = document.createElement('span');
-            date.innerHTML = `<i class="far fa-calendar-alt"></i> ${article.pubDate || 'No Date'}`;
-            
-            meta.appendChild(source);
-            meta.appendChild(date);
-            
-            // Create content container with collapse/expand functionality
-            const contentWrapper = document.createElement('div');
-            contentWrapper.className = 'news-content collapsed';
-            
-            // Check if we have substantial content initially
-            const hasInitialContent = article.content && article.content.length > 100;
-            
-            if (hasInitialContent) {
-                // Add the actual content if we already have it
-                const contentText = document.createElement('div');
-                contentText.className = 'content-text';
-                contentText.textContent = article.content;
-                
-                // Add gradient fade effect at the bottom when collapsed
-                const contentFade = document.createElement('div');
-                contentFade.className = 'content-fade';
-                
-                contentWrapper.appendChild(contentText);
-                contentWrapper.appendChild(contentFade);
-            } else {
-                // Show loading spinner for content that will be fetched
-                const contentSpinner = document.createElement('div');
-                contentSpinner.className = 'content-spinner';
-                contentSpinner.innerHTML = `
-                    <div class="content-loading-indicator">
-                        <div class="spinner-border spinner-border-sm" role="status">
-                            <span class="visually-hidden">Loading...</span>
+    <div class="container py-4">
+        <div id="loading-spinner" class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- News Articles Column -->
+            <div class="col-lg-8">
+                <div id="news-articles" class="news-articles">
+                    <!-- News articles will be loaded here -->
+                    <div class="welcome-message">
+                        <h3>Welcome to Robin News</h3>
+                        <p>Search for news topics and get AI-powered summaries and analysis.</p>
+                        <p>Try searching for: "Technology news", "Climate change", "Space exploration"</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- News Summary Column -->
+            <div class="col-lg-4">
+                <div id="news-summary" class="news-summary">
+                    <div class="summary-card ai-summary-panel">
+                        <div class="ai-summary-header">
+                            <i class="fas fa-brain ai-icon"></i>
+                            <h4 class="mb-0">AI Analysis</h4>
                         </div>
-                        <span>Loading full article content...</span>
+                        <div id="ai-summary-content" class="ai-summary-content summary-placeholder">
+                            <p class="text-muted">Search for news to see AI-powered analysis and insights.</p>
+                        </div>
+                        <div class="ai-summary-footer">
+                            <small id="summary-model"></small>
+                            <small>Updated <span id="summary-timestamp"></span></small>
+                        </div>
                     </div>
-                `;
-                
-                // Add the description as initial content
-                const initialContent = document.createElement('div');
-                initialContent.className = 'content-text';
-                initialContent.textContent = article.description || 'Loading article content...';
-                
-                contentWrapper.appendChild(initialContent);
-                contentWrapper.appendChild(contentSpinner);
-                
-                // Fetch the full content in the background
-                fetchArticleContent(article.link).then(result => {
-                    // Remove the spinner
-                    contentSpinner.remove();
-                    
-                    if (result.success) {
-                        // Update the content
-                        initialContent.textContent = result.content;
-                        
-                        // Add gradient fade effect
-                        const contentFade = document.createElement('div');
-                        contentFade.className = 'content-fade';
-                        contentWrapper.appendChild(contentFade);
-                        
-                        // Add expand button if not already present
-                        if (!articleDiv.querySelector('.expand-btn')) {
-                            const expandBtn = createExpandButton(contentWrapper, articleDiv);
-                            articleDiv.insertBefore(expandBtn, articleDiv.querySelector('.news-link'));
-                        }
-                    } else {
-                        // Show error message
-                        initialContent.textContent = article.description || 'Could not load full article content.';
-                    }
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Layout helpers */
+.sticky-after-header { position: sticky; top: var(--header-height); z-index: 900; background: #fff; }
+
+/* Robin header */
+.robin-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.75rem 1rem; border-bottom: 1px solid #e9ecef; }
+.robin-header-left { display: flex; align-items: center; gap: 0.75rem; }
+.robin-header-right { display: flex; align-items: center; gap: 0.75rem; }
+.robin-logo { font-size: 1.25rem; font-weight: 700; color: #FF6B6B; display: inline-flex; align-items: center; gap: 0.5rem; }
+.back-button { color: #555; text-decoration: none; font-size: 1.1rem; }
+.back-button:hover { color: #ff5252; }
+
+/* Search */
+.robin-search-form { flex: 1; max-width: 720px; margin: 0 1rem; }
+.search-input-container { position: relative; display: flex; align-items: center; }
+.search-icon { position: absolute; left: 0.85rem; color: #9aa0a6; }
+.search-input { width: 100%; padding: 0.7rem 1rem 0.7rem 2.4rem; border: 1px solid #dfe1e5; border-radius: 24px; font-size: 1rem; outline: none; box-shadow: 0 1px 6px rgba(32,33,36,0.1); }
+.search-input:focus { box-shadow: 0 1px 10px rgba(32,33,36,0.2); border-color: #dfe1e5; }
+.search-button { background-color: #FF6B6B; color: #fff; border: 1px solid #FF6B6B; border-radius: 24px; margin-left: 8px; padding: 0.6rem 1.2rem; }
+.search-button:hover { background-color: #ff5252; border-color: #ff5252; }
+
+/* Cards and content */
+.news-articles { min-height: 400px; }
+.welcome-message { text-align: center; padding: 2rem; background: #f8f9fa; border-radius: 12px; margin-bottom: 1.25rem; }
+.news-card { border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 1.25rem; padding: 1.25rem; transition: box-shadow 0.3s; background: #fff; }
+.news-card:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+.news-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.4rem; }
+.news-meta { display: flex; gap: 0.75rem; font-size: 0.875rem; color: #666; margin-bottom: 0.75rem; }
+.news-content { font-size: 1rem; line-height: 1.6; overflow: hidden; transition: max-height 0.3s ease-out; position: relative; }
+.news-content.collapsed { max-height: 120px; }
+.news-content.expanded { max-height: 5000px; }
+.content-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,1)); pointer-events: none; display: none; }
+.news-content.collapsed .content-fade { display: block; }
+.expand-btn { margin-top: 10px; margin-bottom: 5px; background-color: #f8f9fa; border: 1px solid #e0e0e0; color: #555; border-radius: 15px; padding: 3px 12px; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; }
+.expand-btn:hover { background: #FF6B6B; color: #fff; border-color: #FF6B6B; }
+.expand-btn i { transition: transform 0.3s; margin-right: 4px; }
+.expand-btn.expanded i { transform: rotate(180deg); }
+.loading-spinner { display: none; justify-content: center; margin: 2rem 0; }
+.pagination-container { display: flex; justify-content: center; margin: 2rem 0; }
+#load-more-btn { background-color: #FF6B6B; color: #fff; border: none; padding: 0.5rem 1.5rem; border-radius: 5px; cursor: pointer; display: none; }
+#load-more-btn:hover { background-color: #ff5252; }
+.no-results { text-align: center; padding: 2rem; color: #666; }
+
+/* AI summary panel */
+.ai-summary-panel { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.25rem; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 1.25rem; }
+.ai-summary-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid #f0f0f0; }
+.ai-summary-header h4 { margin: 0; font-size: 1.1rem; color: #FF6B6B; }
+.ai-summary-header .ai-icon { color: #FF6B6B; }
+.ai-summary-content { font-size: 0.95rem; line-height: 1.5; min-height: 100px; }
+.ai-summary-footer { margin-top: 0.5rem; font-size: 0.8rem; color: #888; display: flex; justify-content: space-between; }
+
+/* Sticky summary on desktop */
+@media (min-width: 992px) {
+  .news-summary { position: sticky; top: calc(var(--header-height) + 16px); }
+}
+
+@keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function fetchArticleContent(articleUrl) {
+    return fetch('/api/robin/article_content', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ article_url: articleUrl })
+    })
+    .then(r => r.json())
+    .catch(err => ({ success: false, error: err.message }));
+}
+
+function generateAllArticlesSummary() {
+    const summaryContent = document.getElementById('ai-summary-content');
+    const summaryModel = document.getElementById('summary-model');
+    const summaryTimestamp = document.getElementById('summary-timestamp');
+    const generateBtn = document.getElementById('generate-summary-btn');
+    if (generateBtn) generateBtn.disabled = true;
+
+    summaryContent.innerHTML = `
+        <div class="summary-loading">
+            <i class="fas fa-robot"></i>
+            <p>Generating AI commentary column from ${allFetchedArticles.length} articles...</p>
+            <div class="spinner-border spinner-border-sm mt-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>`;
+
+    const articlesWithContent = [];
+    let articlesToFetch = 0, articlesFetched = 0;
+
+    allFetchedArticles.forEach(article => {
+        if (article.content && article.content.length > 100) {
+            articlesWithContent.push({ title: article.title, content: article.content });
+        } else { articlesToFetch++; }
+    });
+
+    if (articlesToFetch === 0) return requestAllArticlesSummary(articlesWithContent);
+
+    allFetchedArticles.forEach(article => {
+        if (!article.content || article.content.length <= 100) {
+            fetchArticleContent(article.link)
+                .then(result => {
+                    articlesFetched++;
+                    if (result.success) articlesWithContent.push({ title: article.title, content: result.content });
+                    const loadingMessage = document.querySelector('.summary-loading p');
+                    if (loadingMessage) loadingMessage.textContent = `Fetching article content (${articlesFetched}/${articlesToFetch})...`;
+                    if (articlesFetched === articlesToFetch) requestAllArticlesSummary(articlesWithContent);
+                })
+                .catch(() => {
+                    articlesFetched++;
+                    if (articlesFetched === articlesToFetch) requestAllArticlesSummary(articlesWithContent);
                 });
-            }
-            
-            // Create link to original article
-            const link = document.createElement('a');
-            link.className = 'news-link';
-            link.href = article.link;
-            link.target = '_blank';
-            link.textContent = 'Read full article';
-            
-            articleDiv.appendChild(title);
-            articleDiv.appendChild(meta);
-            articleDiv.appendChild(contentWrapper);
-            
-            // Only add the expand button right away if we already have content
-            if (hasInitialContent) {
-                const expandBtn = createExpandButton(contentWrapper, articleDiv);
-                articleDiv.appendChild(expandBtn);
-            }
-            
-            articleDiv.appendChild(link);
-            
-            return articleDiv;
         }
-        
-        function createExpandButton(contentWrapper, articleDiv) {
-            const expandBtn = document.createElement('button');
-            expandBtn.className = 'expand-btn';
-            expandBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Read more';
-            expandBtn.addEventListener('click', function() {
-                const isExpanded = contentWrapper.classList.contains('expanded');
-                
-                if (isExpanded) {
-                    contentWrapper.classList.remove('expanded');
-                    contentWrapper.classList.add('collapsed');
-                    expandBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Read more';
-                    // Scroll to the top of the article
-                    articleDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                } else {
-                    contentWrapper.classList.remove('collapsed');
-                    contentWrapper.classList.add('expanded');
-                    expandBtn.innerHTML = '<i class="fas fa-chevron-up"></i> Show less';
-                }
-                
-                expandBtn.classList.toggle('expanded');
-            });
-            
-            return expandBtn;
-        }
-        
-        function fetchArticleContent(articleUrl) {
-            return fetch('/api/robin/article_content', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    article_url: articleUrl
-                })
-            })
-            .then(response => response.json())
-            .catch(error => {
-                console.error('Error fetching article content:', error);
-                return { success: false, error: error.message };
-            });
-        }
-        
-        function generateAllArticlesSummary() {
-            const summaryContent = document.getElementById('ai-summary-content');
-            const summaryModel = document.getElementById('summary-model');
-            const summaryTimestamp = document.getElementById('summary-timestamp');
-            
-            // Disable the button to prevent multiple clicks
-            const generateBtn = document.getElementById('generate-summary-btn');
-            generateBtn.disabled = true;
-            
-            // Show loading state
-            summaryContent.innerHTML = `
-                <div class="summary-loading">
-                    <i class="fas fa-robot"></i>
-                    <p>Generating AI commentary column from ${allFetchedArticles.length} articles...</p>
-                    <div class="spinner-border spinner-border-sm mt-2" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                </div>
-            `;
-            
-            // Prepare articles for processing
-            const articlesWithContent = [];
-            let articlesToFetch = 0;
-            let articlesFetched = 0;
-            
-            // First check which articles already have content and which need to be fetched
-            allFetchedArticles.forEach(article => {
-                if (article.content && article.content.length > 100) {
-                    // Already has sufficient content
-                    articlesWithContent.push({
-                        title: article.title,
-                        content: article.content
-                    });
-                } else {
-                    // Need to fetch content
-                    articlesToFetch++;
-                }
-            });
-            
-            // If we have all the content already, generate summary immediately
-            if (articlesToFetch === 0) {
-                requestAllArticlesSummary(articlesWithContent);
-                return;
-            }
-            
-            // Otherwise, fetch content for articles that need it
-            allFetchedArticles.forEach(article => {
-                if (!article.content || article.content.length <= 100) {
-                    fetchArticleContent(article.link)
-                        .then(result => {
-                            articlesFetched++;
-                            
-                            if (result.success) {
-                                articlesWithContent.push({
-                                    title: article.title,
-                                    content: result.content
-                                });
-                            }
-                            
-                            // Update loading message with progress
-                            const loadingMessage = document.querySelector('.summary-loading p');
-                            if (loadingMessage) {
-                                loadingMessage.textContent = `Fetching article content (${articlesFetched}/${articlesToFetch})...`;
-                            }
-                            
-                            // Once all articles are processed, generate the summary
-                            if (articlesFetched === articlesToFetch) {
-                                requestAllArticlesSummary(articlesWithContent);
-                            }
-                        })
-                        .catch(error => {
-                            articlesFetched++;
-                            console.error(`Error fetching content for "${article.title}":`, error);
-                            
-                            // Even if this article fails, continue with the rest
-                            if (articlesFetched === articlesToFetch) {
-                                requestAllArticlesSummary(articlesWithContent);
-                            }
-                        });
-                }
-            });
-        }
-        
-        function requestAllArticlesSummary(articles) {
-            const loadingMessage = document.querySelector('.summary-loading p');
-            if (loadingMessage) {
-                loadingMessage.textContent = 'Generating AI commentary column...';
-            }
-            
-            // Call the API to generate a summary from all articles
-            fetch('/api/robin/generate_summary', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    articles: articles,
-                    query: currentQuery
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    displaySummary(data.summary, data.model_used);
-                } else {
-                    showSummaryError(data.error || "Failed to generate summary");
-                }
-            })
-            .catch(error => {
-                showSummaryError("Error: " + error.message);
-            });
-        }
-        
-        function displaySummary(summaryText, modelUsed) {
-            const summaryContent = document.getElementById('ai-summary-content');
-            const summaryModel = document.getElementById('summary-model');
-            const summaryTimestamp = document.getElementById('summary-timestamp');
-            
-            // Parse the markdown content
-            const formattedSummary = marked.parse(summaryText);
-            
-            // Display the summary with proper markdown rendering
-            summaryContent.innerHTML = formattedSummary;
-            
-            // Add styling for markdown content
-            const style = document.createElement('style');
-            style.textContent = `
-                .ai-summary-content h1, .ai-summary-content h2, .ai-summary-content h3 {
-                    margin-top: 1rem;
-                    margin-bottom: 0.5rem;
-                    color: #222;
-                }
-                .ai-summary-content h1 { font-size: 1.6rem; }
-                .ai-summary-content h2 { font-size: 1.4rem; }
-                .ai-summary-content h3 { font-size: 1.2rem; }
-                .ai-summary-content p { margin-bottom: 1rem; }
-                .ai-summary-content ul, .ai-summary-content ol { 
-                    padding-left: 1.5rem;
-                    margin-bottom: 1rem;
-                }
-                .ai-summary-content li { margin-bottom: 0.3rem; }
-                .ai-summary-content blockquote {
-                    border-left: 3px solid #FF6B6B;
-                    padding-left: 1rem;
-                    color: #555;
-                    font-style: italic;
-                    margin: 1rem 0;
-                }
-                .ai-summary-content code {
-                    background-color: #f3f3f3;
-                    padding: 0.2rem 0.4rem;
-                    border-radius: 3px;
-                    font-family: monospace;
-                }
-                .ai-summary-content a {
-                    color: #FF6B6B;
-                    text-decoration: none;
-                }
-                .ai-summary-content a:hover {
-                    text-decoration: underline;
-                }
-                .ai-summary-content img {
-                    max-width: 100%;
-                    height: auto;
-                    border-radius: 4px;
-                    margin: 1rem 0;
-                }
-                .ai-summary-content table {
-                    border-collapse: collapse;
-                    width: 100%;
-                    margin: 1rem 0;
-                }
-                .ai-summary-content th, .ai-summary-content td {
-                    border: 1px solid #ddd;
-                    padding: 8px;
-                }
-                .ai-summary-content th {
-                    background-color: #f2f2f2;
-                    text-align: left;
-                }
-            `;
-            document.head.appendChild(style);
-            
-            // Update metadata
-            summaryModel.textContent = `Model: ${modelUsed}`;
-            summaryTimestamp.textContent = new Date().toLocaleTimeString();
-            
-            // Scroll the summary into view on mobile
-            if (window.innerWidth <= 992) {
-                const summarySection = document.querySelector('.ai-summary-panel');
-                if (summarySection) {
-                    summarySection.scrollIntoView({ behavior: 'smooth' });
-                }
-            }
-        }
-        
-        function showSummaryError(errorMessage) {
-            const summaryContent = document.getElementById('ai-summary-content');
-            summaryContent.innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-circle"></i> ${errorMessage}
-                </div>
-            `;
-        }
-    </script>
-</body>
-</html>
+    });
+}
+
+function requestAllArticlesSummary(articles) {
+    const loadingMessage = document.querySelector('.summary-loading p');
+    if (loadingMessage) loadingMessage.textContent = 'Generating AI commentary column...';
+
+    fetch('/api/robin/generate_summary', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ articles, query: (typeof currentQuery !== 'undefined' ? currentQuery : '') })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) displaySummary(data.summary, data.model_used);
+        else showSummaryError(data.error || 'Failed to generate summary');
+    })
+    .catch(err => showSummaryError('Error: ' + err.message));
+}
+
+function displaySummary(summaryText, modelUsed) {
+    const summaryContent = document.getElementById('ai-summary-content');
+    const summaryModel = document.getElementById('summary-model');
+    const summaryTimestamp = document.getElementById('summary-timestamp');
+
+    const formatted = (window.marked && typeof marked.parse === 'function') ? marked.parse(summaryText) : summaryText;
+    summaryContent.innerHTML = formatted;
+
+    if (summaryModel) summaryModel.textContent = `Model: ${modelUsed}`;
+    if (summaryTimestamp) summaryTimestamp.textContent = new Date().toLocaleTimeString();
+
+    if (window.innerWidth <= 992) {
+        const summarySection = document.querySelector('.ai-summary-panel');
+        if (summarySection) summarySection.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+function showSummaryError(errorMessage) {
+    const summaryContent = document.getElementById('ai-summary-content');
+    if (!summaryContent) return;
+    summaryContent.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-circle"></i> ${errorMessage}</div>`;
+}
+</script>
+{% endblock %}
+            border-radius: 5px;

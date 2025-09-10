@@ -65,6 +65,7 @@ from services.subscription_middleware import (
     init_subscription_context, 
     subscription_context_processor
 )
+from config.app_display_names import get_display_name
 
 # Configure logging
 logging.basicConfig(
@@ -172,6 +173,11 @@ def create_app():
     def inject_csrf_token():
         return {'csrf_token': lambda: session.get('csrf_token')}
     
+    # Make session accessible in templates
+    @app.context_processor
+    def inject_session():
+        return {'session': session}
+    
     # Register blueprints
     app.register_blueprint(chat_bp)
     app.register_blueprint(enhanced_chat_bp)
@@ -193,6 +199,19 @@ def create_app():
     
     # Add subscription context processor for templates
     app.context_processor(subscription_context_processor)
+
+    # Inject app display names into templates for header
+    @app.context_processor
+    def inject_app_display_name():
+        try:
+            name = get_display_name(
+                path=request.path,
+                blueprint=getattr(request, 'blueprint', None),
+                endpoint=getattr(request, 'endpoint', None)
+            )
+        except Exception:
+            name = None
+        return {'app_display_name': name}
     
     # Define routes
     @app.route('/')
