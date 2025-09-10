@@ -75,3 +75,8 @@ temp_logs/
 
 # Generated video assets (do not commit large binary outputs)
 generated_videos/
+
+# Demo and test files (exclude from production)
+demo_*.py
+*_demo.py
+*_test_*.py

@@ -324,9 +324,8 @@
                     <i class="fas fa-newspaper"></i> Robin
                 </div>
             </div>
-            
-            <div class="col">
-                <form id="search-form" class="robin-search-form">
+            <div class="robin-search-form">
+                <form id="search-form">
                     <div class="search-input-container">
                         <i class="fas fa-search search-icon"></i>
                         <input type="text" id="search-input" class="search-input" placeholder="Search for news..." required>
@@ -339,161 +338,295 @@
             </div>
         </header>
 
-{% block content %}
-<div class="container py-4">
-    <div id="loading-spinner" class="loading-spinner">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- News Articles Column -->
-        <div class="col-lg-8">
-            <div id="news-articles" class="news-articles">
-                <!-- News articles will be loaded here -->
-                <div class="welcome-message">
-                    <h3>Welcome to Robin News</h3>
-                    <p>Search for news topics and get AI-powered summaries and analysis.</p>
-                    <p>Try searching for: "Technology news", "Climate change", "Space exploration"</p>
+        <main class="container py-4">
+            <div id="loading-spinner" class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
                 </div>
             </div>
-        </div>
 
-        <!-- News Summary Column -->
-        <div class="col-lg-4">
-            <div id="news-summary" class="news-summary">
-                <div class="summary-card">
-                    <h4><i class="fas fa-brain me-2"></i>AI Analysis</h4>
-                    <p class="text-muted">Search for news to see AI-powered analysis and insights.</p>
+            <div class="row">
+                <!-- News Articles Column -->
+                <div class="col-lg-8">
+                    <div id="news-container" class="news-container">
+                        <!-- News articles will be displayed here -->
+                        <div class="initial-message text-center mt-5">
+                            <i class="fas fa-newspaper fa-4x mb-3" style="color: #FF6B6B;"></i>
+                            <h2>Robin News Reporter</h2>
+                            <p class="lead">Search for the latest news on any topic</p>
+                        </div>
+                    </div>
+
+                    <div class="pagination-container">
+                        <button id="load-more-btn">Load More</button>
+                    </div>
+                </div>
+                
+                <!-- AI Summary Column -->
+                <div class="col-lg-4">
+                    <div class="ai-summary-panel">
+                        <div class="ai-summary-header">
+                            <i class="fas fa-chart-line ai-icon"></i>
+                            <h4>Economic Analysis & Forecast</h4>
+                        </div>
+                        <div id="ai-summary-content" class="ai-summary-content">
+                            <div class="summary-placeholder">
+                                <p>After searching, click the button below to generate a summary column from all results.</p>
+                                <button id="generate-summary-btn" class="btn btn-primary mt-3" disabled>
+                                    <i class="fas fa-magic me-2"></i>Generate Summary
+                                </button>
+                            </div>
+                        </div>
+                        <div class="ai-summary-footer">
+                            <span id="summary-model">Powered by AI</span>
+                            <span id="summary-timestamp"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+        </main>
 
-{% block extra_css %}
-<style>
-    /* Robin-specific styles */
-    .robin-header {
-        background: white;
-        border-bottom: 1px solid #e0e0e0;
-        padding: 1rem 0;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-    }
+        <footer class="mt-auto py-3 bg-light">
+            <div class="container text-center">
+                <p><small>Phoenix AI Platform | Robin News Reporter</small></p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
-    .back-button {
-        color: #555;
-        text-decoration: none;
-        margin-right: 1rem;
-        font-size: 1.2rem;
-    }
-    
-    .robin-logo {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #e74c3c;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .robin-search-form {
-        flex: 1;
-        max-width: 500px;
-        margin: 0 auto;
-    }
-    
-    .search-input-container {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-    
-    .search-input {
-        flex: 1;
-        padding: 0.75rem 1rem 0.75rem 2.5rem;
-        border: 1px solid #ddd;
-        border-radius: 24px 0 0 24px;
-        font-size: 1rem;
-        outline: none;
-    }
-    
-    .search-input:focus {
-        border-color: #e74c3c;
-        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2);
-    }
-    
-    .search-icon {
-        position: absolute;
-        left: 1rem;
-        color: #9aa0a6;
-        z-index: 1;
-    }
-    
-    .search-button {
-        padding: 0.75rem 1.5rem;
-        border: 1px solid #e74c3c;
-        border-left: none;
-        border-radius: 0 24px 24px 0;
-        background: #e74c3c;
-        color: white;
-        font-weight: 500;
-        cursor: pointer;
-    }
-    
-    .search-button:hover {
-        background: #c0392b;
-    }
-    
-    .loading-spinner {
-        text-align: center;
-        padding: 2rem;
-        display: none;
-    }
-    
-    .welcome-message {
-        text-align: center;
-        padding: 3rem 2rem;
-        background: #f8f9fa;
-        border-radius: 1rem;
-        margin-bottom: 2rem;
-    }
-    
-    .news-articles {
-        min-height: 400px;
-    }
-    
-    .news-summary {
-        position: sticky;
-        top: 100px;
-    }
-    
-    .summary-card {
-        background: white;
-        border-radius: 1rem;
-        padding: 1.5rem;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    }
-    
-    .user-avatar-tiny {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        object-fit: cover;
-    }
-    
-    .bg-gradient-premium {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-    
-    @media (max-width: 768px) {
-        .robin-search-form {
-            max-width: 300px;
+    <script>
+        let currentPage = 1;
+        let currentQuery = '';
+        let hasMoreResults = false;
+        let allFetchedArticles = [];
+        
+        document.getElementById('search-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            currentQuery = document.getElementById('search-input').value.trim();
+            currentPage = 1;
+            
+            if(currentQuery) {
+                searchNews(currentQuery, currentPage);
+            }
+        });
+        
+        document.getElementById('load-more-btn').addEventListener('click', function() {
+            if(hasMoreResults) {
+                currentPage++;
+                searchNews(currentQuery, currentPage);
+            }
+        });
+        
+        function searchNews(query, page) {
+            const spinner = document.getElementById('loading-spinner');
+            const newsContainer = document.getElementById('news-container');
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            const generateSummaryBtn = document.getElementById('generate-summary-btn');
+            
+            spinner.style.display = 'flex';
+            
+            if(page === 1) {
+                newsContainer.innerHTML = '';
+                loadMoreBtn.style.display = 'none';
+                allFetchedArticles = []; // Reset articles array on new search
+                
+                // Reset summary panel
+                const summaryContent = document.getElementById('ai-summary-content');
+                summaryContent.innerHTML = `
+                <div class="summary-placeholder text-center">
+                    <p>After searching, click the button below to generate a summary column from all the search results.</p>
+                    <button id="generate-summary-btn" class="btn btn-primary mt-3" disabled>
+                        <i class="fas fa-magic me-2"></i>Generate Summary
+                    </button>
+                </div>`;
+                
+                // Re-attach event listener to the newly created button
+                document.getElementById('generate-summary-btn').addEventListener('click', generateAllArticlesSummary);
+            }
+            
+            fetch('/api/robin/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    query: query,
+                    page: page
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                spinner.style.display = 'none';
+                
+                if(!data.success) {
+                    newsContainer.innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
+                    return;
+                }
+                
+                if(data.articles.length === 0 && page === 1) {
+                    newsContainer.innerHTML = `<div class="no-results">No news found for "${query}"</div>`;
+                    return;
+                }
+                
+                // Store articles for summary generation
+                allFetchedArticles = [...allFetchedArticles, ...data.articles];
+                
+                data.articles.forEach(article => {
+                    const articleElement = createArticleElement(article);
+                    newsContainer.appendChild(articleElement);
+                });
+                
+                hasMoreResults = data.has_more;
+                loadMoreBtn.style.display = hasMoreResults ? 'block' : 'none';
+                
+                // Enable the generate summary button if we have articles
+                if (allFetchedArticles.length > 0) {
+                    const generateSummaryBtn = document.getElementById('generate-summary-btn');
+                    generateSummaryBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                spinner.style.display = 'none';
+                newsContainer.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+            });
+        }
+        
+        function createArticleElement(article) {
+            const articleDiv = document.createElement('div');
+            articleDiv.className = 'news-card';
+            articleDiv.dataset.articleUrl = article.link;
+            
+            const title = document.createElement('h3');
+            title.className = 'news-title';
+            title.textContent = article.title || 'No Title';
+            
+            const meta = document.createElement('div');
+            meta.className = 'news-meta';
+            
+            const source = document.createElement('span');
+            source.innerHTML = `<i class="fas fa-globe"></i> ${article.source || 'Unknown Source'}`;
+            
+            const date = document.createElement('span');
+            date.innerHTML = `<i class="far fa-calendar-alt"></i> ${article.pubDate || 'No Date'}`;
+            
+            meta.appendChild(source);
+            meta.appendChild(date);
+            
+            // Create content container with collapse/expand functionality
+            const contentWrapper = document.createElement('div');
+            contentWrapper.className = 'news-content collapsed';
+            
+            // Check if we have substantial content initially
+            const hasInitialContent = article.content && article.content.length > 100;
+            
+            if (hasInitialContent) {
+                // Add the actual content if we already have it
+                const contentText = document.createElement('div');
+                contentText.className = 'content-text';
+                contentText.textContent = article.content;
+                
+                // Add gradient fade effect at the bottom when collapsed
+                const contentFade = document.createElement('div');
+                contentFade.className = 'content-fade';
+                
+                contentWrapper.appendChild(contentText);
+                contentWrapper.appendChild(contentFade);
+            } else {
+                // Show loading spinner for content that will be fetched
+                const contentSpinner = document.createElement('div');
+                contentSpinner.className = 'content-spinner';
+                contentSpinner.innerHTML = `
+                    <div class="content-loading-indicator">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span>Loading full article content...</span>
+                    </div>
+                `;
+                
+                // Add the description as initial content
+                const initialContent = document.createElement('div');
+                initialContent.className = 'content-text';
+                initialContent.textContent = article.description || 'Loading article content...';
+                
+                contentWrapper.appendChild(initialContent);
+                contentWrapper.appendChild(contentSpinner);
+                
+                // Fetch the full content in the background
+                fetchArticleContent(article.link).then(result => {
+                    // Remove the spinner
+                    contentSpinner.remove();
+                    
+                    if (result.success) {
+                        // Update the content
+                        initialContent.textContent = result.content;
+                        
+                        // Add gradient fade effect
+                        const contentFade = document.createElement('div');
+                        contentFade.className = 'content-fade';
+                        contentWrapper.appendChild(contentFade);
+                        
+                        // Add expand button if not already present
+                        if (!articleDiv.querySelector('.expand-btn')) {
+                            const expandBtn = createExpandButton(contentWrapper, articleDiv);
+                            articleDiv.insertBefore(expandBtn, articleDiv.querySelector('.news-link'));
+                        }
+                    } else {
+                        // Show error message
+                        initialContent.textContent = article.description || 'Could not load full article content.';
+                    }
+                });
+            }
+            
+            // Create link to original article
+            const link = document.createElement('a');
+            link.className = 'news-link';
+            link.href = article.link;
+            link.target = '_blank';
+            link.textContent = 'Read full article';
+            
+            articleDiv.appendChild(title);
+            articleDiv.appendChild(meta);
+            articleDiv.appendChild(contentWrapper);
+            
+            // Only add the expand button right away if we already have content
+            if (hasInitialContent) {
+                const expandBtn = createExpandButton(contentWrapper, articleDiv);
+                articleDiv.appendChild(expandBtn);
+            }
+            
+            articleDiv.appendChild(link);
+            
+            return articleDiv;
+        }
+        
+        function createExpandButton(contentWrapper, articleDiv) {
+            const expandBtn = document.createElement('button');
+            expandBtn.className = 'expand-btn';
+            expandBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Read more';
+            expandBtn.addEventListener('click', function() {
+                const isExpanded = contentWrapper.classList.contains('expanded');
+                
+                if (isExpanded) {
+                    contentWrapper.classList.remove('expanded');
+                    contentWrapper.classList.add('collapsed');
+                    expandBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Read more';
+                    // Scroll to the top of the article
+                    articleDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    contentWrapper.classList.remove('collapsed');
+                    contentWrapper.classList.add('expanded');
+                    expandBtn.innerHTML = '<i class="fas fa-chevron-up"></i> Show less';
+                }
+                
+                expandBtn.classList.toggle('expanded');
+            });
+            
+            return expandBtn;
         }
         
         function fetchArticleContent(articleUrl) {
