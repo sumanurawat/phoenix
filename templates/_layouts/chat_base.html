@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block body_class %}chat-page{% endblock %}
+
+{#
+Reusable chat layout:
+- Provides a full-height container that accounts for the sticky header
+- Slots:
+  - block chat_sidebar
+  - block chat_header (within content area)
+  - block chat_messages
+  - block chat_input
+#}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+  body.chat-page {
+    background: #fff;
+  }
+  .chat-root {
+    height: calc(100vh - var(--header-height));
+    display: flex;
+    overflow: hidden;
+  }
+  .chat-sidebar {
+    width: 280px;
+    border-right: 1px solid #e9ecef;
+    overflow: auto;
+  }
+  .chat-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .chat-content-header {
+    border-bottom: 1px solid #e9ecef;
+    padding: .75rem 1rem;
+  }
+  .chat-messages {
+    flex: 1;
+    overflow: auto;
+    padding: 1rem;
+    background: #f8fafc;
+  }
+  .chat-input {
+    border-top: 1px solid #e9ecef;
+    padding: .75rem 1rem;
+    background: #fff;
+  }
+  @media (max-width: 992px) {
+    .chat-sidebar { display: none; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="chat-root">
+    <aside class="chat-sidebar">
+      {% block chat_sidebar %}{% endblock %}
+    </aside>
+    <section class="chat-content">
+      <div class="chat-content-header">
+        {% block chat_header %}{% endblock %}
+      </div>
+      <div class="chat-messages">
+        {% block chat_messages %}{% endblock %}
+      </div>
+      <div class="chat-input">
+        {% block chat_input %}{% endblock %}
+      </div>
+    </section>
+  </div>
+{% endblock %}

@@ -1,119 +1,117 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .profile-card {
-            max-width: 500px;
-            margin: 0 auto;
-            background: #fff;
-            border-radius: 1rem;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-            padding: 2rem 2.5rem;
-        }
-        .profile-avatar {
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 1rem;
-        }
-        .edit-btn {
-            float: right;
-        }
-        .subscription-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-        }
-        .subscription-badge.premium {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .subscription-badge.free {
-            background: #f0f0f0;
-            color: #666;
-        }
-        .btn-membership {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .btn-membership:hover {
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-    </style>
-</head>
-<body>
-    <div class="container py-5">
-        <div class="profile-card text-center">
-            {% if user_picture %}
-                <img src="{{ user_picture }}" class="profile-avatar mb-2" alt="avatar">
-            {% else %}
-                <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ user_id or user_email }}" class="profile-avatar mb-2" alt="avatar">
-            {% endif %}
-            
-            <h2 class="mb-1">Welcome{% if user_name %}, {{ user_name }}{% elif user_email %}, {{ user_email }}{% endif %}</h2>
-            <p class="text-muted mb-2">{{ user_email }}</p>
-            
-            <!-- Subscription Status Badge -->
-            {% if subscription and subscription.is_premium %}
-                <div class="subscription-badge premium">
-                    <i class="fas fa-crown"></i>
-                    <span>Premium Member</span>
-                </div>
-            {% else %}
-                <div class="subscription-badge free">
-                    <i class="fas fa-user"></i>
-                    <span>Free Plan</span>
-                </div>
-            {% endif %}
+{% extends "base.html" %}
 
-            <div class="d-grid gap-2 mt-4">
-                <!-- Manage Membership Button -->
-                <a href="{{ url_for('subscription.manage') }}" class="btn btn-membership">
-                    <i class="fas fa-credit-card me-2"></i>Manage Membership
-                </a>
-                <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
-                    <i class="fas fa-home me-2"></i>Back to Main Page
-                </a>
-                <a href="{{ url_for('derplexity') }}" class="btn btn-primary">
-                    <i class="fas fa-comments me-2"></i>Derplexity Chat
-                </a>
-                <a href="{{ url_for('doogle') }}" class="btn btn-primary">
-                    <i class="fas fa-search me-2"></i>Doogle Search
-                </a>
-                <a href="{{ url_for('robin.robin_page') }}" class="btn btn-primary">
-                    <i class="fas fa-newspaper me-2"></i>Robin News
-                </a>
-                <a href="{{ url_for('deeplink.manage_short_links_page') }}" class="btn btn-primary">
-                    <i class="fas fa-link me-2"></i>Short Links
-                </a>
-                <a href="{{ url_for('dashboard_page') }}" class="btn btn-primary">
-                    <i class="fas fa-chart-bar me-2"></i>Dashboard
-                </a>
+{% block title %}{{ title }}{% endblock %}
+
+{% block body_class %}bg-light{% endblock %}
+
+{% block main_class %}py-5{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="profile-card text-center">
+        {% if user_picture %}
+            <img src="{{ user_picture }}" class="profile-avatar mb-2" alt="avatar">
+        {% else %}
+            <img src="https://api.dicebear.com/7.x/identicon/svg?seed={{ user_id or user_email }}" class="profile-avatar mb-2" alt="avatar">
+        {% endif %}
+        
+        <h2 class="mb-1">Welcome{% if user_name %}, {{ user_name }}{% elif user_email %}, {{ user_email }}{% endif %}</h2>
+        <p class="text-muted mb-2">{{ user_email }}</p>
+        
+        <!-- Subscription Status Badge -->
+        {% if subscription and subscription.is_premium %}
+            <div class="subscription-badge premium">
+                <i class="fas fa-crown"></i>
+                <span>Premium Member</span>
             </div>
+        {% else %}
+            <div class="subscription-badge free">
+                <i class="fas fa-user"></i>
+                <span>Free Plan</span>
+            </div>
+        {% endif %}
 
-            <hr class="my-4">
-            <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-danger">
-                <i class="fas fa-sign-out-alt me-2"></i>Logout
+        <div class="d-grid gap-2 mt-4">
+            <!-- Manage Membership Button -->
+            <a href="{{ url_for('subscription.manage') }}" class="btn btn-membership">
+                <i class="fas fa-credit-card me-2"></i>Manage Membership
+            </a>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                <i class="fas fa-home me-2"></i>Back to Main Page
+            </a>
+            <a href="{{ url_for('derplexity') }}" class="btn btn-primary">
+                <i class="fas fa-comments me-2"></i>Derplexity Chat
+            </a>
+            <a href="{{ url_for('doogle') }}" class="btn btn-primary">
+                <i class="fas fa-search me-2"></i>Doogle Search
+            </a>
+            <a href="{{ url_for('robin.robin_page') }}" class="btn btn-primary">
+                <i class="fas fa-newspaper me-2"></i>Robin News
+            </a>
+            <a href="{{ url_for('deeplink.manage_short_links_page') }}" class="btn btn-primary">
+                <i class="fas fa-link me-2"></i>Short Links
+            </a>
+            <a href="{{ url_for('dashboard_page') }}" class="btn btn-primary">
+                <i class="fas fa-chart-bar me-2"></i>Dashboard
             </a>
         </div>
+
+        <hr class="my-4">
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-danger">
+            <i class="fas fa-sign-out-alt me-2"></i>Logout
+        </a>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Font Awesome is already linked in the head, so no need to add it again here -->
-</body>
-</html>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-card {
+        max-width: 500px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 1rem;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+        padding: 2rem 2.5rem;
+    }
+    .profile-avatar {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 1rem;
+    }
+    .edit-btn {
+        float: right;
+    }
+    .subscription-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    .subscription-badge.premium {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .subscription-badge.free {
+        background: #f0f0f0;
+        color: #666;
+    }
+    .btn-membership {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-membership:hover {
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+</style>
+{% endblock %}
