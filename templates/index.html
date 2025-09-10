@@ -26,9 +26,6 @@
                 <nav class="sidebar-nav">
                     <ul>
                         <li><a href="#projects" class="active">Projects</a></li>
-                        <li><a href="{{ url_for('blogs') }}">
-                            <i class="fas fa-feather-alt"></i> Technical Blogs
-                        </a></li>
                         <li><a href="https://github.com/sumanurawat" target="_blank">
                             <i class="fab fa-github"></i> GitHub
                         </a></li>
@@ -156,10 +153,11 @@
                         <!-- Stats Column -->
                         <div class="col-lg-5 col-md-6 mb-4">
                             <div class="section-header mb-4">
-                                <h3 class="section-title">Platform Statistics</h3>
-                                <p class="section-subtitle">Real-time platform metrics</p>
+                                <h3 class="section-title">Feature Analytics</h3>
+                                <p class="section-subtitle">Real-time performance metrics by feature</p>
                             </div>
                             <div class="compact-stats-grid">
+                                <!-- URL Shortener Stats -->
                                 <div class="compact-stats-card">
                                     <div class="compact-stats-icon">
                                         <i class="fas fa-link"></i>
@@ -175,7 +173,47 @@
                                     </div>
                                     <div class="compact-stats-content">
                                         <div class="compact-stats-number" id="total-clicks">-</div>
-                                        <div class="compact-stats-label">Clicks Served</div>
+                                        <div class="compact-stats-label">Link Clicks</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- AI Chat Stats -->
+                                <div class="compact-stats-card">
+                                    <div class="compact-stats-icon">
+                                        <i class="fas fa-robot"></i>
+                                    </div>
+                                    <div class="compact-stats-content">
+                                        <div class="compact-stats-number" id="chat-sessions">-</div>
+                                        <div class="compact-stats-label">AI Sessions</div>
+                                    </div>
+                                </div>
+                                <div class="compact-stats-card">
+                                    <div class="compact-stats-icon">
+                                        <i class="fas fa-comments"></i>
+                                    </div>
+                                    <div class="compact-stats-content">
+                                        <div class="compact-stats-number" id="chat-messages">-</div>
+                                        <div class="compact-stats-label">Messages</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Search & Discovery Stats -->
+                                <div class="compact-stats-card">
+                                    <div class="compact-stats-icon">
+                                        <i class="fas fa-search"></i>
+                                    </div>
+                                    <div class="compact-stats-content">
+                                        <div class="compact-stats-number" id="search-queries">-</div>
+                                        <div class="compact-stats-label">Searches</div>
+                                    </div>
+                                </div>
+                                <div class="compact-stats-card">
+                                    <div class="compact-stats-icon">
+                                        <i class="fas fa-database"></i>
+                                    </div>
+                                    <div class="compact-stats-content">
+                                        <div class="compact-stats-number" id="datasets-found">-</div>
+                                        <div class="compact-stats-label">Datasets Found</div>
                                     </div>
                                 </div>
 
@@ -206,13 +244,27 @@
         fetch('/api/website-stats')
             .then(response => response.json())
             .then(data => {
+                // URL Shortener stats
                 document.getElementById('total-links').textContent = data.total_links || '0';
                 document.getElementById('total-clicks').textContent = data.total_clicks || '0';
+                
+                // AI Chat stats (placeholder values for now)
+                document.getElementById('chat-sessions').textContent = data.chat_sessions || '0';
+                document.getElementById('chat-messages').textContent = data.chat_messages || '0';
+                
+                // Search & Discovery stats (placeholder values for now)
+                document.getElementById('search-queries').textContent = data.search_queries || '0';
+                document.getElementById('datasets-found').textContent = data.datasets_found || '0';
             })
             .catch(error => {
                 console.error('Error fetching stats:', error);
+                // Set default values on error
                 document.getElementById('total-links').textContent = '0';
                 document.getElementById('total-clicks').textContent = '0';
+                document.getElementById('chat-sessions').textContent = '0';
+                document.getElementById('chat-messages').textContent = '0';
+                document.getElementById('search-queries').textContent = '0';
+                document.getElementById('datasets-found').textContent = '0';
             });
     </script>
 </body>
