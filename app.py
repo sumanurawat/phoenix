@@ -56,6 +56,7 @@ from api.stats_routes import stats_bp
 from api.dataset_routes import dataset_bp
 from api.video_routes import video_bp
 from api.stripe_routes import stripe_bp, subscription_bp
+from api.subscription_admin_routes import subscription_admin_bp
 
 # Import services (AFTER Firebase initialization)
 from services.chat_service import ChatService
@@ -190,6 +191,7 @@ def create_app():
     app.register_blueprint(video_bp)
     app.register_blueprint(stripe_bp)
     app.register_blueprint(subscription_bp)
+    app.register_blueprint(subscription_admin_bp)
     
     # Setup subscription middleware
     @app.before_request
@@ -536,6 +538,16 @@ Keep your response concise and actionable."""
 
 # Create the application
 app = create_app()
+
+# Initialize subscription cron service in production
+if not app.config.get('TESTING', False) and os.getenv('FLASK_ENV') != 'testing':
+    try:
+        from services.subscription_cron_service import SubscriptionCronService
+        cron_service = SubscriptionCronService()
+        cron_service.start_scheduler()
+        logger.info("✅ Subscription cron service started")
+    except Exception as e:
+        logger.error(f"❌ Failed to start subscription cron service: {e}")
 
 if __name__ == '__main__':
     # Create session directory if it doesn't exist
