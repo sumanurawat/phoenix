@@ -3,7 +3,11 @@ from __future__ import annotations
 import json
 import logging
 import threading
-from flask import Blueprint, request, jsonify, Response, stream_with_context
+import uuid
+from datetime import datetime, timezone
+from flask import Blueprint, request, jsonify, Response, stream_with_context, session
+from firebase_admin import firestore
+from api.auth_routes import login_required
 from services.veo_video_generation_service import VeoGenerationParams, veo_video_service
 from services.website_stats_service import WebsiteStatsService
 from services.realtime_event_bus import realtime_event_bus
@@ -16,60 +20,112 @@ website_stats_service = WebsiteStatsService()
 _jobs = {}
 
 def _run_generation(job_id: str, prompts, base_options):
-	for idx, prompt in enumerate(prompts):
-		evt_topic = job_id
-		realtime_event_bus.publish(evt_topic, 'prompt.started', {"prompt_index": idx})
-		try:
-			params = VeoGenerationParams(
-				model=base_options.get('model', 'veo-3.0-fast-generate-001'),
-				prompt=prompt,
-				aspect_ratio=base_options.get('aspect_ratio', '16:9'),
-				duration_seconds=base_options.get('duration_seconds', 8),
-				sample_count=1,
-				resolution=base_options.get('resolution'),
-				generate_audio=base_options.get('generate_audio'),
-				enhance_prompt=base_options.get('enhance_prompt', True),
-			)
-			result = veo_video_service.start_generation(params, poll=True)
-			if result.success:
-				uri = (result.gcs_uris or result.local_paths or [None])[0]
-				realtime_event_bus.publish(evt_topic, 'prompt.completed', {"prompt_index": idx, "video_url": uri, "gcs_uris": result.gcs_uris, "local_paths": result.local_paths})
-				_jobs[job_id]['prompts'][idx]['status'] = 'completed'
-				_jobs[job_id]['prompts'][idx]['video_url'] = uri
-				_jobs[job_id]['prompts'][idx]['gcs_uris'] = result.gcs_uris
-				_jobs[job_id]['prompts'][idx]['local_paths'] = result.local_paths
-				# Increment videos generated per successful prompt
-				try:
-					website_stats_service.increment_videos_generated(1)
-				except Exception:
-					logger.exception('Failed to increment videos generated counter')
-			else:
-				realtime_event_bus.publish(evt_topic, 'prompt.failed', {"prompt_index": idx, "error": result.error})
-				_jobs[job_id]['prompts'][idx]['status'] = 'failed'
-				_jobs[job_id]['prompts'][idx]['error'] = result.error
-		except Exception as e:  # noqa
-			realtime_event_bus.publish(evt_topic, 'prompt.failed', {"prompt_index": idx, "error": str(e)})
-			_jobs[job_id]['prompts'][idx]['status'] = 'failed'
-			_jobs[job_id]['prompts'][idx]['error'] = str(e)
-	realtime_event_bus.publish(job_id, 'job.completed', _jobs[job_id])
-	_jobs[job_id]['status'] = 'completed'
+    video_urls = []
+    for idx, prompt in enumerate(prompts):
+        evt_topic = job_id
+        realtime_event_bus.publish(evt_topic, 'prompt.started', {"prompt_index": idx})
+        try:
+            params = VeoGenerationParams(
+                model=base_options.get('model', 'veo-3.0-fast-generate-001'),
+                prompt=prompt,
+                aspect_ratio=base_options.get('aspect_ratio', '16:9'),
+                duration_seconds=base_options.get('duration_seconds', 8),
+                sample_count=base_options.get('sample_count', 1),
+                resolution=base_options.get('resolution'),
+                generate_audio=base_options.get('generate_audio'),
+                enhance_prompt=base_options.get('enhance_prompt', True),
+                negative_prompt=base_options.get('negative_prompt'),
+                person_generation=base_options.get('person_generation'),
+                seed=base_options.get('seed'),
+                storage_uri=base_options.get('storage_uri'),
+                compression_quality=base_options.get('compression_quality'),
+                image_gcs_uri=base_options.get('image_gcs_uri'),
+                image_mime_type=base_options.get('image_mime_type'),
+            )
+            result = veo_video_service.start_generation(params, poll=True)
+            if result.success:
+                uri = (result.gcs_uris or result.local_paths or [None])[0]
+                if uri:
+                    video_urls.append(uri)
+                realtime_event_bus.publish(evt_topic, 'prompt.completed', {"prompt_index": idx, "video_url": uri, "gcs_uris": result.gcs_uris, "local_paths": result.local_paths})
+                _jobs[job_id]['prompts'][idx]['status'] = 'completed'
+                _jobs[job_id]['prompts'][idx]['video_url'] = uri
+                _jobs[job_id]['prompts'][idx]['gcs_uris'] = result.gcs_uris
+                _jobs[job_id]['prompts'][idx]['local_paths'] = result.local_paths
+                # Increment videos generated per successful prompt
+                try:
+                    website_stats_service.increment_videos_generated(1)
+                except Exception:
+                    logger.exception('Failed to increment videos generated counter')
+            else:
+                realtime_event_bus.publish(evt_topic, 'prompt.failed', {"prompt_index": idx, "error": result.error})
+                _jobs[job_id]['prompts'][idx]['status'] = 'failed'
+                _jobs[job_id]['prompts'][idx]['error'] = result.error
+        except Exception as e:  # noqa
+            realtime_event_bus.publish(evt_topic, 'prompt.failed', {"prompt_index": idx, "error": str(e)})
+            _jobs[job_id]['prompts'][idx]['status'] = 'failed'
+            _jobs[job_id]['prompts'][idx]['error'] = str(e)
+    
+    # Update Firebase record with final status and video URLs
+    try:
+        db = firestore.client()
+        docs = db.collection('video_generations').where('job_id', '==', job_id).get()
+        if docs:
+            doc_ref = docs[0].reference
+            doc_ref.update({
+                'status': 'completed',
+                'video_urls': video_urls,
+                'completed_at': firestore.SERVER_TIMESTAMP
+            })
+            logger.info(f"Updated Firebase record for job {job_id} with {len(video_urls)} video URLs")
+    except Exception as e:
+        logger.error(f"Failed to update Firebase record for job {job_id}: {e}")
+    
+    realtime_event_bus.publish(job_id, 'job.completed', _jobs[job_id])
+    _jobs[job_id]['status'] = 'completed'
 
 @video_bp.route('/generate', methods=['POST'])
+@login_required
 def start_video_batch():
-	data = request.get_json(force=True, silent=True) or {}
-	prompts = data.get('prompts') or []
-	if not isinstance(prompts, list) or not prompts:
-		return jsonify({"success": False, "error": "prompts must be non-empty list"}), 400
-	base_options = data.get('options') or {}
-	job_id = f"job_{len(_jobs)+1}"
-	_jobs[job_id] = {
-		'job_id': job_id,
-		'status': 'processing',
-		'prompts': [{'prompt': p, 'status': 'queued'} for p in prompts]
-	}
-	thread = threading.Thread(target=_run_generation, args=(job_id, prompts, base_options), daemon=True)
-	thread.start()
-	return jsonify({"success": True, "job_id": job_id})
+    data = request.get_json(force=True, silent=True) or {}
+    logger.info('video.generate request', extra={
+        'user_id': session.get('user_id'),
+        'prompts_len': len(data.get('prompts') or []),
+    })
+    prompts = data.get('prompts') or []
+    if not isinstance(prompts, list) or not prompts:
+        return jsonify({"success": False, "error": "prompts must be non-empty list"}), 400
+    base_options = data.get('options') or {}
+    job_id = f"job_{len(_jobs)+1}"
+    
+    # Store video generation request in Firebase
+    try:
+        db = firestore.client()
+        generation_doc = {
+            'user_id': session.get('user_id'),
+            'user_email': session.get('user_email'),
+            'timestamp': datetime.now(timezone.utc),
+            'job_id': job_id,
+            'prompts': prompts,
+            'options': base_options,
+            'status': 'started',
+            'video_urls': [],
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        db.collection('video_generations').add(generation_doc)
+        logger.info(f"Video generation request logged to Firebase for user {session.get('user_id')}")
+    except Exception as e:
+        logger.error(f"Failed to log video generation request: {e}")
+        # Continue anyway - don't fail the request if logging fails
+    
+    _jobs[job_id] = {
+        'job_id': job_id,
+        'status': 'processing',
+        'prompts': [{'prompt': p, 'status': 'queued'} for p in prompts]
+    }
+    thread = threading.Thread(target=_run_generation, args=(job_id, prompts, base_options), daemon=True)
+    thread.start()
+    return jsonify({"success": True, "job_id": job_id})
 
 @video_bp.route('/job/<job_id>', methods=['GET'])
 def get_job(job_id):
