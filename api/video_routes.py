@@ -87,45 +87,45 @@ def _run_generation(job_id: str, prompts, base_options):
 @video_bp.route('/generate', methods=['POST'])
 @login_required
 def start_video_batch():
-	data = request.get_json(force=True, silent=True) or {}
-	logger.info('video.generate request', extra={
-		'user_id': session.get('user_id'),
-		'prompts_len': len(data.get('prompts') or []),
-	})
-	prompts = data.get('prompts') or []
-	if not isinstance(prompts, list) or not prompts:
-		return jsonify({"success": False, "error": "prompts must be non-empty list"}), 400
-	base_options = data.get('options') or {}
-	job_id = f"job_{len(_jobs)+1}"
-	
-	# Store video generation request in Firebase
-	try:
-		db = firestore.client()
-		generation_doc = {
-			'user_id': session.get('user_id'),
-			'user_email': session.get('user_email'),
-			'timestamp': datetime.now(timezone.utc),
-			'job_id': job_id,
-			'prompts': prompts,
-			'options': base_options,
-			'status': 'started',
-			'video_urls': [],
-			'created_at': firestore.SERVER_TIMESTAMP
-		}
-		db.collection('video_generations').add(generation_doc)
-		logger.info(f"Video generation request logged to Firebase for user {session.get('user_id')}")
-	except Exception as e:
-		logger.error(f"Failed to log video generation request: {e}")
-		# Continue anyway - don't fail the request if logging fails
-	
-	_jobs[job_id] = {
-		'job_id': job_id,
-		'status': 'processing',
-		'prompts': [{'prompt': p, 'status': 'queued'} for p in prompts]
-	}
-	thread = threading.Thread(target=_run_generation, args=(job_id, prompts, base_options), daemon=True)
-	thread.start()
-	return jsonify({"success": True, "job_id": job_id})
+    data = request.get_json(force=True, silent=True) or {}
+    logger.info('video.generate request', extra={
+        'user_id': session.get('user_id'),
+        'prompts_len': len(data.get('prompts') or []),
+    })
+    prompts = data.get('prompts') or []
+    if not isinstance(prompts, list) or not prompts:
+        return jsonify({"success": False, "error": "prompts must be non-empty list"}), 400
+    base_options = data.get('options') or {}
+    job_id = f"job_{len(_jobs)+1}"
+    
+    # Store video generation request in Firebase
+    try:
+        db = firestore.client()
+        generation_doc = {
+            'user_id': session.get('user_id'),
+            'user_email': session.get('user_email'),
+            'timestamp': datetime.now(timezone.utc),
+            'job_id': job_id,
+            'prompts': prompts,
+            'options': base_options,
+            'status': 'started',
+            'video_urls': [],
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        db.collection('video_generations').add(generation_doc)
+        logger.info(f"Video generation request logged to Firebase for user {session.get('user_id')}")
+    except Exception as e:
+        logger.error(f"Failed to log video generation request: {e}")
+        # Continue anyway - don't fail the request if logging fails
+    
+    _jobs[job_id] = {
+        'job_id': job_id,
+        'status': 'processing',
+        'prompts': [{'prompt': p, 'status': 'queued'} for p in prompts]
+    }
+    thread = threading.Thread(target=_run_generation, args=(job_id, prompts, base_options), daemon=True)
+    thread.start()
+    return jsonify({"success": True, "job_id": job_id})
 
 @video_bp.route('/job/<job_id>', methods=['GET'])
 def get_job(job_id):
