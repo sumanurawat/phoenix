@@ -158,7 +158,7 @@ def create_app():
 
         # Accept token from form field, header, or JSON body (for fetch requests)
         sent_token = request.form.get('csrf_token') or request.headers.get('X-CSRF-Token')
-        if not sent_token and (request.is_json or request.headers.get('Content-Type','').startswith('application/json')):
+        if not sent_token and (request.is_json or request.headers.get('Content-Type', '').startswith('application/json')):
             try:
                 body = request.get_json(silent=True) or {}
                 sent_token = body.get('csrf_token')
