@@ -529,8 +529,8 @@ Keep your response concise and actionable."""
     
     @app.route('/video-generation')
     def video_generation():
-        """Render the Video Generation page (placeholder)."""
-        return render_template('video_generation.html', title='Video Generation - Phoenix AI')
+        """Render the Video Generation Studio page with full VEO3 parameter control."""
+        return render_template('video_generation_studio.html', title='Video Generation Studio - Phoenix AI')
     
     return app
 
