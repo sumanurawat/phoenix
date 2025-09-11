@@ -20,15 +20,22 @@ def _run_generation(job_id: str, prompts, base_options):
 		evt_topic = job_id
 		realtime_event_bus.publish(evt_topic, 'prompt.started', {"prompt_index": idx})
 		try:
+			# Extract sample count from options, default to 1
+			sample_count = base_options.get('sample_count', 1)
+			
 			params = VeoGenerationParams(
 				model=base_options.get('model', 'veo-3.0-fast-generate-001'),
 				prompt=prompt,
 				aspect_ratio=base_options.get('aspect_ratio', '16:9'),
 				duration_seconds=base_options.get('duration_seconds', 8),
-				sample_count=1,
+				sample_count=sample_count,
 				resolution=base_options.get('resolution'),
 				generate_audio=base_options.get('generate_audio'),
 				enhance_prompt=base_options.get('enhance_prompt', True),
+				negative_prompt=base_options.get('negative_prompt'),
+				person_generation=base_options.get('person_generation'),
+				seed=base_options.get('seed'),
+				storage_uri=base_options.get('storage_uri'),
 			)
 			result = veo_video_service.start_generation(params, poll=True)
 			if result.success:
@@ -96,3 +103,60 @@ def stream_events(job_id):
 		finally:
 			realtime_event_bus.unsubscribe(job_id, cb)
 	return Response(stream_with_context(event_stream()), mimetype='text/event-stream')
+
+@video_bp.route('/config', methods=['GET'])
+def get_video_config():
+	"""Get available VEO models and configuration options."""
+	from services.veo_video_generation_service import VEO_MODELS, ASPECT_RATIOS, RESOLUTIONS, PERSON_GENERATION
+	
+	config = {
+		"models": [
+			{
+				"id": "veo-3.0-fast-generate-001",
+				"name": "VEO 3.0 Fast",
+				"description": "Fast generation with good quality",
+				"supports_audio": True,
+				"supports_resolution": True,
+				"recommended": True
+			},
+			{
+				"id": "veo-3.0-generate-001", 
+				"name": "VEO 3.0 Standard",
+				"description": "High quality generation",
+				"supports_audio": True,
+				"supports_resolution": True,
+				"recommended": False
+			},
+			{
+				"id": "veo-3.0-generate-preview",
+				"name": "VEO 3.0 Preview",
+				"description": "Preview model with latest features",
+				"supports_audio": True,
+				"supports_resolution": True,
+				"recommended": False
+			},
+			{
+				"id": "veo-3.0-fast-generate-preview",
+				"name": "VEO 3.0 Fast Preview", 
+				"description": "Fast preview model",
+				"supports_audio": True,
+				"supports_resolution": True,
+				"recommended": False
+			},
+			{
+				"id": "veo-2.0-generate-001",
+				"name": "VEO 2.0",
+				"description": "Legacy model",
+				"supports_audio": False,
+				"supports_resolution": False,
+				"recommended": False
+			}
+		],
+		"aspect_ratios": ASPECT_RATIOS,
+		"resolutions": RESOLUTIONS,
+		"person_generation": PERSON_GENERATION,
+		"duration_range": {"min": 5, "max": 8},
+		"sample_count_range": {"min": 1, "max": 4}
+	}
+	
+	return jsonify({"success": True, "config": config})
