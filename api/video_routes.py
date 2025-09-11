@@ -25,10 +25,17 @@ def _run_generation(job_id: str, prompts, base_options):
 				prompt=prompt,
 				aspect_ratio=base_options.get('aspect_ratio', '16:9'),
 				duration_seconds=base_options.get('duration_seconds', 8),
-				sample_count=1,
+				sample_count=base_options.get('sample_count', 1),
 				resolution=base_options.get('resolution'),
-				generate_audio=base_options.get('generate_audio'),
+					generate_audio=base_options.get('generate_audio'),
 				enhance_prompt=base_options.get('enhance_prompt', True),
+					negative_prompt=base_options.get('negative_prompt'),
+					person_generation=base_options.get('person_generation'),
+					seed=base_options.get('seed'),
+					storage_uri=base_options.get('storage_uri'),
+					compression_quality=base_options.get('compression_quality'),
+				image_gcs_uri=base_options.get('image_gcs_uri'),
+				image_mime_type=base_options.get('image_mime_type'),
 			)
 			result = veo_video_service.start_generation(params, poll=True)
 			if result.success:
@@ -57,6 +64,14 @@ def _run_generation(job_id: str, prompts, base_options):
 @video_bp.route('/generate', methods=['POST'])
 def start_video_batch():
 	data = request.get_json(force=True, silent=True) or {}
+	logger.info('video.generate request', extra={
+		'content_type': request.headers.get('Content-Type'),
+		'accept': request.headers.get('Accept'),
+		'has_csrf_header': bool(request.headers.get('X-CSRF-Token')),
+		'has_csrf_body': bool((data or {}).get('csrf_token')),
+		'options_keys': list((data.get('options') or {}).keys()) if isinstance(data.get('options'), dict) else 'n/a',
+		'prompts_len': len(data.get('prompts') or []),
+	})
 	prompts = data.get('prompts') or []
 	if not isinstance(prompts, list) or not prompts:
 		return jsonify({"success": False, "error": "prompts must be non-empty list"}), 400
