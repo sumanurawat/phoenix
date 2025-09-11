@@ -9,7 +9,7 @@ from services.stripe_service import StripeService
 
 logger = logging.getLogger(__name__)
 
-# Feature limits for free vs premium users
+# Feature limits for different subscription tiers
 FEATURE_LIMITS = {
     'free': {
         'chat_messages': 5,  # Per day
@@ -22,6 +22,44 @@ FEATURE_LIMITS = {
         'custom_personalities': False,
         'priority_support': False
     },
+    'basic': {
+        'chat_messages': -1,  # Unlimited
+        'searches': -1,  # Unlimited
+        'datasets_analyzed': -1,  # Unlimited
+        'videos_generated': 10,  # Per day
+        'ai_models': 'all',  # All available models
+        'export_enabled': True,
+        'advanced_analytics': True,
+        'custom_personalities': False,
+        'priority_support': False
+    },
+    'pro': {
+        'chat_messages': -1,  # Unlimited
+        'searches': -1,  # Unlimited
+        'datasets_analyzed': -1,  # Unlimited
+        'videos_generated': 50,  # Per day
+        'ai_models': 'all',  # All available models
+        'export_enabled': True,
+        'advanced_analytics': True,
+        'custom_personalities': True,
+        'priority_support': True,
+        'api_access': True
+    },
+    'enterprise': {
+        'chat_messages': -1,  # Unlimited
+        'searches': -1,  # Unlimited
+        'datasets_analyzed': -1,  # Unlimited
+        'videos_generated': -1,  # Unlimited
+        'ai_models': 'all',  # All available models
+        'export_enabled': True,
+        'advanced_analytics': True,
+        'custom_personalities': True,
+        'priority_support': True,
+        'api_access': True,
+        'white_label': True,
+        'dedicated_support': True
+    },
+    # Legacy compatibility
     'premium': {
         'chat_messages': -1,  # Unlimited
         'searches': -1,  # Unlimited
@@ -30,8 +68,8 @@ FEATURE_LIMITS = {
         'ai_models': 'all',  # All available models
         'export_enabled': True,
         'advanced_analytics': True,
-        'custom_personalities': True,
-        'priority_support': True
+        'custom_personalities': False,
+        'priority_support': False
     }
 }
 
@@ -42,6 +80,7 @@ def init_subscription_context():
             'is_premium': False,
             'status': 'none',
             'plan_id': 'zero',
+            'tier': 'free',
             'limits': FEATURE_LIMITS['free']
         }
         return
@@ -60,22 +99,41 @@ def init_subscription_context():
     # Get usage stats
     usage_stats = stripe_service.get_usage_stats(firebase_uid)
     
+    # Map plan_id to tier for new tier system
+    plan_id = subscription_status.get('plan_id', 'zero')
+    tier = _map_plan_id_to_tier(plan_id)
+    
+    # Determine if user is premium (any paid tier)
+    is_premium = tier != 'free'
+    
     # Set context
     g.subscription = {
-        'is_premium': subscription_status.get('is_premium', False),
+        'is_premium': is_premium,
         'status': subscription_status.get('status', 'none'),
         'current_period_end': subscription_status.get('current_period_end'),
         'cancel_at_period_end': subscription_status.get('cancel_at_period_end', False),
-        'plan_id': subscription_status.get('plan_id', 'zero'),
-        'limits': FEATURE_LIMITS['premium'] if subscription_status.get('is_premium') else FEATURE_LIMITS['free'],
+        'plan_id': plan_id,
+        'tier': tier,
+        'limits': FEATURE_LIMITS.get(tier, FEATURE_LIMITS['free']),
         'usage': usage_stats
     }
+
+def _map_plan_id_to_tier(plan_id: str) -> str:
+    """Map plan_id to tier name for the new tier system."""
+    plan_to_tier = {
+        'zero': 'free',
+        'five': 'basic',  # Legacy premium -> basic
+        'fifteen': 'pro',
+        'fifty': 'enterprise'
+    }
+    return plan_to_tier.get(plan_id, 'free')
 
 def subscription_context_processor():
     """Flask context processor to inject subscription data into templates."""
     subscription = getattr(g, 'subscription', {
         'is_premium': False,
         'status': 'none',
+        'tier': 'free',
         'limits': FEATURE_LIMITS['free']
     })
     return {'subscription': subscription}
