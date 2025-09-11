@@ -170,10 +170,6 @@ def create_app():
             app.logger.warning('CSRF validation failed', extra={
                 'path': path,
                 'method': request.method,
-                'content_type': request.headers.get('Content-Type'),
-                'accept': request.headers.get('Accept'),
-                'origin': request.headers.get('Origin'),
-                'referer': request.headers.get('Referer'),
                 'has_header_token': bool(request.headers.get('X-CSRF-Token')),
                 'has_form_token': bool(request.form.get('csrf_token')),
                 'session_token_present': bool(session_token),
@@ -557,8 +553,9 @@ Keep your response concise and actionable."""
         return send_file(target_abs, mimetype='video/mp4')
     
     @app.route('/video-generation')
+    @login_required
     def video_generation():
-        """Render the Video Generation page (placeholder)."""
+        """Render the Video Generation page (requires login)."""
         return render_template('video_generation.html', title='Video Generation - Phoenix AI')
     
     return app

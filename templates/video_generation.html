@@ -26,6 +26,9 @@
 
 {% block content %}
 <div class="container py-4">
+    <!-- Hidden CSRF token for JavaScript access -->
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
     <a href="/" class="btn btn-link mb-3"><i class="fas fa-arrow-left"></i> Back</a>
     <h1 class="mb-3">AI Video Generation (Beta)</h1>
     <p class="text-muted">Configure Veo 3 parameters and paste a JSON array of prompts. We'll validate and generate videos.</p>
@@ -159,6 +162,9 @@
     </div>
 </div>
 <script>
+    // Make CSRF token globally available
+    window.CSRF_TOKEN = "{{ csrf_token() }}";
+    
     (function(){
         const promptInput = document.getElementById('promptJson');
     const validateBtn = document.getElementById('validateBtn');
@@ -250,13 +256,14 @@
             showMsg(successBox, `Validated ${result.prompts.length} prompt(s). Ready for generation.`);
         });
 
-    startBtn.addEventListener('click', async () => {
+        startBtn.addEventListener('click', async () => {
             hideMsg(errorBox); hideMsg(successBox);
             startBtn.disabled = true;
             startBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Starting...';
             try {
-        const options = collectOptions();
+                const options = collectOptions();
                 const csrf = (window.CSRF_TOKEN || (document.querySelector('input[name="csrf_token"]')?.value)) || null;
+                
                 const headers = { 'Content-Type': 'application/json' };
                 if (csrf) headers['X-CSRF-Token'] = csrf;
                 const resp = await fetch('/api/video/generate', {
