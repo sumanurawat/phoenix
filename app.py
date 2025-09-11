@@ -156,22 +156,47 @@ def create_app():
         if path in oauth_whitelist:
             return
 
-        # Accept token from form field or header
+        # Accept token from form field, header, or JSON body (for fetch requests)
         sent_token = request.form.get('csrf_token') or request.headers.get('X-CSRF-Token')
+        if not sent_token and (request.is_json or request.headers.get('Content-Type', '').startswith('application/json')):
+            try:
+                body = request.get_json(silent=True) or {}
+                sent_token = body.get('csrf_token')
+            except Exception:
+                sent_token = None
         session_token = session.get('csrf_token')
 
         if not sent_token or not session_token or sent_token != session_token:
             app.logger.warning('CSRF validation failed', extra={
                 'path': path,
                 'method': request.method,
-                'sent_token_present': bool(sent_token),
+                'has_header_token': bool(request.headers.get('X-CSRF-Token')),
+                'has_form_token': bool(request.form.get('csrf_token')),
+                'session_token_present': bool(session_token),
             })
+            # Respond with JSON for JSON requests to avoid browser parsing errors
+            if request.is_json or 'application/json' in (request.headers.get('Accept') or ''):
+                from flask import jsonify
+                return jsonify({
+                    'success': False,
+                    'error': 'Invalid or missing CSRF token',
+                    'code': 'csrf_failed'
+                }), 400
             return abort(400, description='Invalid or missing CSRF token')
 
     # Make token accessible in templates
     @app.context_processor
     def inject_csrf_token():
         return {'csrf_token': lambda: session.get('csrf_token')}
+
+    # Inject a small script with CSRF token for pages (optional; base template should render it)
+    @app.after_request
+    def add_csrf_header(resp):
+        # Expose CSRF via header so front-end can read it if needed (same-origin)
+        token = session.get('csrf_token')
+        if token:
+            resp.headers['X-CSRF-Token'] = token
+        return resp
     
     # Make session accessible in templates
     @app.context_processor
@@ -528,8 +553,9 @@ Keep your response concise and actionable."""
         return send_file(target_abs, mimetype='video/mp4')
     
     @app.route('/video-generation')
+    @login_required
     def video_generation():
-        """Render the Video Generation page (placeholder)."""
+        """Render the Video Generation page (requires login)."""
         return render_template('video_generation.html', title='Video Generation - Phoenix AI')
     
     return app

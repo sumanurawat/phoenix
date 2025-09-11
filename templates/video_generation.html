@@ -3,17 +3,126 @@
 {% block extra_css %}
 <style>
     .placeholder-box {border:2px dashed #888; padding:2rem; text-align:center; border-radius:12px; background: #1d1f27; color:#ccc;}
+    /* Dark theme readability fixes */
+    .card.bg-dark, .card.bg-dark .card-header { color: #e6e6e6; }
+    .bg-dark .form-label, .bg-dark label, .bg-dark .form-check-label, .bg-dark .form-text { color: #e6e6e6; }
+    .bg-dark .form-control, .bg-dark .form-select { 
+        background-color: #2a2f3a; 
+        color: #eaeaea; 
+        border-color: #444; 
+    }
+    .bg-dark .form-control::placeholder, .bg-dark .form-select option { color: #b7bdc8; }
+    .bg-dark .form-control:focus, .bg-dark .form-select:focus { 
+        background-color: #2d3340; 
+        color: #ffffff; 
+        border-color: #6c8cff; 
+        box-shadow: 0 0 0 0.1rem rgba(108, 140, 255, 0.25);
+    }
+    /* Ensure the main prompt textarea is readable in dark mode */
+    #promptJson { background-color: #2a2f3a; color: #eaeaea; border-color: #444; }
+    #promptJson::placeholder { color: #b7bdc8; }
 </style>
+<meta name="csrf-token" content="{{ csrf_token }}">
 {% endblock %}
 
 {% block content %}
 <div class="container py-4">
     <a href="/" class="btn btn-link mb-3"><i class="fas fa-arrow-left"></i> Back</a>
     <h1 class="mb-3">AI Video Generation (Beta)</h1>
-    <p class="text-muted">Paste a JSON array of prompt strings. We'll validate it and prepare a table for generation.</p>
+    <p class="text-muted">Configure Veo 3 parameters and paste a JSON array of prompts. We'll validate and generate videos.</p>
 
     <div class="row g-4">
         <div class="col-lg-5">
+            <div class="card bg-dark border-secondary mb-3">
+                <div class="card-header">Studio Controls</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Model</label>
+                            <select id="model" class="form-select">
+                                <option value="veo-3.0-fast-generate-001" selected>veo-3.0-fast-generate-001 (fast)</option>
+                                <option value="veo-3.0-generate-001">veo-3.0-generate-001 (quality)</option>
+                                <option value="veo-3.0-generate-preview">veo-3.0-generate-preview</option>
+                                <option value="veo-3.0-fast-generate-preview">veo-3.0-fast-generate-preview</option>
+                                <option value="veo-2.0-generate-001">veo-2.0-generate-001</option>
+                                <option value="veo-2.0-generate-exp">veo-2.0-generate-exp</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Aspect Ratio</label>
+                            <select id="aspectRatio" class="form-select">
+                                <option value="16:9" selected>16:9</option>
+                                <option value="9:16">9:16</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Duration</label>
+                            <select id="durationSeconds" class="form-select">
+                                <option value="4">4</option>
+                                <option value="6">6</option>
+                                <option value="8" selected>8</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Resolution (Veo 3)</label>
+                            <select id="resolution" class="form-select">
+                                <option value="">Default</option>
+                                <option value="720p">720p</option>
+                                <option value="1080p">1080p</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Compression</label>
+                            <select id="compressionQuality" class="form-select">
+                                <option value="">Default (optimized)</option>
+                                <option value="optimized">optimized</option>
+                                <option value="lossless">lossless</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Samples</label>
+                            <select id="sampleCount" class="form-select">
+                                <option value="1" selected>1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Seed</label>
+                            <input type="number" id="seed" class="form-control" placeholder="optional">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Negative Prompt</label>
+                            <input type="text" id="negativePrompt" class="form-control" placeholder="optional">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Person Generation</label>
+                            <select id="personGeneration" class="form-select">
+                                <option value="">Default (allow_adult)</option>
+                                <option value="allow_adult">allow_adult</option>
+                                <option value="dont_allow">dont_allow</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enhancePrompt" checked>
+                                <label class="form-check-label" for="enhancePrompt">Use prompt enhancement</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="generateAudio">
+                                <label class="form-check-label" for="generateAudio">Generate audio (Veo 3)</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Storage URI (gs://bucket/prefix)</label>
+                            <input type="text" id="storageUri" class="form-control" placeholder="optional">
+                        </div>
+                    </div>
+                </div>
+            </div>
             <label for="promptJson" class="form-label fw-semibold">Prompt JSON Input</label>
             <textarea id="promptJson" class="form-control" rows="14" placeholder='[\n  "A cat playing piano",\n  "A sunset over cyberpunk city"\n]'></textarea>
             <div class="d-flex gap-2 mt-3">
@@ -63,7 +172,7 @@
         const placeholderPanel = document.getElementById('placeholderPanel');
         const promptTableBody = document.querySelector('#promptTable tbody');
 
-        const sample = [
+    const sample = [
             "A cat playing piano in a jazz bar, cinematic lighting",
             "Slow orbital shot of a futuristic eco city at sunrise",
             "Drone flyover of terraced rice fields with morning mist"
@@ -147,10 +256,15 @@
             startBtn.disabled = true;
             startBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Starting...';
             try {
+                const options = collectOptions();
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || null;
+                
+                const headers = { 'Content-Type': 'application/json' };
+                if (csrf) headers['X-CSRF-Token'] = csrf;
                 const resp = await fetch('/api/video/generate', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompts: currentPrompts, options: { model: 'veo-3.0-fast-generate-001', aspect_ratio: '16:9', duration_seconds: 8 } })
+                    headers,
+                    body: JSON.stringify({ prompts: currentPrompts, options, csrf_token: csrf })
                 });
                 const data = await resp.json();
                 if(!data.success){
@@ -165,6 +279,23 @@
                 startBtn.innerHTML = '<i class="fas fa-play"></i> Start Generation';
             }
         });
+
+        function collectOptions(){
+            const model = document.getElementById('model').value;
+            const aspect_ratio = document.getElementById('aspectRatio').value;
+            const duration_seconds = parseInt(document.getElementById('durationSeconds').value, 10);
+            const resolution = document.getElementById('resolution').value || undefined;
+            const compression_quality = document.getElementById('compressionQuality').value || undefined;
+            const sample_count = parseInt(document.getElementById('sampleCount').value, 10) || 1;
+            const seedVal = document.getElementById('seed').value;
+            const seed = seedVal === '' ? undefined : Number(seedVal);
+            const negative_prompt = document.getElementById('negativePrompt').value || undefined;
+            const person_generation = document.getElementById('personGeneration').value || undefined;
+            const enhance_prompt = document.getElementById('enhancePrompt').checked;
+            const generate_audio = document.getElementById('generateAudio').checked ? true : undefined;
+            const storage_uri = document.getElementById('storageUri').value || undefined;
+            return { model, aspect_ratio, duration_seconds, resolution, compression_quality, sample_count, seed, negative_prompt, person_generation, enhance_prompt, generate_audio, storage_uri };
+        }
 
         function listenToStream(jobId){
             const es = new EventSource(`/api/video/stream/${jobId}`);

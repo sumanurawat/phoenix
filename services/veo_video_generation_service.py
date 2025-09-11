@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 VEO_MODELS = [
     "veo-2.0-generate-001",
+    "veo-2.0-generate-exp",
     "veo-3.0-generate-001",
     "veo-3.0-fast-generate-001",
     "veo-3.0-generate-preview",
@@ -36,6 +37,7 @@ VEO_MODELS = [
 ASPECT_RATIOS = ["16:9", "9:16"]
 RESOLUTIONS = ["720p", "1080p"]  # Veo 3 only
 PERSON_GENERATION = ["allow_adult", "dont_allow"]
+COMPRESSION_QUALITY = ["optimized", "lossless"]
 
 @dataclass
 class VeoGenerationParams:
@@ -51,6 +53,7 @@ class VeoGenerationParams:
     sample_count: int = 1
     seed: Optional[int] = None
     storage_uri: Optional[str] = None
+    compression_quality: Optional[str] = None  # optimized | lossless
     # Media (image/video) inputs (mutually exclusive per union type for each field)
     image_bytes_b64: Optional[str] = None
     image_gcs_uri: Optional[str] = None
@@ -65,8 +68,16 @@ class VeoGenerationParams:
     def validate(self) -> None:
         if self.model not in VEO_MODELS:
             raise ValueError(f"Unsupported model: {self.model}")
-        if not (5 <= self.duration_seconds <= 8):
-            raise ValueError("duration_seconds must be between 5 and 8")
+        # Duration rules differ by model family
+        if self.model.startswith("veo-3.0"):
+            if self.duration_seconds not in {4, 6, 8}:
+                raise ValueError("For Veo 3 models, duration_seconds must be 4, 6, or 8")
+            # generateAudio is required by Veo 3; default to False if not provided
+            if self.generate_audio is None:
+                self.generate_audio = False
+        else:
+            if not (5 <= self.duration_seconds <= 8):
+                raise ValueError("For Veo 2 models, duration_seconds must be between 5 and 8")
         if self.aspect_ratio not in ASPECT_RATIOS:
             raise ValueError("aspect_ratio must be one of: " + ", ".join(ASPECT_RATIOS))
         if self.sample_count < 1 or self.sample_count > 4:
@@ -77,6 +88,8 @@ class VeoGenerationParams:
             raise ValueError("person_generation invalid")
         if self.generate_audio is not None and self.model.startswith("veo-2.0"):
             raise ValueError("generate_audio not supported by veo-2.0 models")
+        if self.compression_quality and self.compression_quality not in COMPRESSION_QUALITY:
+            raise ValueError("compression_quality must be 'optimized' or 'lossless'")
         if self.prompt is None and not (self.image_bytes_b64 or self.image_gcs_uri):
             raise ValueError("Either prompt or image must be provided")
 
@@ -135,6 +148,8 @@ class VeoGenerationParams:
             params["storageUri"] = self.storage_uri
         if self.generate_audio is not None:
             params["generateAudio"] = self.generate_audio
+        if self.compression_quality:
+            params["compressionQuality"] = self.compression_quality
         return params
 
 @dataclass
