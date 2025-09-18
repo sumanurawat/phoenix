@@ -38,6 +38,7 @@
         <div class="card-body">
             <p class="text-muted mb-3">Enter any URL you want to shorten. Perfect for sharing on social media, emails, or anywhere you need a clean, trackable link.</p>
             <form method="POST" action="{{ url_for('deeplink.manage_short_links_page') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group mb-3">
                     <label for="original_url" class="form-label">Enter URL to shorten:</label>
                     <input type="url" class="form-control" id="original_url" name="original_url" 
