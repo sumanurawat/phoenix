@@ -10,8 +10,6 @@ from typing import Optional
 
 # Ordered list of (prefix, display_name) tuples; first match wins
 DISPLAY_NAME_PREFIXES = [
-    ('/derplexity-enhanced', 'Derplexity'),
-    ('/derplexity-legacy', 'Derplexity'),
     ('/derplexity', 'Derplexity'),
     ('/doogle', 'Doogle'),
     ('/robin', 'Robin'),
