@@ -247,27 +247,9 @@ def create_app():
     @app.route('/derplexity')
     @login_required
     def derplexity():
-        """Render the enhanced Derplexity chat interface with persistent conversations."""
-        return render_template('derplexity_v2.html', 
-                            title='Derplexity Chat')
-    
-    @app.route('/derplexity-enhanced')
-    @login_required
-    def derplexity_enhanced():
-        """Render the enhanced Derplexity chat interface (alternative)."""
-        return render_template('enhanced_derplexity.html', 
-                            title='Derplexity Chat (Enhanced)')
-    
-    @app.route('/derplexity-legacy')
-    def derplexity_legacy():
-        """Render the legacy Derplexity chat interface (session-based)."""
-        # Initialize a new chat session if one doesn't exist
-        if "chat" not in session:
-            session["chat"] = chat_service.start_new_chat()
-        
+        """Render the Derplexity chat interface with persistent conversations."""
         return render_template('derplexity.html', 
-                            title='Derplexity Chat (Legacy)', 
-                            chat=session["chat"])
+                            title='Derplexity Chat')
     
     @app.route('/doogle')
     def doogle():
