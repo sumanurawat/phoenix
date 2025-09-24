@@ -27,8 +27,9 @@ except ImportError:
     GROK_AVAILABLE = False
     logging.warning("Grok API not available. Run: pip install openai")
 
-from config.settings import GEMINI_API_KEY, CLAUDE_API_KEY, GROK_API_KEY, MAX_RETRIES, RETRY_DELAY
+from config.settings import GEMINI_API_KEY, CLAUDE_API_KEY, GROK_API_KEY, OPENAI_API_KEY, MAX_RETRIES, RETRY_DELAY
 from config.gemini_models import GEMINI_MODELS, get_model_info
+from config.openai_models import OpenAIModels, get_openai_model_info
 from services.utils import format_chat_history, handle_api_error
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,7 @@ class ModelProvider(Enum):
     GEMINI = "gemini"
     CLAUDE = "claude"
     GROK = "grok"
+    OPENAI = "openai"
 
 
 class ModelInfo:
@@ -110,12 +112,12 @@ class ModelInfo:
         "grok-vision-beta": {"name": "Grok Vision Beta", "cost": "High", "performance": "High"},
     }
     
-    # OpenAI models (for reference - not implemented yet)
+    # OpenAI models (ChatGPT - Mature API with good pricing)
     OPENAI_MODELS = {
-        "gpt-4-turbo": {"name": "GPT-4 Turbo", "cost": "High", "performance": "Highest"},
-        "gpt-4o": {"name": "GPT-4o", "cost": "High", "performance": "Highest"},
-        "gpt-4o-mini": {"name": "GPT-4o Mini", "cost": "Low", "performance": "Good"},
-        "gpt-3.5-turbo": {"name": "GPT-3.5 Turbo", "cost": "Low", "performance": "Medium"},
+        "gpt-4o-mini": {"name": "GPT-4o Mini (Ultra-budget)", "cost": "Very Low", "performance": "High"},
+        "gpt-4o": {"name": "GPT-4o (Flagship)", "cost": "Medium", "performance": "Highest"},
+        "gpt-4-turbo": {"name": "GPT-4 Turbo (Premium)", "cost": "High", "performance": "Highest"},
+        "gpt-3.5-turbo": {"name": "GPT-3.5 Turbo (Budget)", "cost": "Low", "performance": "Medium"},
     }
 
 
@@ -132,6 +134,7 @@ class EnhancedLLMService:
         self._init_gemini()
         self._init_claude()
         self._init_grok()
+        self._init_openai()
         
         logger.info(f"🚀 Enhanced LLM Service initialized")
         logger.info(f"📊 Provider: {provider.value}, Model: {self.model}")
@@ -144,6 +147,8 @@ class EnhancedLLMService:
             return "claude-sonnet-4-20250514"  # Default to Claude 4 Sonnet
         elif provider == ModelProvider.GROK:
             return "grok-2-1212"  # Default to Grok 2-1212 (production model)
+        elif provider == ModelProvider.OPENAI:
+            return OpenAIModels.PRIMARY  # Default to GPT-4o Mini (cheapest)
         return GEMINI_MODELS.PRIMARY
     
     def _init_gemini(self):
@@ -212,6 +217,49 @@ class EnhancedLLMService:
                 logger.error(f"🔍 Error type: {type(e).__name__}")
                 self.grok_client = None
     
+    def _init_openai(self):
+        """Initialize OpenAI API."""
+        if not GROK_AVAILABLE:  # Uses same openai library
+            logger.warning("⚠️ OpenAI API library not installed. Run: pip install openai")
+            self.openai_client = None
+        elif not OPENAI_API_KEY:
+            logger.warning("⚠️ OpenAI API key not found in environment variables")
+            self.openai_client = None
+        else:
+            try:
+                # Initialize OpenAI client with basic configuration
+                self.openai_client = openai.OpenAI(
+                    api_key=OPENAI_API_KEY,
+                    timeout=30.0
+                )
+                
+                # Test the API connection
+                logger.info("🧪 Testing OpenAI API connection...")
+                test_model = "gpt-4o-mini"  # Use stable model for testing
+                test_params = {
+                    "model": test_model,
+                    "messages": [{"role": "user", "content": "Hello, respond with just 'OK'"}]
+                }
+                
+                # Use correct parameters based on model
+                if test_model.startswith('gpt-5'):
+                    test_params["max_completion_tokens"] = 10
+                    # GPT-5 only supports default temperature (1.0), don't set it
+                else:
+                    test_params["max_tokens"] = 10
+                    test_params["temperature"] = 0.1
+                
+                test_response = self.openai_client.chat.completions.create(**test_params)
+                
+                test_content = test_response.choices[0].message.content
+                logger.info(f"✅ OpenAI API test successful: {test_content}")
+                logger.info(f"✅ OpenAI API initialized with key: {OPENAI_API_KEY[:15]}...")
+                
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize OpenAI API: {e}")
+                logger.error(f"🔍 Error type: {type(e).__name__}")
+                self.openai_client = None
+    
     def switch_model(self, provider: ModelProvider, model: str):
         """Switch to a different model/provider."""
         old_info = f"{self.provider.value}:{self.model}"
@@ -231,6 +279,8 @@ class EnhancedLLMService:
             primary_result = self._generate_with_claude(prompt, max_retries, enable_thinking, thinking_budget)
         elif self.provider == ModelProvider.GROK:
             primary_result = self._generate_with_grok(prompt, max_retries)
+        elif self.provider == ModelProvider.OPENAI:
+            primary_result = self._generate_with_openai(prompt, max_retries)
         else:
             raise ValueError(f"Unsupported provider: {self.provider}")
         
@@ -239,7 +289,7 @@ class EnhancedLLMService:
             return primary_result
         
         # If primary failed and fallback is enabled, try Gemini Flash as backup
-        if enable_fallback and self.provider in [ModelProvider.CLAUDE, ModelProvider.GROK]:
+        if enable_fallback and self.provider in [ModelProvider.CLAUDE, ModelProvider.GROK, ModelProvider.OPENAI]:
             logger.warning(f"🔄 {self.provider.value} failed, falling back to Gemini 1.5 Flash as backup...")
             return self._fallback_to_gemini(prompt, max_retries, primary_result)
         
@@ -425,6 +475,69 @@ class EnhancedLLMService:
                 
             time.sleep(RETRY_DELAY)
     
+    def _generate_with_openai(self, prompt: str, max_retries: int) -> Dict[str, Any]:
+        """Generate text using OpenAI API."""
+        if not self.openai_client:
+            return {"success": False, "error": "OpenAI client not initialized", "provider": "openai"}
+        
+        logger.info(f"🤖 Generating with OpenAI: {self.model}")
+        
+        for attempt in range(max_retries):
+            try:
+                start_time = time.time()
+                
+                # GPT-5 models use max_completion_tokens instead of max_tokens
+                # and only support default temperature (1.0)
+                request_params = {
+                    "model": self.model,
+                    "messages": [{"role": "user", "content": prompt}]
+                }
+                
+                # Use correct token parameter based on model
+                if self.model.startswith('gpt-5'):
+                    request_params["max_completion_tokens"] = 4096
+                    # GPT-5 only supports default temperature (1.0), don't set it
+                else:
+                    request_params["max_tokens"] = 4096
+                    request_params["temperature"] = 0.1  # Lower temperature for code generation
+                
+                response = self.openai_client.chat.completions.create(**request_params)
+                
+                response_time = time.time() - start_time
+                
+                # Extract response text and usage information
+                response_text = response.choices[0].message.content
+                usage = response.usage
+                
+                input_tokens = usage.prompt_tokens
+                output_tokens = usage.completion_tokens
+                
+                self._track_cost("openai", input_tokens, output_tokens)
+                
+                logger.info(f"✅ OpenAI generation successful ({response_time:.2f}s)")
+                logger.info(f"📊 Token usage: {input_tokens} input + {output_tokens} output = {input_tokens + output_tokens} total")
+                
+                return {
+                    "success": True,
+                    "text": response_text,
+                    "provider": "openai",
+                    "model": self.model,
+                    "response_time": response_time,
+                    "usage": {
+                        "input_tokens": input_tokens,
+                        "output_tokens": output_tokens,
+                        "total_tokens": input_tokens + output_tokens
+                    },
+                    "cost_info": self.cost_tracker
+                }
+                
+            except Exception as e:
+                logger.error(f"❌ OpenAI attempt {attempt + 1} failed: {e}")
+                if attempt == max_retries - 1:
+                    return {"success": False, "error": str(e), "provider": "openai"}
+                
+            time.sleep(RETRY_DELAY)
+    
     def _track_cost(self, provider: str, input_tokens: int, output_tokens: int):
         """Track estimated costs."""
         self.cost_tracker["requests"] += 1
@@ -462,11 +575,11 @@ class EnhancedLLMService:
             "grok-beta": {"input": 5.0, "output": 15.0},          # Beta model pricing
             "grok-vision-beta": {"input": 5.0, "output": 15.0},   # Beta vision model
             
-            # === OPENAI MODELS (for reference - could be added later) ===
-            # OpenAI's strength: Multimodal capabilities and ecosystem
+            # === OPENAI MODELS (ChatGPT) - MATURE API & GOOD MID-TIER ===
+            # OpenAI's strength: Multimodal capabilities, mature ecosystem, wide adoption
             "gpt-4-turbo": {"input": 10.0, "output": 30.0},       # Cheaper than Claude Opus
             "gpt-4o": {"input": 5.0, "output": 15.0},             # More expensive than Claude 4 Sonnet
-            "gpt-4o-mini": {"input": 0.15, "output": 0.60},       # 2x more than Gemini Flash
+            "gpt-4o-mini": {"input": 0.15, "output": 0.60},       # 2x more than Gemini Flash but great value
             "gpt-3.5-turbo": {"input": 0.5, "output": 1.5},       # 7x more than Gemini Flash
             
             # === COST ANALYSIS INSIGHTS ===
@@ -484,6 +597,8 @@ class EnhancedLLMService:
             rates = {"input": 3.5, "output": 10.5}  # Default Gemini Pro pricing
         elif provider == "grok":
             rates = {"input": 2.0, "output": 10.0}  # Default Grok 2-1212 pricing
+        elif provider == "openai":
+            rates = {"input": 0.15, "output": 0.60}  # Default GPT-4o Mini pricing
         else:
             rates = {"input": 3.0, "output": 15.0}  # Default Claude pricing
         
@@ -562,6 +677,14 @@ class EnhancedLLMService:
                 {"id": "grok-2-vision-1212", "name": "Grok 2 Vision-1212", "cost": "Medium", "performance": "High"},
                 {"id": "grok-beta", "name": "Grok Beta", "cost": "High", "performance": "High"},
                 {"id": "grok-vision-beta", "name": "Grok Vision Beta", "cost": "High", "performance": "High"},
+            ]
+        
+        if GROK_AVAILABLE and OPENAI_API_KEY:  # Uses same openai library
+            models["openai"] = [
+                {"id": "gpt-4o-mini", "name": "GPT-4o Mini (Ultra-budget)", "cost": "Very Low", "performance": "High"},
+                {"id": "gpt-4o", "name": "GPT-4o (Flagship)", "cost": "Medium", "performance": "Highest"},
+                {"id": "gpt-4-turbo", "name": "GPT-4 Turbo (Premium)", "cost": "High", "performance": "Highest"},
+                {"id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo (Budget)", "cost": "Low", "performance": "Medium"},
             ]
         
         return models

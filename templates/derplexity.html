@@ -5,6 +5,10 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+
+<!-- Phoenix Model Selector Component -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/model_selector.css') }}">
+<script src="{{ url_for('static', filename='js/model_config.js') }}"></script>
 {% endblock %}
 
 {% block body_class %}derplexity-page{% endblock %}
@@ -183,28 +187,9 @@
             margin: 0;
         }
         
-        /* Model selector styles */
-        .model-selector {
-            position: relative;
+        /* Phoenix Model Selector integration */
+        #derplexityModelSelector {
             margin-right: 1rem;
-        }
-        
-        .model-selector select {
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 0.875rem;
-            background: white;
-        }
-        
-        .model-selector select:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
-        }
-        
-        .model-selector select option:disabled {
-            background: #f3f4f6 !important;
-            color: #9ca3af !important;
-            font-style: italic;
         }
         
         /* Messages Area */
@@ -519,22 +504,8 @@
                 </button>
                 <h1 class="chat-title" id="chatTitle">Welcome to Derplexity</h1>
                 
-                <!-- Model Selector -->
-                <div class="model-selector">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fas fa-robot text-muted"></i>
-                        <select id="modelProvider" class="form-select form-select-sm" onchange="updateAvailableModels()" style="width: auto; min-width: 100px;">
-                            <option value="gemini" selected>Gemini</option>
-                            <option value="claude" id="claudeOption">Claude</option>
-                            <option value="grok" id="grokOption">Grok</option>
-                        </select>
-                        <select id="modelName" class="form-select form-select-sm" style="width: auto; min-width: 180px;">
-                            <option value="gemini-1.5-flash-8b">Flash 8B (Fast)</option>
-                        </select>
-                        
-                        <!-- Thinking mode removed for simplicity - will be re-implemented later -->
-                    </div>
-                </div>
+                <!-- Phoenix Model Selector Component -->
+                <div id="derplexityModelSelector"></div>
             </div>
             
             <!-- Messages -->
@@ -608,6 +579,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/model-selector.js') }}"></script>
     
+    <!-- Include Phoenix Model Selector Component -->
+    {% include 'components/model_selector.html' %}
+    
     <script>
         // Global state
         let conversations = [];
@@ -626,96 +600,49 @@
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
         
-        // Model Management - Same as Dataset Analysis
-        const availableModels = {
-            gemini: [
-                {id: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash 8B (Fast & Cost-Effective)', cost: 'Very Low', prodAllowed: true},
-                {id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Highest Quality, $$$)', cost: 'High', prodAllowed: true},
-                {id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (High Quality, $)', cost: 'Low', prodAllowed: true},
-                {id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Good Quality, $$)', cost: 'Medium', prodAllowed: true},
-                {id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Good Quality, $)', cost: 'Low', prodAllowed: true}
-            ],
-            claude: [
-                {id: 'claude-opus-4-20250514', name: 'Claude 4 Opus (World\'s Best Coding Model, $$$$)', cost: 'Very High', prodAllowed: true},
-                {id: 'claude-sonnet-4-20250514', name: 'Claude 4 Sonnet (Latest & Best Balance, $$$)', cost: 'High', prodAllowed: true},
-                {id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (High Quality, $$)', cost: 'Medium', prodAllowed: true},
-                {id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku (Fast & Affordable, $)', cost: 'Low', prodAllowed: true},
-                {id: 'claude-3-opus-20240229', name: 'Claude 3 Opus (Premium, $$$)', cost: 'High', prodAllowed: true}
-            ],
-            grok: [
-                {id: 'grok-4', name: 'Grok 4 (Real-time Search, $$$)', cost: 'High', prodAllowed: true},
-                {id: 'grok-2-1212', name: 'Grok 2-1212 (Production Model, $$)', cost: 'Medium', prodAllowed: true},
-                {id: 'grok-2-vision-1212', name: 'Grok 2 Vision-1212 (Vision Support, $$)', cost: 'Medium', prodAllowed: true},
-                {id: 'grok-beta', name: 'Grok Beta (Latest Features, $$$)', cost: 'High', prodAllowed: true},
-                {id: 'grok-vision-beta', name: 'Grok Vision Beta (Vision Beta, $$$)', cost: 'High', prodAllowed: true}
-            ]
-        };
-
-        function updateAvailableModels() {
-            const provider = document.getElementById('modelProvider').value;
-            const modelSelect = document.getElementById('modelName');
-            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const isDev = window.location.hostname.includes('dev') || window.location.hostname.includes('staging');
-            const isDevOrLocal = isLocalhost || isDev;
-            
-            const models = availableModels[provider] || [];
-            modelSelect.innerHTML = '';
-            
-            models.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model.id;
-                
-                // In production, grey out expensive models but still show them
-                if (!isDevOrLocal && !model.prodAllowed) {
-                    option.textContent = `${model.name} (Premium - Contact Admin)`;
-                    option.disabled = true;
-                    option.style.color = '#9ca3af';
-                    option.style.fontStyle = 'italic';
-                } else {
-                    option.textContent = model.name;
-                }
-                
-                modelSelect.appendChild(option);
-            });
-            
-            // Select the appropriate default model
-            if (provider === 'gemini') {
-                modelSelect.value = 'gemini-1.5-flash-8b';  // Always default to most cost-effective
-            } else if (provider === 'claude') {
-                modelSelect.value = 'claude-sonnet-4-20250514';  // Default to Claude 4 Sonnet
-            } else if (provider === 'grok') {
-                modelSelect.value = 'grok-2-1212';  // Default to Grok production model
-            }
-            
-            // Thinking mode control removed
-        }
+        // Phoenix Model Selector Component Integration
+        let modelSelector;
         
-        // updateThinkingVisibility(), updateThinkingBudget(), and updateBudgetDisplay() functions removed - thinking mode disabled
-
-        function initializeEnvironment() {
-            updateAvailableModels();
-            
-            // Thinking visibility event listener removed
+        function initializeModelSelector() {
+            modelSelector = new PhoenixModelSelector('derplexityModelSelector', {
+                title: 'AI Model Selection',
+                subtitle: 'Choose your preferred AI provider and model for the best experience',
+                defaultProvider: 'openai', // Cheapest overall
+                onChange: (provider, model) => {
+                    console.log('Model selection changed:', provider, model);
+                    // Update the chat title if needed
+                    updateChatTitle();
+                }
+            });
         }
 
         // Get current model configuration for API calls
         function getCurrentModelConfig() {
-            const config = {
-                provider: document.getElementById('modelProvider').value,
-                model: document.getElementById('modelName').value
+            if (!modelSelector) {
+                return { provider: 'openai', model: 'gpt-4o-mini' }; // Fallback
+            }
+            
+            const selection = modelSelector.getSelection();
+            return {
+                provider: selection.provider,
+                model: selection.model
             };
-            
-            // Thinking parameters removed for simplicity
-            
-            return config;
         }
 
         // Validate model selection before API calls
         function validateModelSelection() {
-            const modelSelect = document.getElementById('modelName');
-            const selectedOption = modelSelect.options[modelSelect.selectedIndex];
+            const selection = modelSelector ? modelSelector.getSelection() : null;
+            if (!selection || !selection.modelData) {
+                alert('Please select a valid AI model before continuing.');
+                return false;
+            }
             
-            if (selectedOption && selectedOption.disabled) {
+            // In production, check if model is allowed
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const isDev = window.location.hostname.includes('dev') || window.location.hostname.includes('staging');
+            const isDevOrLocal = isLocalhost || isDev;
+            
+            if (!isDevOrLocal && !selection.modelData.prodAllowed) {
                 alert('This model is not available in production. Please select an available model or contact your administrator for premium access.');
                 return false;
             }
@@ -726,7 +653,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadConversations();
             setupEventListeners();
-            initializeEnvironment();
+            initializeModelSelector();
         });
         
         function setupEventListeners() {
