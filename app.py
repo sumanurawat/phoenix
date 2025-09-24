@@ -129,70 +129,16 @@ def create_app():
     app.config["SESSION_FILE_THRESHOLD"] = SESSION_FILE_THRESHOLD
     Session(app)
 
-    # --- Basic CSRF Protection (custom lightweight implementation) ---
-    # Generates a per-session token and validates it on form POSTs.
-    # Skips validation when explicitly disabled via env (e.g., tests) or for safe/whitelisted endpoints.
-    def _ensure_csrf_token():
-        if 'csrf_token' not in session:
-            session['csrf_token'] = secrets.token_urlsafe(32)
-
-    @app.before_request
-    def _csrf_protect():
-        # Always ensure a token exists for any sessioned visitor
-        _ensure_csrf_token()
-
-        if os.getenv('DISABLE_CSRF', '0') == '1':
-            return  # Explicitly disabled (e.g., test harness)
-
-        # Only enforce on state‑changing methods
-        if request.method not in ('POST', 'PUT', 'PATCH', 'DELETE'):
-            return
-
-        # Whitelist endpoints that are OAuth callbacks or external provider exchanges (GET only anyway)
-        path = request.path
-        oauth_whitelist = (
-            '/login/google/callback',
-        )
-        if path in oauth_whitelist:
-            return
-
-        # Accept token from form field, header, or JSON body (for fetch requests)
-        sent_token = request.form.get('csrf_token') or request.headers.get('X-CSRF-Token')
-        if not sent_token and (request.is_json or request.headers.get('Content-Type', '').startswith('application/json')):
-            try:
-                body = request.get_json(silent=True) or {}
-                sent_token = body.get('csrf_token')
-            except Exception:
-                sent_token = None
-        session_token = session.get('csrf_token')
-
-        if not sent_token or not session_token or sent_token != session_token:
-            app.logger.warning('CSRF validation failed', extra={
-                'path': path,
-                'method': request.method,
-                'has_header_token': bool(request.headers.get('X-CSRF-Token')),
-                'has_form_token': bool(request.form.get('csrf_token')),
-                'session_token_present': bool(session_token),
-            })
-            # Respond with JSON for JSON requests to avoid browser parsing errors
-            if request.is_json or 'application/json' in (request.headers.get('Accept') or ''):
-                from flask import jsonify
-                return jsonify({
-                    'success': False,
-                    'error': 'Invalid or missing CSRF token',
-                    'code': 'csrf_failed'
-                }), 400
-            return abort(400, description='Invalid or missing CSRF token')
-
-    # Make token accessible in templates
-    @app.context_processor
-    def inject_csrf_token():
-        return {'csrf_token': lambda: session.get('csrf_token')}
-
-    # Inject a small script with CSRF token for pages (optional; base template should render it)
+    # --- Centralized CSRF Protection ---
+    from middleware.csrf_protection import csrf
+    csrf.init_app(app)
+    
+    # Configure CSRF based on environment
+    app.config['DISABLE_CSRF'] = os.getenv('DISABLE_CSRF', '0') == '1'
+    
+    # Expose CSRF token via header for frontend
     @app.after_request
     def add_csrf_header(resp):
-        # Expose CSRF via header so front-end can read it if needed (same-origin)
         token = session.get('csrf_token')
         if token:
             resp.headers['X-CSRF-Token'] = token

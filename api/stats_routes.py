@@ -7,6 +7,7 @@ import logging
 from flask import Blueprint, jsonify, render_template, session
 from services.website_stats_service import WebsiteStatsService
 from api.auth_routes import login_required
+from middleware.csrf_protection import csrf_protect
 
 logger = logging.getLogger(__name__)
 

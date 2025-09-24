@@ -18,6 +18,7 @@ stripe_bp = Blueprint('stripe', __name__, url_prefix='/api/stripe')
 subscription_bp = Blueprint('subscription', __name__)
 
 # Initialize Stripe service
+from middleware.csrf_protection import csrf_protect
 stripe_service = StripeService()
 
 # API Routes
@@ -28,6 +29,7 @@ def get_stripe_config():
     return jsonify(config)
 
 @stripe_bp.route('/create-checkout-session', methods=['POST'])
+@csrf_protect
 @login_required
 def create_checkout_session():
     """Create a Stripe checkout session."""
@@ -78,6 +80,7 @@ def get_subscription_status():
         return jsonify({'error': str(e)}), 500
 
 @stripe_bp.route('/subscription/cancel', methods=['POST'])
+@csrf_protect
 @login_required
 def cancel_subscription():
     """Cancel subscription at period end."""
@@ -113,6 +116,7 @@ def cancel_subscription():
         }), 500
 
 @stripe_bp.route('/subscription/reactivate', methods=['POST'])
+@csrf_protect
 @login_required
 def reactivate_subscription():
     """Reactivate a cancelled subscription."""

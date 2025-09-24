@@ -5,6 +5,7 @@ from flask import Blueprint, render_template, request, jsonify
 from services.robin_service import RobinService
 from services.llm_service import LLMService
 from services.website_stats_service import WebsiteStatsService
+from middleware.csrf_protection import csrf_protect
 
 robin_bp = Blueprint("robin", __name__)
 robin_service = RobinService()
@@ -17,6 +18,7 @@ def robin_page():
     return render_template("robin.html", title="Robin News Reporter")
 
 @robin_bp.route("/api/robin/search", methods=["POST"])
+@csrf_protect
 def search_news():
     """Endpoint to search for news articles."""
     data = request.get_json()
@@ -31,6 +33,7 @@ def search_news():
     return jsonify(result)
 
 @robin_bp.route("/api/robin/article_content", methods=["POST"])
+@csrf_protect
 def get_article_content():
     """Endpoint to fetch full content for a specific article."""
     data = request.get_json()
@@ -49,6 +52,7 @@ def get_article_content():
     return jsonify(result)
 
 @robin_bp.route("/api/robin/generate_summary", methods=["POST"])
+@csrf_protect
 def generate_summary():
     """Endpoint to generate an AI summary of multiple news articles."""
     data = request.get_json()
