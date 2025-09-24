@@ -61,6 +61,7 @@ from api.stripe_routes import stripe_bp, subscription_bp
 from services.chat_service import ChatService
 from services.enhanced_chat_service import EnhancedChatService
 from services.search_service import SearchService
+from services.website_stats_service import WebsiteStatsService
 from services.subscription_middleware import (
     init_subscription_context, 
     subscription_context_processor
@@ -90,6 +91,7 @@ except Exception as e:
 chat_service = ChatService()
 enhanced_chat_service = EnhancedChatService()
 search_service = SearchService()
+website_stats_service = WebsiteStatsService()
 
 def require_auth(f):
     """Decorator to require authentication for routes."""
@@ -212,6 +214,12 @@ def create_app():
         results = {}
         if query:
             results = search_service.search(query, category, page)
+            
+            # Increment Doogle search stats for non-empty queries
+            try:
+                website_stats_service.increment_doogle_searches()
+            except Exception as e:
+                logger.warning(f"Failed to update Doogle search stats: {e}")
             
         return render_template('doogle.html', 
                            title='Doogle Search', 
