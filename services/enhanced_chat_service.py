@@ -12,6 +12,7 @@ from firebase_admin import firestore
 from services.llm_service import LLMService
 from services.enhanced_llm_service import EnhancedLLMService, ModelProvider
 from services.utils import format_timestamp
+from services.website_stats_service import WebsiteStatsService
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -24,6 +25,7 @@ class EnhancedChatService:
         # Use EnhancedLLMService for multi-provider support
         self.llm_service = EnhancedLLMService()
         self.db = db or firestore.client()
+        self.website_stats = WebsiteStatsService()
     
     # Conversation Management
     
@@ -69,6 +71,12 @@ class EnhancedChatService:
             
             # Save to Firestore
             self.db.collection('conversations').document(conversation_id).set(conversation_data)
+            
+            # Update website stats - increment conversations started
+            try:
+                self.website_stats.increment_conversations_started()
+            except Exception as e:
+                logger.warning(f"Failed to update conversation stats: {e}")
             
             # Convert SERVER_TIMESTAMP to datetime for return
             conversation_data['created_at'] = datetime.now()
@@ -302,6 +310,12 @@ class EnhancedChatService:
             
             # Save message to Firestore
             self.db.collection('messages').document(message_id).set(message_data)
+            
+            # Update website stats - increment messages exchanged
+            try:
+                self.website_stats.increment_messages_exchanged()
+            except Exception as e:
+                logger.warning(f"Failed to update message stats: {e}")
             
             # Update conversation metadata
             updates = {
