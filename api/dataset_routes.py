@@ -18,6 +18,8 @@ from services.dataset_discovery.exceptions import (
 # Configure logging
 logger = logging.getLogger(__name__)
 
+from middleware.csrf_protection import csrf_protect
+
 # Create blueprint
 dataset_bp = Blueprint('datasets', __name__, url_prefix='/api/datasets')
 
@@ -97,6 +99,7 @@ def handle_api_error(func):
 
 
 @dataset_bp.route('/search', methods=['POST'])
+@csrf_protect
 @handle_api_error
 def search_datasets():
     """
@@ -277,6 +280,7 @@ def get_config_info():
 
 
 @dataset_bp.route('/download/check', methods=['POST'])
+@csrf_protect
 @handle_api_error
 def check_download_feasibility():
     """
@@ -337,6 +341,7 @@ def check_download_feasibility():
 
 
 @dataset_bp.route('/download', methods=['POST'])
+@csrf_protect
 @handle_api_error
 def download_dataset():
     """
@@ -437,6 +442,7 @@ def get_download_status():
 
 
 @dataset_bp.route('/download/cleanup', methods=['POST'])
+@csrf_protect
 @handle_api_error
 def cleanup_downloads():
     """
@@ -507,6 +513,7 @@ def dataset_analyze():
 
 
 @dataset_bp.route('/analyze/step', methods=['POST'])
+@csrf_protect
 def analyze_step():
     """
     Run individual analysis step on downloaded dataset with configurable models
@@ -736,6 +743,7 @@ def get_conversation_messages(conversation_id):
 
 
 @dataset_bp.route('/generate-code', methods=['POST'])
+@csrf_protect
 def generate_analysis_code():
     """
     Generate complete analysis code using Gemini API

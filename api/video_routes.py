@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify, Response, stream_with_context, session
 from firebase_admin import firestore
 from api.auth_routes import login_required
+from middleware.csrf_protection import csrf_protect
 from services.veo_video_generation_service import VeoGenerationParams, veo_video_service
 from services.website_stats_service import WebsiteStatsService
 from services.realtime_event_bus import realtime_event_bus
@@ -85,6 +86,7 @@ def _run_generation(job_id: str, prompts, base_options):
     _jobs[job_id]['status'] = 'completed'
 
 @video_bp.route('/generate', methods=['POST'])
+@csrf_protect
 @login_required
 def start_video_batch():
     data = request.get_json(force=True, silent=True) or {}

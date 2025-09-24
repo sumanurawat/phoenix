@@ -13,6 +13,9 @@
     <!-- Custom styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     {% block extra_css %}{% endblock %}
+    
+    <!-- CSRF Protection -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body class="{% block body_class %}{% endblock %}">
     {% block header %}
@@ -246,5 +249,9 @@
     /* Utility: make an element sticky below the app header */
     .sticky-after-header { position: sticky; top: var(--header-height); }
     </style>
+    
+    <!-- CSRF Protection Script -->
+    <script src="{{ url_for('static', filename='js/csrf-protection.js') }}"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

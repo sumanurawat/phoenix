@@ -17,6 +17,7 @@ from services.click_tracking_service import ClickTrackingService
 from functools import wraps
 from datetime import datetime
 from api.auth_routes import login_required
+from middleware.csrf_protection import csrf_protect
 
 deeplink_bp = Blueprint('deeplink', __name__, url_prefix='/apps/deeplink')
 
@@ -25,6 +26,7 @@ click_tracking_service = ClickTrackingService()
 
 # NEW COMBINED PAGE ROUTE
 @deeplink_bp.route('/profile/links', methods=['GET', 'POST'])
+@csrf_protect
 @login_required
 def manage_short_links_page():
     user_id = session.get('user_id')
@@ -183,6 +185,7 @@ def manage_short_links_page():
 
 
 @deeplink_bp.route('/profile/links/delete/<string:short_code>', methods=['POST'])
+@csrf_protect
 @login_required
 def delete_short_link_route(short_code):
     """Delete a short link. Returns JSON response for AJAX calls."""

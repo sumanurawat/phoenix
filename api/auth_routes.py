@@ -8,9 +8,19 @@ import requests
 from services.auth_service import AuthService
 from services.stripe_service import StripeService
 from firebase_admin import firestore
+from middleware.csrf_protection import csrf_protect
 
 auth_bp = Blueprint('auth', __name__)
 auth_service = AuthService()
+
+
+@auth_bp.route('/api/csrf-token', methods=['GET'])
+def get_csrf_token():
+    """Endpoint to refresh CSRF token."""
+    return jsonify({
+        'success': True,
+        'csrf_token': session.get('csrf_token')
+    })
 
 
 def is_safe_url(target):
@@ -36,6 +46,7 @@ def login_required(func):
 
 
 @auth_bp.route('/signup', methods=['GET', 'POST'])
+@csrf_protect
 def signup():
     error = None
     next_url = request.args.get('next') or request.form.get('next')
@@ -74,6 +85,7 @@ def signup():
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@csrf_protect
 def login():
     error = None
     next_url = request.args.get('next') or request.form.get('next')

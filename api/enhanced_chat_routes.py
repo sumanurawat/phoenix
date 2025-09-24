@@ -9,6 +9,7 @@ from functools import wraps
 
 from services.enhanced_chat_service import EnhancedChatService
 from api.auth_routes import login_required
+from middleware.csrf_protection import csrf_protect
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -71,6 +72,7 @@ def get_conversations():
     })
 
 @enhanced_chat_bp.route('/api/conversations', methods=['POST'])
+@csrf_protect
 @login_required
 @handle_api_error
 def create_conversation():
@@ -129,6 +131,7 @@ def get_conversation(conversation_id):
     })
 
 @enhanced_chat_bp.route('/api/conversations/<conversation_id>', methods=['PUT'])
+@csrf_protect
 @login_required
 @handle_api_error
 def update_conversation(conversation_id):
@@ -154,6 +157,7 @@ def update_conversation(conversation_id):
     return jsonify({"success": True})
 
 @enhanced_chat_bp.route('/api/conversations/<conversation_id>', methods=['DELETE'])
+@csrf_protect
 @login_required
 @handle_api_error
 def delete_conversation(conversation_id):
@@ -198,6 +202,7 @@ def get_conversation_messages(conversation_id):
     })
 
 @enhanced_chat_bp.route('/api/conversations/<conversation_id>/messages', methods=['POST'])
+@csrf_protect
 @login_required
 @handle_api_error
 def send_message(conversation_id):
@@ -239,6 +244,7 @@ def send_message(conversation_id):
     return jsonify(result)
 
 @enhanced_chat_bp.route('/api/messages/<message_id>', methods=['DELETE'])
+@csrf_protect
 @login_required
 @handle_api_error
 def delete_message(message_id):
@@ -257,6 +263,7 @@ def delete_message(message_id):
 # Chat Session Management
 
 @enhanced_chat_bp.route('/api/chat/start-conversation', methods=['POST'])
+@csrf_protect
 @login_required
 @handle_api_error
 def start_conversation_with_message():
@@ -299,6 +306,7 @@ def start_conversation_with_message():
     return jsonify(result)
 
 @enhanced_chat_bp.route('/api/chat/new-session', methods=['POST'])
+@csrf_protect
 @login_required
 @handle_api_error
 def start_new_session():
@@ -324,6 +332,7 @@ def start_new_session():
     })
 
 @enhanced_chat_bp.route('/api/chat/load-session/<conversation_id>', methods=['POST'])
+@csrf_protect
 @login_required
 @handle_api_error
 def load_session(conversation_id):
@@ -375,6 +384,7 @@ def get_models():
     })
 
 @enhanced_chat_bp.route('/api/conversations/<conversation_id>/title', methods=['PUT'])
+@csrf_protect
 @login_required
 @handle_api_error
 def update_conversation_title(conversation_id):

@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, request
 
 from services.search_service import SearchService
 from services.website_stats_service import WebsiteStatsService
+from middleware.csrf_protection import csrf_protect
 
 # Initialize service
 search_service = SearchService()
@@ -36,6 +37,7 @@ def search():
     return jsonify(search_results)
 
 @search_bp.route('/summary', methods=['POST'])
+@csrf_protect
 def generate_summary():
     """Generate AI summary from search results."""
     try:
