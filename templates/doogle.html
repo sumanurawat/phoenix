@@ -7,6 +7,8 @@
 {{ super() }}
 {% endblock %}
 
+{% block main_class %}{% if query %}doogle-results{% else %}doogle-homepage{% endif %}{% endblock %}
+
 {% block content %}
 {% if query %}
 <!-- Doogle search bar for results page -->
@@ -43,13 +45,6 @@
     </div>
 </div>
 {% endif %}
-
-{{ super() }}
-{% endblock %}
-
-{% block main_class %}{% if query %}doogle-results{% else %}doogle-homepage{% endif %}{% endblock %}
-
-{% block content %}
 {% if query %}
     <!-- Search Results -->
     <div class="container py-4">
