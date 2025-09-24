@@ -200,6 +200,7 @@ def create_app():
                             title='Derplexity Chat')
     
     @app.route('/doogle')
+    @login_required
     def doogle():
         """Render the Doogle search interface."""
         query = request.args.get('q', '')
@@ -228,6 +229,7 @@ def create_app():
                            results=results)
     
     @app.route('/datasets')
+    @login_required
     def dataset_discovery():
         """Render the Dataset Discovery page."""
         return render_template('dataset_discovery.html', title='Dataset Discovery - Phoenix AI')
