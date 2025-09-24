@@ -3,18 +3,20 @@
 {% block title %}Doogle{% endblock %}
 
 {% block header %}
+<!-- Always show standard Phoenix header -->
+{{ super() }}
+{% endblock %}
+
+{% block content %}
 {% if query %}
-<!-- Custom header for search results -->
-<header class="doogle-header">
-    <div class="container-fluid">
+<!-- Doogle search bar for results page -->
+<div class="doogle-sub-header sticky-top bg-light border-bottom">
+    <div class="container-fluid py-2">
         <div class="row align-items-center">
             <div class="col-auto">
-                <a href="{{ url_for('index') }}" class="back-button">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <div class="doogle-logo">
+                <div class="doogle-logo-small">
                     <a href="{{ url_for('doogle') }}" style="text-decoration: none;">
-                        <span>D</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
+                        <span style="color: #4285f4;">D</span><span style="color: #ea4335;">o</span><span style="color: #fbbc05;">o</span><span style="color: #4285f4;">g</span><span style="color: #34a853;">l</span><span style="color: #ea4335;">e</span>
                     </a>
                 </div>
             </div>
@@ -33,52 +35,16 @@
                             autocomplete="off"
                         >
                         <input type="hidden" name="category" value="{{ category }}" id="category-input">
+                        <button type="submit" class="btn btn-primary btn-sm ms-2">Search</button>
                     </div>
                 </form>
             </div>
-            
-            <div class="col-auto">
-                <button type="submit" form="search-form" class="btn btn-primary">Search</button>
-                
-                <!-- User Status -->
-                {% if session.get('user_id') %}
-                    <div class="dropdown d-inline-block ms-2">
-                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            {% if session.get('user_picture') %}
-                                <img src="{{ session.get('user_picture') }}" alt="User" class="user-avatar-tiny">
-                            {% else %}
-                                <i class="fas fa-user"></i>
-                            {% endif %}
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><div class="dropdown-header">
-                                <strong>{{ session.get('user_name') or session.get('user_email', 'User') }}</strong>
-                                {% if subscription and subscription.is_premium %}
-                                    <div class="small"><span class="badge bg-gradient-premium">Premium</span></div>
-                                {% endif %}
-                            </div></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
-                                <i class="fas fa-user me-2"></i>Profile
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('index') }}">
-                                <i class="fas fa-home me-2"></i>Home
-                            </a></li>
-                        </ul>
-                    </div>
-                {% else %}
-                    <div class="auth-buttons-small ms-2">
-                        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-sm">Login</a>
-                    </div>
-                {% endif %}
-            </div>
         </div>
     </div>
-</header>
-{% else %}
-<!-- Show standard Phoenix header for homepage -->
-{{ super() }}
+</div>
 {% endif %}
+
+{{ super() }}
 {% endblock %}
 
 {% block main_class %}{% if query %}doogle-results{% else %}doogle-homepage{% endif %}{% endblock %}
