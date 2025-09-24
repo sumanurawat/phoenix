@@ -297,36 +297,63 @@
         function listenToStream(jobId){
             const es = new EventSource(`/api/video/stream/${jobId}`);
             es.addEventListener('prompt.started', (ev) => {
-                const d = JSON.parse(ev.data); const i = d.prompt_index; setStatus(i, 'Generating', 'info');
+                const d = JSON.parse(ev.data); const i = d.prompt_index; 
+                const sampleCount = parseInt(document.getElementById('sampleCount').value, 10) || 1;
+                const statusText = sampleCount > 1 ? `Generating ${sampleCount} samples` : 'Generating';
+                setStatus(i, statusText, 'info');
             });
             es.addEventListener('prompt.completed', (ev) => {
-                const d = JSON.parse(ev.data); const i = d.prompt_index; setStatus(i, 'Completed', 'success');
+                const d = JSON.parse(ev.data); const i = d.prompt_index; 
+                
+                // Count total videos generated
+                let totalVideos = 0;
+                if(d.gcs_uris && d.gcs_uris.length) totalVideos = d.gcs_uris.length;
+                else if(d.local_paths && d.local_paths.length) totalVideos = d.local_paths.length;
+                else if(d.video_url) totalVideos = 1;
+                
+                const statusText = totalVideos > 1 ? `Completed (${totalVideos} samples)` : 'Completed';
+                setStatus(i, statusText, 'success');
                 const slot = document.getElementById('video-' + i);
                 const pathCell = document.getElementById('path-' + i);
-                let displayPath = null;
-                if(pathCell){
-                    if(d.gcs_uris && d.gcs_uris.length){
-                        displayPath = d.gcs_uris[0];
-                    } else if(d.local_paths && d.local_paths.length){
-                        displayPath = d.local_paths[0];
-                    } else if(d.video_url){
-                        displayPath = d.video_url;
-                    }
-                    if(displayPath) pathCell.textContent = displayPath;
+                
+                // Collect all video paths/URIs
+                let allVideos = [];
+                if(d.gcs_uris && d.gcs_uris.length){
+                    allVideos = d.gcs_uris.map(uri => ({type: 'gcs', path: uri}));
+                } else if(d.local_paths && d.local_paths.length){
+                    allVideos = d.local_paths.map(path => ({type: 'local', path: path}));
+                } else if(d.video_url){
+                    allVideos = [{type: 'url', path: d.video_url}];
                 }
-                if(d.video_url){
-                    if(d.video_url.startsWith('gs://')){
-                        slot.innerHTML = `<div class='text-muted small'>Stored in GCS</div>`;
+                
+                // Update path cell with count info
+                if(pathCell && allVideos.length){
+                    if(allVideos.length === 1){
+                        pathCell.textContent = allVideos[0].path;
                     } else {
-                        // If it's a local filesystem-relative path (generated_videos/...), rewrite to /videos/ endpoint
-                        let src = d.video_url;
-                        if(!/^https?:\/\//.test(src) && !src.startsWith('/')){
-                            // assume relative path under generated_videos
-                            const rel = src.replace(/^generated_videos\/?/, '');
-                            src = '/videos/' + rel;
-                        }
-                        slot.innerHTML = `<video src="${src}" controls style="max-width:100%; height:auto;"></video>`;
+                        pathCell.innerHTML = `<span class="badge bg-info">${allVideos.length} samples</span><br><small>${allVideos[0].path}</small>`;
                     }
+                }
+                
+                // Display all videos in the slot
+                if(allVideos.length){
+                    let videoHtml = '';
+                    allVideos.forEach((video, idx) => {
+                        if(video.type === 'gcs'){
+                            videoHtml += `<div class='text-muted small mb-1'>Sample ${idx + 1}: Stored in GCS</div>`;
+                        } else {
+                            // Convert local path to accessible URL
+                            let src = video.path;
+                            if(!/^https?:\/\//.test(src) && !src.startsWith('/')){
+                                // assume relative path under generated_videos
+                                const rel = src.replace(/^generated_videos\/?/, '');
+                                src = '/videos/' + rel;
+                            }
+                            const sampleLabel = allVideos.length > 1 ? `<div class='small text-muted mb-1'>Sample ${idx + 1}:</div>` : '';
+                            videoHtml += `${sampleLabel}<video src="${src}" controls style="max-width:100%; height:auto;" class="mb-2"></video>`;
+                        }
+                    });
+                    slot.innerHTML = videoHtml;
                 }
             });
             es.addEventListener('prompt.failed', (ev) => {
