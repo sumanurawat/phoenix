@@ -93,15 +93,31 @@ class CSRFProtection:
                 sent_token = self._get_token_from_request()
                 
                 if not sent_token or not self._validate_token(sent_token):
-                    logger.warning('CSRF validation failed', extra={
+                    session_token = session.get('csrf_token', '')
+                    header_token = request.headers.get('X-CSRF-Token', '')
+                    form_token = request.form.get('csrf_token', '')
+                    json_token = self._get_json_token() or ''
+                    
+                    logger.error('🔒 CSRF validation failed', extra={
                         'method': request.method,
                         'endpoint': request.endpoint,
+                        'path': request.path,
+                        'remote_addr': request.remote_addr,
                         'user_agent': request.headers.get('User-Agent', ''),
-                        'has_header_token': bool(request.headers.get('X-CSRF-Token')),
-                        'has_form_token': bool(request.form.get('csrf_token')),
-                        'has_json_token': bool(self._get_json_token()),
-                        'session_has_token': bool(session.get('csrf_token'))
+                        'referer': request.headers.get('Referer', ''),
+                        'content_type': request.content_type,
+                        'has_header_token': bool(header_token),
+                        'has_form_token': bool(form_token),
+                        'has_json_token': bool(json_token),
+                        'session_has_token': bool(session_token),
+                        'session_token_length': len(session_token) if session_token else 0,
+                        'sent_token_length': len(sent_token) if sent_token else 0,
+                        'sent_token_source': 'header' if header_token else ('form' if form_token else ('json' if json_token else 'none')),
+                        'tokens_match': bool(sent_token and session_token and secrets.compare_digest(session_token, sent_token))
                     })
+                    
+                    # Log the actual token values (first 8 chars) for debugging
+                    logger.error(f'🔍 CSRF Token Debug - Session: {session_token[:8]}..., Sent: {sent_token[:8] if sent_token else "None"}...')
                     
                     # Return JSON error for API routes
                     if request.path.startswith('/api/'):

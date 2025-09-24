@@ -89,10 +89,26 @@ def _run_generation(job_id: str, prompts, base_options):
 @csrf_protect
 @login_required
 def start_video_batch():
+    # Enhanced CSRF debugging
+    logger.info('🎬 Video generation request started', extra={
+        'user_id': session.get('user_id'),
+        'endpoint': '/api/video/generate',
+        'method': request.method,
+        'content_type': request.content_type,
+        'has_csrf_header': bool(request.headers.get('X-CSRF-Token')),
+        'has_csrf_form': bool(request.form.get('csrf_token')),
+        'session_has_csrf': bool(session.get('csrf_token')),
+        'headers': dict(request.headers),
+        'remote_addr': request.remote_addr,
+        'user_agent': request.headers.get('User-Agent', ''),
+    })
+    
     data = request.get_json(force=True, silent=True) or {}
-    logger.info('video.generate request', extra={
+    logger.info('📊 Video generation data', extra={
         'user_id': session.get('user_id'),
         'prompts_len': len(data.get('prompts') or []),
+        'has_csrf_in_json': bool(data.get('csrf_token')),
+        'data_keys': list(data.keys()) if isinstance(data, dict) else []
     })
     prompts = data.get('prompts') or []
     if not isinstance(prompts, list) or not prompts:
