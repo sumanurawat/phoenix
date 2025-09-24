@@ -12,11 +12,13 @@ from middleware.csrf_protection import csrf_protect
 from services.veo_video_generation_service import VeoGenerationParams, veo_video_service
 from services.website_stats_service import WebsiteStatsService
 from services.realtime_event_bus import realtime_event_bus
+from services.video_batch_orchestrator import VideoBatchOrchestrator
 
 logger = logging.getLogger(__name__)
 
 video_bp = Blueprint('video', __name__, url_prefix='/api/video')
 website_stats_service = WebsiteStatsService()
+video_orchestrator = VideoBatchOrchestrator()
 
 _jobs = {}
 

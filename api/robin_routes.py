@@ -6,6 +6,7 @@ from services.robin_service import RobinService
 from services.llm_service import LLMService
 from services.website_stats_service import WebsiteStatsService
 from middleware.csrf_protection import csrf_protect
+from api.auth_routes import login_required
 
 robin_bp = Blueprint("robin", __name__)
 robin_service = RobinService()

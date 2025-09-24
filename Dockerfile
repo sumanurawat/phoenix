@@ -17,4 +17,4 @@ ENV FALLBACK_MODEL=gemini-1.5-flash
 # The API key should be provided at runtime, not baked into the image
 # GEMINI_API_KEY will be injected at runtime
 
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 app:app
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 300 app:app
