@@ -1,0 +1,295 @@
+<!--
+Phoenix Model Selector Component
+A beautiful, reusable model selector for all Phoenix AI apps
+
+Usage:
+<div id="myModelSelector" class="phoenix-model-selector-container"></div>
+<script>
+    const modelSelector = new PhoenixModelSelector('myModelSelector', {
+        title: 'AI Model Selection',
+        subtitle: 'Choose your preferred AI provider and model',
+        defaultProvider: 'openai',
+        onChange: (provider, model) => {
+            console.log('Selected:', provider, model);
+        }
+    });
+</script>
+-->
+
+<script>
+class PhoenixModelSelector {
+    constructor(containerId, options = {}) {
+        this.container = document.getElementById(containerId);
+        this.options = {
+            title: options.title || 'AI Model Selection',
+            subtitle: options.subtitle || 'Choose your AI provider and model',
+            defaultProvider: options.defaultProvider || 'openai',
+            onChange: options.onChange || (() => {}),
+            showCostInfo: options.showCostInfo !== false,
+            allowedProviders: options.allowedProviders || Object.keys(PHOENIX_MODELS),
+            ...options
+        };
+        
+        this.currentProvider = this.options.defaultProvider;
+        this.currentModel = DEFAULT_MODELS[this.currentProvider];
+        this.isProviderOpen = false;
+        this.isModelOpen = false;
+        
+        this.init();
+    }
+    
+    init() {
+        this.render();
+        this.bindEvents();
+        this.updateModelSelection();
+        
+        // Auto-close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!this.container.contains(e.target)) {
+                this.closeAllDropdowns();
+            }
+        });
+    }
+    
+    render() {
+        const currentProviderData = PHOENIX_MODELS[this.currentProvider];
+        const currentModelData = this.getCurrentModelData();
+        
+        this.container.innerHTML = `
+            <div class="phoenix-model-selector">
+                <div class="model-selector-header">
+                    <div class="model-selector-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div>
+                        <h4 class="model-selector-title">${this.options.title}</h4>
+                        <p class="model-selector-subtitle">${this.options.subtitle}</p>
+                    </div>
+                </div>
+                
+                <div class="model-controls">
+                    <!-- Provider Selector -->
+                    <div class="provider-selector">
+                        <div class="provider-button" data-role="provider-toggle">
+                            <div class="provider-icon">
+                                <i class="${currentProviderData.icon}" style="color: ${currentProviderData.color}"></i>
+                            </div>
+                            <span>${currentProviderData.name}</span>
+                            <i class="fas fa-chevron-down chevron-icon"></i>
+                        </div>
+                        
+                        <div class="provider-dropdown" data-role="provider-dropdown">
+                            ${this.renderProviderOptions()}
+                        </div>
+                    </div>
+                    
+                    <!-- Model Selector -->
+                    <div class="model-selector-wrapper">
+                        <div class="model-button" data-role="model-toggle">
+                            <div class="model-info">
+                                <span class="model-name">${currentModelData.name}</span>
+                                ${this.options.showCostInfo ? `<span class="model-cost cost-${this.getCostClass(currentModelData.cost)}">${currentModelData.costIcon}</span>` : ''}
+                            </div>
+                            <i class="fas fa-chevron-down chevron-icon"></i>
+                        </div>
+                        
+                        <div class="model-dropdown" data-role="model-dropdown">
+                            ${this.renderModelOptions()}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    renderProviderOptions() {
+        return this.options.allowedProviders
+            .filter(providerId => PHOENIX_MODELS[providerId])
+            .map(providerId => {
+                const provider = PHOENIX_MODELS[providerId];
+                const isSelected = providerId === this.currentProvider;
+                
+                return `
+                    <div class="provider-option ${isSelected ? 'selected' : ''}" data-provider="${providerId}">
+                        <div class="provider-icon">
+                            <i class="${provider.icon}" style="color: ${provider.color}"></i>
+                        </div>
+                        <span>${provider.name}</span>
+                    </div>
+                `;
+            }).join('');
+    }
+    
+    renderModelOptions() {
+        const providerData = PHOENIX_MODELS[this.currentProvider];
+        if (!providerData) return '';
+        
+        return providerData.models.map(model => {
+            const isSelected = model.id === this.currentModel;
+            const isRecommended = model.recommended;
+            const isDisabled = model.requiresAccess || model.comingSoon || model.prodAllowed === false;
+            
+            return `
+                <div class="model-option ${isSelected ? 'selected' : ''} ${isRecommended ? 'recommended' : ''} ${isDisabled ? (model.comingSoon ? 'coming-soon' : 'disabled') : ''}" data-model="${model.id}" ${isDisabled ? 'aria-disabled="true"' : ''}>
+                    <div class="model-option-header">
+                        <span class="model-option-name">${model.name}</span>
+                        ${this.options.showCostInfo ? `<span class="model-option-cost cost-${this.getCostClass(model.cost)}">${model.costIcon}</span>` : ''}
+                    </div>
+                    <div class="model-option-description">${model.description}</div>
+                    <div class="model-option-tags">
+                        ${model.tags.map(tag => `<span class="model-tag ${tag}">${tag}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    bindEvents() {
+        // Provider toggle
+        const providerToggle = this.container.querySelector('[data-role="provider-toggle"]');
+        providerToggle.addEventListener('click', () => this.toggleProviderDropdown());
+        
+        // Model toggle
+        const modelToggle = this.container.querySelector('[data-role="model-toggle"]');
+        modelToggle.addEventListener('click', () => this.toggleModelDropdown());
+        
+        // Provider selection
+        const providerOptions = this.container.querySelectorAll('[data-provider]');
+        providerOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const providerId = option.dataset.provider;
+                this.selectProvider(providerId);
+            });
+        });
+        
+        // Model selection
+        const modelOptions = this.container.querySelectorAll('[data-model]');
+        modelOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const modelId = option.dataset.model;
+                // Prevent selecting disabled/coming soon models
+                if (option.classList.contains('disabled') || option.classList.contains('coming-soon')) {
+                    // Optionally show a toast/alert - keeping it subtle for now
+                    return;
+                }
+                this.selectModel(modelId);
+            });
+        });
+    }
+    
+    toggleProviderDropdown() {
+        this.isProviderOpen = !this.isProviderOpen;
+        this.isModelOpen = false;
+        this.updateDropdownStates();
+    }
+    
+    toggleModelDropdown() {
+        this.isModelOpen = !this.isModelOpen;
+        this.isProviderOpen = false;
+        this.updateDropdownStates();
+    }
+    
+    closeAllDropdowns() {
+        this.isProviderOpen = false;
+        this.isModelOpen = false;
+        this.updateDropdownStates();
+    }
+    
+    updateDropdownStates() {
+        const providerButton = this.container.querySelector('[data-role="provider-toggle"]');
+        const modelButton = this.container.querySelector('[data-role="model-toggle"]');
+        const providerDropdown = this.container.querySelector('[data-role="provider-dropdown"]');
+        const modelDropdown = this.container.querySelector('[data-role="model-dropdown"]');
+        
+        providerButton.classList.toggle('active', this.isProviderOpen);
+        modelButton.classList.toggle('active', this.isModelOpen);
+        providerDropdown.classList.toggle('active', this.isProviderOpen);
+        modelDropdown.classList.toggle('active', this.isModelOpen);
+    }
+    
+    selectProvider(providerId) {
+        if (providerId === this.currentProvider) {
+            this.closeAllDropdowns();
+            return;
+        }
+        
+        this.currentProvider = providerId;
+        this.currentModel = DEFAULT_MODELS[providerId];
+        this.closeAllDropdowns();
+        this.updateModelSelection();
+        this.render();
+        this.bindEvents();
+        
+        // Trigger callback
+        this.options.onChange(this.currentProvider, this.currentModel);
+    }
+    
+    selectModel(modelId) {
+        if (modelId === this.currentModel) {
+            this.closeAllDropdowns();
+            return;
+        }
+        
+        this.currentModel = modelId;
+        this.closeAllDropdowns();
+        this.updateModelSelection();
+        this.render();
+        this.bindEvents();
+        
+        // Trigger callback
+        this.options.onChange(this.currentProvider, this.currentModel);
+    }
+    
+    updateModelSelection() {
+        // Ensure current model exists in current provider
+        const providerData = PHOENIX_MODELS[this.currentProvider];
+        if (providerData && !providerData.models.find(m => m.id === this.currentModel)) {
+            this.currentModel = DEFAULT_MODELS[this.currentProvider];
+        }
+    }
+    
+    getCurrentModelData() {
+        const providerData = PHOENIX_MODELS[this.currentProvider];
+        return providerData ? providerData.models.find(m => m.id === this.currentModel) : null;
+    }
+    
+    getCostClass(cost) {
+        return cost.toLowerCase().replace(/\s+/g, '-');
+    }
+    
+    // Public API methods
+    getSelection() {
+        return {
+            provider: this.currentProvider,
+            model: this.currentModel,
+            modelData: this.getCurrentModelData()
+        };
+    }
+    
+    setSelection(provider, model) {
+        if (PHOENIX_MODELS[provider]) {
+            this.currentProvider = provider;
+            if (model && PHOENIX_MODELS[provider].models.find(m => m.id === model)) {
+                this.currentModel = model;
+            } else {
+                this.currentModel = DEFAULT_MODELS[provider];
+            }
+            this.render();
+            this.bindEvents();
+            this.options.onChange(this.currentProvider, this.currentModel);
+        }
+    }
+    
+    setLoading(isLoading) {
+        this.container.classList.toggle('model-selector-loading', isLoading);
+    }
+}
+
+// Make it globally available
+window.PhoenixModelSelector = PhoenixModelSelector;
+</script>
+
+<style>
+/* Include the model selector styles if not already included */
+@import url('/static/css/model_selector.css');
+</style>
