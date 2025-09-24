@@ -257,14 +257,12 @@
             startBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Starting...';
             try {
                 const options = collectOptions();
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || null;
                 
-                const headers = { 'Content-Type': 'application/json' };
-                if (csrf) headers['X-CSRF-Token'] = csrf;
+                // Let the automatic CSRF protection handle the token
                 const resp = await fetch('/api/video/generate', {
                     method: 'POST',
-                    headers,
-                    body: JSON.stringify({ prompts: currentPrompts, options, csrf_token: csrf })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompts: currentPrompts, options })
                 });
                 const data = await resp.json();
                 if(!data.success){
