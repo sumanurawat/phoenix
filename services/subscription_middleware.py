@@ -82,6 +82,15 @@ def subscription_context_processor():
 
 def premium_required(f: Callable) -> Callable:
     """Decorator to require premium subscription for a route."""
+    # Check if new feature gating system is enabled
+    from config.settings import FEATURE_GATING_V2_ENABLED
+    
+    if FEATURE_GATING_V2_ENABLED:
+        from services.feature_gating import tier_required
+        from config.feature_registry import MembershipTier
+        return tier_required(MembershipTier.PREMIUM)(f)
+    
+    # Legacy implementation
     @wraps(f)
     def decorated_function(*args, **kwargs):
         # Check if user is logged in
@@ -166,6 +175,14 @@ def increment_feature_usage(feature: str, amount: int = 1) -> bool:
 
 def feature_limited(feature: str, custom_limit: Optional[int] = None):
     """Decorator to enforce feature limits."""
+    # Check if new feature gating system is enabled
+    from config.settings import FEATURE_GATING_V2_ENABLED
+    
+    if FEATURE_GATING_V2_ENABLED:
+        from services.feature_gating import feature_required
+        return feature_required(feature, check_limits=True)
+    
+    # Legacy implementation
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def decorated_function(*args, **kwargs):
@@ -203,6 +220,14 @@ def feature_limited(feature: str, custom_limit: Optional[int] = None):
 
 def model_allowed(model_name: str) -> bool:
     """Check if user can access a specific AI model."""
+    # Check if new feature gating system is enabled
+    from config.settings import FEATURE_GATING_V2_ENABLED
+    
+    if FEATURE_GATING_V2_ENABLED:
+        from services.feature_registry_service import feature_registry_service
+        return feature_registry_service.is_model_allowed(model_name)
+    
+    # Legacy implementation
     if not hasattr(g, 'subscription'):
         init_subscription_context()
     
@@ -217,6 +242,14 @@ def model_allowed(model_name: str) -> bool:
 
 def get_available_models() -> list:
     """Get list of AI models available to the user."""
+    # Check if new feature gating system is enabled
+    from config.settings import FEATURE_GATING_V2_ENABLED
+    
+    if FEATURE_GATING_V2_ENABLED:
+        from services.feature_registry_service import feature_registry_service
+        return feature_registry_service.get_available_models()
+    
+    # Legacy implementation
     if not hasattr(g, 'subscription'):
         init_subscription_context()
     
@@ -243,6 +276,14 @@ def get_available_models() -> list:
 
 def feature_enabled(feature_name: str) -> bool:
     """Check if a specific feature is enabled for the user."""
+    # Check if new feature gating system is enabled
+    from config.settings import FEATURE_GATING_V2_ENABLED
+    
+    if FEATURE_GATING_V2_ENABLED:
+        from services.feature_gating import is_feature_accessible
+        return is_feature_accessible(feature_name)
+    
+    # Legacy behavior
     if not hasattr(g, 'subscription'):
         init_subscription_context()
     

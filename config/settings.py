@@ -41,3 +41,6 @@ SESSION_PERMANENT = False
 SESSION_USE_SIGNER = True
 SESSION_FILE_DIR = "./flask_session"
 SESSION_FILE_THRESHOLD = 500
+
+# Feature Gating Configuration
+FEATURE_GATING_V2_ENABLED = os.getenv("FEATURE_GATING_V2_ENABLED", "false").lower() == "true"
