@@ -19,7 +19,7 @@ import time
 from typing import List, Dict, Any, Optional
 from firebase_admin import firestore
 
-from services.video_generation_service import VideoGenerationService, VideoGenOptions
+from services.veo_video_generation_service import VeoVideoGenerationService, VeoGenerationParams
 from services.video_processing_service import VideoProcessingService
 from services.realtime_event_bus import realtime_event_bus
 from services.video_prompt_parser import VideoPromptParser
@@ -30,11 +30,11 @@ logger = logging.getLogger(__name__)
 
 class VideoBatchOrchestrator:
     def __init__(self, db=None,
-                 generation_svc: Optional[VideoGenerationService] = None,
+                 generation_svc: Optional[VeoVideoGenerationService] = None,
                  processing_svc: Optional[VideoProcessingService] = None,
                  parser: Optional[VideoPromptParser] = None):
         self.db = db or firestore.client()
-        self.generation = generation_svc or VideoGenerationService()
+        self.generation = generation_svc or VeoVideoGenerationService()
         self.processing = processing_svc or VideoProcessingService()
         self.parser = parser or VideoPromptParser()
         self._tasks: Dict[str, List[asyncio.Task]] = {}
