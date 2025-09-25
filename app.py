@@ -54,7 +54,7 @@ from api.deeplink_routes import deeplink_bp
 from api.auth_routes import auth_bp, login_required
 from api.stats_routes import stats_bp
 from api.dataset_routes import dataset_bp
-from api.video_routes import video_bp
+# from api.video_routes import video_bp  # Temporarily disabled - missing dependencies
 from api.stripe_routes import stripe_bp, subscription_bp
 
 # Import services (AFTER Firebase initialization)
@@ -160,7 +160,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(stats_bp)
     app.register_blueprint(dataset_bp)
-    app.register_blueprint(video_bp)
+    # app.register_blueprint(video_bp)  # Temporarily disabled - missing dependencies
     app.register_blueprint(stripe_bp)
     app.register_blueprint(subscription_bp)
     
