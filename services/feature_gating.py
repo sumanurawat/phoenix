@@ -36,19 +36,52 @@ def feature_required(feature_id: str, *, check_limits: bool = True, model_param:
             # Check feature access
             can_access, reason = feature_registry_service.can_access_feature(feature_id, user_id)
             if not can_access:
+                # Log access denial
+                logger.info("Feature access denied", extra={
+                    'feature_id': feature_id,
+                    'user_id': user_id,
+                    'reason': reason,
+                    'route': request.endpoint,
+                    'ip': request.remote_addr
+                })
                 return _handle_access_denied(feature_id, reason)
             
             # Check usage limits if enabled
             if check_limits:
                 limit_result = feature_registry_service.check_usage_limit(feature_id, user_id)
                 if not limit_result.get('allowed', True):
+                    # Log limit exceeded
+                    logger.info("Feature limit exceeded", extra={
+                        'feature_id': feature_id,
+                        'user_id': user_id,
+                        'current_usage': limit_result.get('current'),
+                        'limit': limit_result.get('limit'),
+                        'route': request.endpoint,
+                        'ip': request.remote_addr
+                    })
                     return _handle_limit_exceeded(feature_id, limit_result)
             
             # Check model access if specified
             if model_param:
                 model_name = _extract_model_from_request(model_param)
                 if model_name and not feature_registry_service.is_model_allowed(model_name, feature_id, user_id):
+                    # Log model access denial
+                    logger.info("Model access denied", extra={
+                        'feature_id': feature_id,
+                        'user_id': user_id,
+                        'requested_model': model_name,
+                        'route': request.endpoint,
+                        'ip': request.remote_addr
+                    })
                     return _handle_model_denied(model_name, feature_id)
+            
+            # Log successful access
+            logger.debug("Feature access granted", extra={
+                'feature_id': feature_id,
+                'user_id': user_id,
+                'route': request.endpoint,
+                'check_limits': check_limits
+            })
             
             # Increment usage counter if limits are checked
             if check_limits:
