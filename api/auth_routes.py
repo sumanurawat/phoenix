@@ -23,6 +23,54 @@ def get_csrf_token():
     })
 
 
+@auth_bp.route('/api/user/features', methods=['GET'])
+@login_required
+def get_user_features():
+    """Get user's feature access information for frontend."""
+    from config.settings import FEATURE_GATING_V2_ENABLED
+    
+    if FEATURE_GATING_V2_ENABLED:
+        from services.feature_gating import get_user_feature_access
+        feature_data = get_user_feature_access()
+    else:
+        # Legacy fallback
+        from services.subscription_middleware import init_subscription_context
+        from flask import g
+        
+        if not hasattr(g, 'subscription'):
+            init_subscription_context()
+            
+        feature_data = {
+            'tier': 'premium' if g.subscription.get('is_premium') else 'free',
+            'features': {},
+            'models': g.subscription.get('limits', {}).get('ai_models', [])
+        }
+    
+    return jsonify({
+        'success': True,
+        'data': feature_data
+    })
+
+
+@auth_bp.route('/api/user/upgrade-suggestions', methods=['GET'])
+@login_required 
+def get_upgrade_suggestions():
+    """Get features that would be unlocked by upgrading."""
+    from config.settings import FEATURE_GATING_V2_ENABLED
+    
+    if FEATURE_GATING_V2_ENABLED:
+        from services.feature_registry_service import feature_registry_service
+        suggestions = feature_registry_service.get_upgrade_suggestions()
+    else:
+        # Legacy - return empty list
+        suggestions = []
+    
+    return jsonify({
+        'success': True,
+        'suggestions': suggestions
+    })
+
+
 def is_safe_url(target):
     """Ensure redirect URL is safe and belongs to our domain"""
     ref_url = urlparse(request.host_url)

@@ -20,6 +20,13 @@ logger = logging.getLogger(__name__)
 
 from middleware.csrf_protection import csrf_protect
 
+# Feature gating imports
+from config.settings import FEATURE_GATING_V2_ENABLED
+if FEATURE_GATING_V2_ENABLED:
+    from services.feature_gating import feature_required
+else:
+    from services.subscription_middleware import feature_limited, premium_required
+
 # Create blueprint
 dataset_bp = Blueprint('datasets', __name__, url_prefix='/api/datasets')
 
@@ -98,8 +105,31 @@ def handle_api_error(func):
     return wrapper
 
 
+def apply_dataset_search_gating(f):
+    """Apply gating for dataset search."""
+    if FEATURE_GATING_V2_ENABLED:
+        return feature_required('dataset_search')(f)
+    else:
+        return feature_limited('datasets_analyzed')(f)
+
+def apply_dataset_download_gating(f):
+    """Apply gating for dataset download."""
+    if FEATURE_GATING_V2_ENABLED:
+        return feature_required('dataset_download')(f)
+    else:
+        return premium_required(f)
+
+def apply_dataset_analysis_gating(f):
+    """Apply gating for dataset analysis."""
+    if FEATURE_GATING_V2_ENABLED:
+        return feature_required('dataset_analysis')(f)
+    else:
+        return premium_required(f)
+
+
 @dataset_bp.route('/search', methods=['POST'])
 @csrf_protect
+@apply_dataset_search_gating
 @handle_api_error
 def search_datasets():
     """
@@ -342,6 +372,7 @@ def check_download_feasibility():
 
 @dataset_bp.route('/download', methods=['POST'])
 @csrf_protect
+@apply_dataset_download_gating
 @handle_api_error
 def download_dataset():
     """
@@ -514,6 +545,7 @@ def dataset_analyze():
 
 @dataset_bp.route('/analyze/step', methods=['POST'])
 @csrf_protect
+@apply_dataset_analysis_gating
 def analyze_step():
     """
     Run individual analysis step on downloaded dataset with configurable models

@@ -14,6 +14,13 @@ from services.website_stats_service import WebsiteStatsService
 from services.realtime_event_bus import realtime_event_bus
 from services.video_batch_orchestrator import VideoBatchOrchestrator
 
+# Feature gating imports
+from config.settings import FEATURE_GATING_V2_ENABLED
+if FEATURE_GATING_V2_ENABLED:
+    from services.feature_gating import feature_required
+else:
+    from services.subscription_middleware import premium_required
+
 logger = logging.getLogger(__name__)
 
 video_bp = Blueprint('video', __name__, url_prefix='/api/video')
@@ -99,9 +106,17 @@ def _run_generation(job_id: str, prompts, base_options):
     realtime_event_bus.publish(job_id, 'job.completed', _jobs[job_id])
     _jobs[job_id]['status'] = 'completed'
 
+def apply_video_generation_gating(f):
+    """Apply appropriate feature gating decorator for video generation."""
+    if FEATURE_GATING_V2_ENABLED:
+        return feature_required('video_generation')(f)
+    else:
+        return premium_required(f)  # Video generation is premium only
+
 @video_bp.route('/generate', methods=['POST'])
 @csrf_protect
 @login_required
+@apply_video_generation_gating
 def start_video_batch():
     # Enhanced CSRF debugging
     logger.info('🎬 Video generation request started', extra={

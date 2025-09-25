@@ -1,0 +1,291 @@
+{#
+Feature Gating Template Macros
+
+These macros provide easy integration of feature gating into Jinja2 templates.
+#}
+
+{% macro feature_button(feature_id, text, class="btn btn-primary", type="button", onclick="", disabled_text=None) %}
+    {#
+    Render a button that's automatically gated based on feature access
+    
+    Args:
+        feature_id: The feature ID to check access for
+        text: Button text
+        class: CSS classes for the button
+        type: Button type (button, submit, etc.)
+        onclick: JavaScript onclick handler
+        disabled_text: Text to show when disabled (optional)
+    #}
+    <button 
+        type="{{ type }}"
+        class="{{ class }}"
+        data-feature="{{ feature_id }}"
+        {% if onclick %}onclick="{{ onclick }}"{% endif %}
+        {% if disabled_text %}data-disabled-text="{{ disabled_text }}"{% endif %}
+    >
+        {{ text }}
+    </button>
+{% endmacro %}
+
+{% macro feature_link(feature_id, text, href="#", class="", disabled_text=None) %}
+    {#
+    Render a link that's automatically gated based on feature access
+    
+    Args:
+        feature_id: The feature ID to check access for
+        text: Link text
+        href: Link URL
+        class: CSS classes for the link
+        disabled_text: Text to show when disabled
+    #}
+    <a 
+        href="{{ href }}"
+        class="{{ class }}"
+        data-feature="{{ feature_id }}"
+        {% if disabled_text %}data-disabled-text="{{ disabled_text }}"{% endif %}
+    >
+        {{ text }}
+    </a>
+{% endmacro %}
+
+{% macro feature_section(feature_id, content, fallback_content="") %}
+    {#
+    Render a section that's shown/hidden based on feature access
+    
+    Args:
+        feature_id: The feature ID to check access for
+        content: Content to show when feature is accessible
+        fallback_content: Content to show when feature is not accessible
+    #}
+    <div data-feature="{{ feature_id }}" class="feature-section">
+        <div class="feature-available-content">
+            {{ content }}
+        </div>
+        {% if fallback_content %}
+        <div class="feature-restricted-content" style="display: none;">
+            {{ fallback_content }}
+        </div>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro model_selector(name="model", id="model-selector", class="form-select", default_model="") %}
+    {#
+    Render a model selector dropdown that's automatically populated based on user's tier
+    
+    Args:
+        name: Input name attribute
+        id: Input id attribute
+        class: CSS classes for the select
+        default_model: Default selected model
+    #}
+    <select 
+        name="{{ name }}" 
+        id="{{ id }}" 
+        class="{{ class }}"
+        data-model-selector="true"
+        {% if default_model %}data-default="{{ default_model }}"{% endif %}
+    >
+        <!-- Options will be populated by JavaScript -->
+        <option value="">Loading models...</option>
+    </select>
+{% endmacro %}
+
+{% macro tier_badge(class="tier-indicator") %}
+    {#
+    Render a badge showing the user's current subscription tier
+    
+    Args:
+        class: CSS classes for the badge
+    #}
+    <span class="{{ class }}" data-tier-indicator="true">
+        FREE
+    </span>
+{% endmacro %}
+
+{% macro usage_indicator(feature_id, class="usage-indicator") %}
+    {#
+    Render a usage indicator for a feature
+    
+    Args:
+        feature_id: The feature ID to show usage for
+        class: CSS classes for the indicator
+    #}
+    <div class="{{ class }}" data-usage-indicator="{{ feature_id }}">
+        <span class="usage-text">Loading...</span>
+        <div class="usage-bar">
+            <div class="usage-bar-fill" style="width: 0%"></div>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro upgrade_prompt_card(feature_id, title, description, benefits=[]) %}
+    {#
+    Render an upgrade prompt card for a specific feature
+    
+    Args:
+        feature_id: The feature ID this prompt is for
+        title: Card title
+        description: Card description
+        benefits: List of benefits to show
+    #}
+    <div class="upgrade-prompt-card" data-feature-restricted="{{ feature_id }}">
+        <div class="card">
+            <div class="card-header">
+                <h3>{{ title }} <span class="tier-badge tier-premium">PREMIUM</span></h3>
+            </div>
+            <div class="card-body">
+                <p>{{ description }}</p>
+                
+                {% if benefits %}
+                <ul class="benefits-list">
+                    {% for benefit in benefits %}
+                    <li>{{ benefit }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                
+                <div class="upgrade-actions">
+                    <button class="btn btn-primary" onclick="FeatureGate.showUpgrade('{{ feature_id }}')">
+                        Upgrade Now
+                    </button>
+                    <a href="/subscription" class="btn btn-link">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro feature_toggle(feature_id, enabled_content, disabled_content="") %}
+    {#
+    Toggle between two content blocks based on feature access
+    
+    Args:
+        feature_id: The feature ID to check access for
+        enabled_content: Content to show when feature is accessible
+        disabled_content: Content to show when feature is not accessible
+    #}
+    <div data-feature-toggle="{{ feature_id }}">
+        <div class="feature-enabled" data-show-when="accessible">
+            {{ enabled_content }}
+        </div>
+        {% if disabled_content %}
+        <div class="feature-disabled" data-show-when="restricted">
+            {{ disabled_content }}
+        </div>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro premium_banner(class="premium-banner") %}
+    {#
+    Render a banner encouraging upgrade to premium
+    
+    Args:
+        class: CSS classes for the banner
+    #}
+    <div class="{{ class }}" data-show-for-tier="free">
+        <div class="banner-content">
+            <div class="banner-text">
+                <strong>🚀 Unlock Premium Features!</strong>
+                Get unlimited access to all AI models, advanced features, and priority support.
+            </div>
+            <div class="banner-actions">
+                <a href="/subscription" class="btn btn-primary btn-sm">Upgrade Now</a>
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
+{# CSS and JavaScript includes for feature gating #}
+{% macro feature_gating_includes() %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/feature_gating.css') }}">
+    <script src="{{ url_for('static', filename='js/feature_gating.js') }}"></script>
+{% endmacro %}
+
+{# Custom CSS classes that can be used with the macros #}
+<style>
+.feature-section .feature-restricted-content {
+    padding: 1rem;
+    background-color: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.upgrade-prompt-card {
+    margin: 1rem 0;
+}
+
+.upgrade-prompt-card .card {
+    border: 2px solid #fbbf24;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.upgrade-prompt-card .card-header {
+    background-color: #fbbf24;
+    color: #92400e;
+    padding: 1rem;
+}
+
+.upgrade-prompt-card .card-body {
+    padding: 1.5rem;
+}
+
+.benefits-list {
+    margin: 1rem 0;
+    padding-left: 1.25rem;
+}
+
+.benefits-list li {
+    margin-bottom: 0.5rem;
+}
+
+.upgrade-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.premium-banner {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #92400e;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+.banner-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.banner-text {
+    flex: 1;
+    min-width: 200px;
+}
+
+.banner-actions {
+    flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+    .banner-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .upgrade-actions {
+        flex-direction: column;
+    }
+    
+    .upgrade-actions .btn {
+        width: 100%;
+    }
+}
+</style>

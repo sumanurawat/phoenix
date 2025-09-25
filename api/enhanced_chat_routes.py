@@ -11,6 +11,13 @@ from services.enhanced_chat_service import EnhancedChatService
 from api.auth_routes import login_required
 from middleware.csrf_protection import csrf_protect
 
+# Feature gating imports
+from config.settings import FEATURE_GATING_V2_ENABLED
+if FEATURE_GATING_V2_ENABLED:
+    from services.feature_gating import feature_required
+else:
+    from services.subscription_middleware import feature_limited
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -42,10 +49,25 @@ def get_current_user():
         'name': session.get('user_name')
     }
 
+def apply_enhanced_chat_gating(f):
+    """Apply appropriate feature gating decorator for enhanced chat."""
+    if FEATURE_GATING_V2_ENABLED:
+        return feature_required('chat_enhanced')(f)
+    else:
+        return feature_limited('chat_messages')(f)  # Legacy uses same limit
+
+def apply_conversation_gating(f):
+    """Apply gating for conversation management (no usage increment)."""
+    if FEATURE_GATING_V2_ENABLED:
+        return feature_required('chat_enhanced', check_limits=False)(f)
+    else:
+        return f  # No additional gating in legacy
+
 # Conversation Management Endpoints
 
 @enhanced_chat_bp.route('/api/conversations', methods=['GET'])
 @login_required
+@apply_conversation_gating
 @handle_api_error
 def get_conversations():
     """Get user's conversations, optionally filtered by origin."""
@@ -204,6 +226,7 @@ def get_conversation_messages(conversation_id):
 @enhanced_chat_bp.route('/api/conversations/<conversation_id>/messages', methods=['POST'])
 @csrf_protect
 @login_required
+@apply_enhanced_chat_gating
 @handle_api_error
 def send_message(conversation_id):
     """Send a message and get AI response."""

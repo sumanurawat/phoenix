@@ -1,0 +1,378 @@
+/**
+ * Feature Gating UI Styles
+ * 
+ * Styles for feature access control, upgrade prompts, and tier indicators
+ */
+
+/* Feature-gated elements */
+.feature-gated {
+    opacity: 0.6;
+    cursor: not-allowed;
+    position: relative;
+}
+
+.feature-gated:hover {
+    opacity: 0.8;
+}
+
+.feature-restricted {
+    border: 1px solid #fbbf24;
+    background-color: #fef3c7;
+}
+
+.feature-available {
+    border-color: #10b981;
+}
+
+/* Tier indicators */
+.tier-indicator {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.tier-free {
+    background-color: #e5e7eb;
+    color: #374151;
+}
+
+.tier-premium {
+    background-color: #fbbf24;
+    color: #92400e;
+}
+
+.tier-enterprise {
+    background-color: #8b5cf6;
+    color: #ffffff;
+}
+
+/* Premium model options in selectors */
+.premium-option {
+    color: #fbbf24;
+    font-style: italic;
+}
+
+.premium-option::after {
+    content: " 🔒";
+}
+
+/* Upgrade modal */
+.feature-gate-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+}
+
+.modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    position: relative;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    margin: 5% auto;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: #6b7280;
+}
+
+.modal-close:hover {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-body p {
+    margin-bottom: 1rem;
+    color: #374151;
+    line-height: 1.6;
+}
+
+.upgrade-benefits {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-radius: 6px;
+}
+
+.upgrade-benefits h4 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.upgrade-benefits ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    list-style-type: disc;
+}
+
+.upgrade-benefits li {
+    margin-bottom: 0.5rem;
+    color: #374151;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    font-size: 0.875rem;
+    transition: all 0.15s ease;
+}
+
+.btn-primary {
+    background-color: #3b82f6;
+    color: white;
+    flex: 1;
+}
+
+.btn-primary:hover {
+    background-color: #2563eb;
+}
+
+.btn-secondary {
+    background-color: white;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover {
+    background-color: #f3f4f6;
+}
+
+/* Body class when modal is open */
+.modal-open {
+    overflow: hidden;
+}
+
+/* Feature usage indicators */
+.usage-indicator {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-left: 0.5rem;
+}
+
+.usage-indicator.warning {
+    color: #f59e0b;
+}
+
+.usage-indicator.danger {
+    color: #ef4444;
+}
+
+.usage-bar {
+    width: 100px;
+    height: 4px;
+    background-color: #e5e7eb;
+    border-radius: 2px;
+    margin-left: 0.5rem;
+    overflow: hidden;
+}
+
+.usage-bar-fill {
+    height: 100%;
+    background-color: #10b981;
+    transition: width 0.3s ease;
+}
+
+.usage-bar-fill.warning {
+    background-color: #f59e0b;
+}
+
+.usage-bar-fill.danger {
+    background-color: #ef4444;
+}
+
+/* Tooltips for feature restrictions */
+.feature-tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.feature-tooltip .tooltip-text {
+    visibility: hidden;
+    width: 200px;
+    background-color: #1f2937;
+    color: white;
+    text-align: center;
+    border-radius: 6px;
+    padding: 0.5rem;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    font-size: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.feature-tooltip .tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #1f2937 transparent transparent transparent;
+}
+
+.feature-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+    .modal-content {
+        margin: 2% auto;
+        width: 95%;
+    }
+    
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 1rem;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .modal-content {
+        background-color: #1f2937;
+        color: #f9fafb;
+    }
+    
+    .modal-header {
+        border-bottom-color: #374151;
+    }
+    
+    .modal-header h3 {
+        color: #f9fafb;
+    }
+    
+    .modal-close {
+        color: #9ca3af;
+    }
+    
+    .modal-close:hover {
+        background-color: #374151;
+        color: #f3f4f6;
+    }
+    
+    .modal-body p {
+        color: #d1d5db;
+    }
+    
+    .upgrade-benefits {
+        background-color: #374151;
+    }
+    
+    .upgrade-benefits h4 {
+        color: #f9fafb;
+    }
+    
+    .upgrade-benefits li {
+        color: #d1d5db;
+    }
+    
+    .modal-footer {
+        border-top-color: #374151;
+        background-color: #374151;
+    }
+    
+    .btn-secondary {
+        background-color: #4b5563;
+        color: #f9fafb;
+        border-color: #6b7280;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #6b7280;
+    }
+    
+    .feature-restricted {
+        border-color: #f59e0b;
+        background-color: rgba(245, 158, 11, 0.1);
+    }
+    
+    .tier-free {
+        background-color: #4b5563;
+        color: #f3f4f6;
+    }
+}
