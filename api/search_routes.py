@@ -7,6 +7,13 @@ from services.search_service import SearchService
 from services.website_stats_service import WebsiteStatsService
 from middleware.csrf_protection import csrf_protect
 
+# Feature gating imports
+from config.settings import FEATURE_GATING_V2_ENABLED
+if FEATURE_GATING_V2_ENABLED:
+    from services.feature_gating import feature_required
+else:
+    from services.subscription_middleware import premium_required
+
 # Initialize service
 search_service = SearchService()
 website_stats_service = WebsiteStatsService()
@@ -14,7 +21,23 @@ website_stats_service = WebsiteStatsService()
 # Create Blueprint
 search_bp = Blueprint('search', __name__, url_prefix='/api/search')
 
+def apply_search_basic_gating(f):
+    """Apply gating for basic search with usage limits."""
+    if FEATURE_GATING_V2_ENABLED:
+        return feature_required('search_basic')(f)
+    else:
+        # No gating in legacy for basic search, just tracking
+        return f
+
+def apply_search_summary_gating(f):
+    """Apply gating for AI-powered search summaries."""
+    if FEATURE_GATING_V2_ENABLED:
+        return feature_required('search_ai_summary')(f)
+    else:
+        return premium_required(f)  # Premium feature in legacy
+
 @search_bp.route('/', methods=['GET'])
+@apply_search_basic_gating
 def search():
     """Process a search query and return results."""
     # Get query parameters
@@ -38,6 +61,7 @@ def search():
 
 @search_bp.route('/summary', methods=['POST'])
 @csrf_protect
+@apply_search_summary_gating
 def generate_summary():
     """Generate AI summary from search results."""
     try:

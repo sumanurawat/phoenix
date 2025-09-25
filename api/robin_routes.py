@@ -8,10 +8,38 @@ from services.website_stats_service import WebsiteStatsService
 from middleware.csrf_protection import csrf_protect
 from api.auth_routes import login_required
 
+# Feature gating imports
+from config.settings import FEATURE_GATING_V2_ENABLED
+if FEATURE_GATING_V2_ENABLED:
+    from services.feature_gating import feature_required
+else:
+    from services.subscription_middleware import feature_limited, premium_required
+
 robin_bp = Blueprint("robin", __name__)
 robin_service = RobinService()
 llm_service = LLMService()
 website_stats_service = WebsiteStatsService()
+
+def apply_news_search_gating(f):
+    """Apply gating for news search."""
+    if FEATURE_GATING_V2_ENABLED:
+        return feature_required('news_search')(f)
+    else:
+        return feature_limited('searches')(f)
+
+def apply_news_content_gating(f):
+    """Apply gating for news content extraction."""
+    if FEATURE_GATING_V2_ENABLED:
+        return feature_required('news_content_extraction')(f)
+    else:
+        return premium_required(f)
+
+def apply_news_summary_gating(f):
+    """Apply gating for news AI summarization."""
+    if FEATURE_GATING_V2_ENABLED:
+        return feature_required('news_ai_summary')(f)
+    else:
+        return premium_required(f)
 
 @robin_bp.route("/robin", methods=["GET"])
 def robin_page():
@@ -20,6 +48,7 @@ def robin_page():
 
 @robin_bp.route("/api/robin/search", methods=["POST"])
 @csrf_protect
+@apply_news_search_gating
 def search_news():
     """Endpoint to search for news articles."""
     data = request.get_json()
@@ -35,6 +64,7 @@ def search_news():
 
 @robin_bp.route("/api/robin/article_content", methods=["POST"])
 @csrf_protect
+@apply_news_content_gating
 def get_article_content():
     """Endpoint to fetch full content for a specific article."""
     data = request.get_json()
@@ -54,6 +84,7 @@ def get_article_content():
 
 @robin_bp.route("/api/robin/generate_summary", methods=["POST"])
 @csrf_protect
+@apply_news_summary_gating
 def generate_summary():
     """Endpoint to generate an AI summary of multiple news articles."""
     data = request.get_json()
