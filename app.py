@@ -55,6 +55,7 @@ from api.auth_routes import auth_bp, login_required
 from api.stats_routes import stats_bp
 from api.dataset_routes import dataset_bp
 from api.video_routes import video_bp
+from api.reel_routes import reel_bp
 from api.stripe_routes import stripe_bp, subscription_bp
 
 # Import services (AFTER Firebase initialization)
@@ -161,6 +162,7 @@ def create_app():
     app.register_blueprint(stats_bp)
     app.register_blueprint(dataset_bp)
     app.register_blueprint(video_bp)
+    app.register_blueprint(reel_bp)
     app.register_blueprint(stripe_bp)
     app.register_blueprint(subscription_bp)
     
@@ -495,6 +497,12 @@ Keep your response concise and actionable."""
     def video_generation():
         """Render the Video Generation page (requires login)."""
         return render_template('video_generation.html', title='Video Generation - Phoenix AI')
+
+    @app.route('/reel-maker')
+    @login_required
+    def reel_maker():
+        """Render the Reel Maker page (requires login)."""
+        return render_template('reel_maker.html', title='Reel Maker')
     
     return app
 

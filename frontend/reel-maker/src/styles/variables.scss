@@ -1,0 +1,38 @@
+// Color Variables
+$primary-color: #6c8cff;
+$secondary-color: #6c757d;
+$success-color: #28a745;
+$danger-color: #dc3545;
+$warning-color: #ffc107;
+$info-color: #17a2b8;
+$light-color: #f8f9fa;
+$dark-color: #343a40;
+
+// Dark theme colors
+$bg-dark: #1d1f27;
+$bg-dark-secondary: #2a2f3a;
+$bg-dark-tertiary: #2d3340;
+$text-light: #e6e6e6;
+$text-muted-light: #b7bdc8;
+$border-dark: #444;
+
+// Spacing
+$spacing-xs: 0.25rem;
+$spacing-sm: 0.5rem;
+$spacing-md: 1rem;
+$spacing-lg: 1.5rem;
+$spacing-xl: 2rem;
+
+// Layout
+$sidebar-width: 320px;
+$workspace-min-height: calc(100vh - 120px);
+
+// Borders and Radius
+$border-radius: 8px;
+$border-radius-sm: 4px;
+$border-radius-lg: 12px;
+
+// Transitions
+$transition-fast: 0.15s ease;
+$transition-normal: 0.3s ease;
+$transition-slow: 0.5s ease;
