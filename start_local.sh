@@ -46,6 +46,29 @@ fi
 echo "Creating session directory if it doesn't exist..."
 mkdir -p ./flask_session
 
+# Check if Node.js is available for React frontend
+if command -v node >/dev/null 2>&1; then
+    echo "🔍 Node.js found: $(node --version)"
+    
+    # Check if frontend dependencies need to be installed
+    if [ ! -d "frontend/reel-maker/node_modules" ]; then
+        echo "📥 Installing React frontend dependencies..."
+        cd frontend/reel-maker
+        npm install
+        cd ../..
+    fi
+    
+    # Build React frontend
+    echo "🔨 Building React frontend..."
+    cd frontend/reel-maker
+    npm run build
+    cd ../..
+    echo "✅ React frontend built successfully"
+else
+    echo "⚠️  Node.js not found. React frontend will not be available."
+    echo "   Install Node.js to enable the Reel Maker feature."
+fi
+
 echo "Starting Phoenix AI Platform..."
 echo "📝 Note: You'll see initialization logs twice due to Flask debug mode auto-reloader"
 echo "🌐 Server will be available at: http://localhost:8080"
