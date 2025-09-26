@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='reel_maker/assets/index.css') }}">
+<style>
+    /* Loading state before React loads */
+    .reel-maker-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 400px;
+        flex-direction: column;
+        gap: 1rem;
+        color: #e6e6e6;
+    }
+    
+    .reel-maker-loading i {
+        font-size: 3rem;
+        color: #6c8cff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="row g-0">
+        <div class="col-12">
+            <!-- Back button -->
+            <div class="p-3 bg-dark border-bottom border-secondary">
+                <a href="/" class="btn btn-link text-light">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <!-- React App Container -->
+            <div id="reel-maker-root">
+                <!-- Loading state shown before React hydrates -->
+                <div class="reel-maker-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading Reel Maker...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- React bundle will be loaded here after build -->
+<script type="module" src="{{ url_for('static', filename='reel_maker/assets/main.js') }}"></script>
+
+<!-- Error handling for React loading -->
+<script>
+    // Show error message if React fails to load after 10 seconds
+    setTimeout(function() {
+        const root = document.getElementById('reel-maker-root');
+        const loading = root.querySelector('.reel-maker-loading');
+        
+        if (loading && loading.style.display !== 'none') {
+            loading.innerHTML = `
+                <i class="fas fa-exclamation-triangle text-warning"></i>
+                <p>Failed to load Reel Maker</p>
+                <p class="text-muted small">Please refresh the page or contact support if the issue persists.</p>
+                <button class="btn btn-primary" onclick="location.reload()">
+                    <i class="fas fa-refresh"></i> Refresh Page
+                </button>
+            `;
+        }
+    }, 10000);
+</script>
+{% endblock %}
