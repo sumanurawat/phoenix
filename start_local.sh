@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # Script to clean port 8080 and start the Phoenix AI Platform
 echo "=== Phoenix AI Platform Startup ==="
 
@@ -27,8 +29,8 @@ fi
 
 echo "Checking if port 8080 is in use..."
 
-# Find processes using port 8080
-PIDS=$(lsof -ti tcp:8080)
+# Find processes using port 8080 (lsof exits 1 when nothing is found; ignore)
+PIDS=$(lsof -ti tcp:8080 || true)
 
 if [ -n "$PIDS" ]; then
     echo "Port 8080 is in use by process(es): $PIDS"
@@ -46,9 +48,43 @@ fi
 echo "Creating session directory if it doesn't exist..."
 mkdir -p ./flask_session
 
-echo "Starting Phoenix AI Platform..."
+# Build Reel Maker frontend bundle so Flask can serve the latest assets
+FRONTEND_DIR="frontend/reel-maker"
+if [ -d "$FRONTEND_DIR" ]; then
+    echo ""
+    echo "=== Preparing Reel Maker frontend ==="
+    if ! command -v npm >/dev/null 2>&1; then
+        echo "❌ ERROR: npm is required to build the frontend. Please install Node.js (includes npm) and rerun this script."
+        exit 1
+    fi
+
+    pushd "$FRONTEND_DIR" >/dev/null
+
+    if [ ! -d "node_modules" ]; then
+        echo "📦 Installing frontend dependencies (first run only)..."
+        npm install
+    else
+        echo "✅ Frontend dependencies already present. Skipping npm install."
+    fi
+
+    echo "🔨 Building React bundle..."
+    npm run build
+
+    popd >/dev/null
+    echo "✅ Frontend assets ready in static/reel_maker/"
+    echo ""
+else
+    echo "⚠️  Frontend directory $FRONTEND_DIR not found. Skipping React build."
+    echo ""
+fi
+
+echo "=== Starting Phoenix AI Platform ==="
 echo "📝 Note: You'll see initialization logs twice due to Flask debug mode auto-reloader"
 echo "🌐 Server will be available at: http://localhost:8080"
+echo "🎬 Reel Maker: http://localhost:8080/reel-maker"
+echo ""
+echo "Press Ctrl+C to stop the server"
+echo "─────────────────────────────────────────────────────────"
 echo ""
 
 python app.py

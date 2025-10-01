@@ -1,6 +1,8 @@
 # Phoenix AI Platform
 
-Phoenix is a Flask-based Python web application featuring multiple AI-powered tools including conversational AI (Derplexity), intelligent search (Doogle), news aggregation (Robin), and a URL shortener with analytics. The platform integrates Google Gemini, Claude, Grok APIs and uses Firebase Firestore for data persistence.
+Phoenix is a Flask-based Python web application featuring multiple AI-powered tools including conversational AI (Derplexity), intelligent search (Doogle), news aggregation (Robin), URL shortener (Deeplink), and dataset discovery with video generation. The platform integrates multiple LLM providers (Google Gemini, Claude, Grok, OpenAI) with Firebase Firestore for persistence and Stripe for subscriptions.
+
+**Architecture**: Multi-service Flask app with Blueprint-based routing, service-oriented design, and Firebase-first authentication.
 
 Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
 
@@ -117,40 +119,70 @@ After making changes, always validate:
 
 ## Application Architecture
 
-### Core Components
-- **`app.py`** - Main Flask application entry point
-- **`config/settings.py`** - Centralized configuration management
-- **`services/`** - Backend services (LLM, auth, search, etc.)
-- **`api/`** - Flask route blueprints for different features
-- **`templates/`** - Jinja2 HTML templates
-- **`static/`** - CSS, JavaScript, and image assets
+### Service-Oriented Design Pattern
+Phoenix follows a **service-layer architecture** where business logic is separated from routes:
+- **Routes** (`api/*_routes.py`) - Only handle HTTP concerns, delegate to services
+- **Services** (`services/`) - Contain all business logic, API integrations, data processing
+- **Config** (`config/`) - Centralized settings with environment-based overrides
 
-### Key Services
-- **LLM Service** (`services/llm_service.py`) - Google Gemini integration
-- **Enhanced LLM Service** (`services/enhanced_llm_service.py`) - Multi-provider LLM
-- **Auth Service** (`services/auth_service.py`) - Firebase authentication
-- **Document Service** (`services/document_service.py`) - File processing
-- **Search Service** (`services/search_service.py`) - Google Custom Search
+### Blueprint Registration Pattern
+All routes use Flask Blueprints with consistent patterns:
+```python
+# In api/example_routes.py
+example_bp = Blueprint('example', __name__, url_prefix='/api/example')
 
-### Database
-- **Firebase Firestore** - Primary database for user data, links, analytics
-- **No local database** - all data stored in cloud
-- **Requires service account JSON** for local development
+# In app.py
+app.register_blueprint(example_bp)
+```
 
-## Main Features and Routes
+### Authentication & Authorization Patterns
+- **`@login_required`** decorator from `api.auth_routes` - Used consistently across protected routes
+- **Firebase session-based auth** - User data stored in Flask session after Firebase token verification
+- **CSRF protection** via `@csrf_protect` decorator from `middleware.csrf_protection`
+- **Subscription gating** via middleware in `services.subscription_middleware`
 
-### Core Applications
-1. **Derplexity** (`/apps/derplexity`) - Conversational AI interface
-2. **Doogle** (`/apps/doogle`) - AI-powered search engine  
-3. **Robin** (`/apps/robin`) - News aggregation and analysis
-4. **URL Shortener** (`/apps/deeplink`) - Link shortening with analytics
-5. **Dataset Discovery** (`/apps/dataset-discovery`) - Kaggle dataset search
+### Multi-Provider LLM Architecture
+**Critical Pattern**: The `services/enhanced_llm_service.py` provides unified interface to multiple LLM providers:
+- **ModelProvider enum**: GEMINI, CLAUDE, GROK, OPENAI
+- **Fallback chain**: Graceful degradation when primary provider fails
+- **Usage tracking**: Token counting and cost calculation per provider
+- **Model selection**: Provider-specific model configurations in `config/`
 
-### User Management
-- **Authentication required** for most features
-- **Firebase Auth integration** for login/signup
-- **User profiles** and subscription management
-- **Analytics tracking** for user interactions
+Example usage pattern:
+```python
+from services.enhanced_llm_service import EnhancedLLMService, ModelProvider
+llm = EnhancedLLMService(provider=ModelProvider.GEMINI, model="gemini-1.5-flash")
+response = llm.generate_text(prompt, enable_fallback=True)
+```
+
+### Database & Persistence
+- **Firebase Firestore** - Primary database (user data, links, analytics, subscriptions)
+- **Flask sessions** - Filesystem-based sessions in `./flask_session/`
+- **No local database** - All persistent data in cloud (Firebase)
+- **Service account authentication** - Via `firebase-credentials.json` or Application Default Credentials
+
+## Core Features and Routing Patterns
+
+### Application Structure
+Each major feature follows a consistent pattern:
+- **Frontend route** in `app.py` (e.g., `/derplexity`, `/doogle`)
+- **API blueprint** in `api/` (e.g., `chat_routes.py`, `search_routes.py`)
+- **Service layer** in `services/` (e.g., `chat_service.py`, `search_service.py`)
+
+### Feature Breakdown
+1. **Derplexity** (`/derplexity`, `/api/chat/`) - Multi-turn conversations with LLM providers
+2. **Enhanced Chat** (`/api/enhanced-chat/`) - Advanced chat with model selection and thinking modes
+3. **Doogle** (`/doogle`, `/api/search/`) - AI-powered web/news search with Google Custom Search
+4. **Robin** (`/api/robin/`) - News aggregation and analysis via NewsData.io API
+5. **Deeplink** (`/apps/deeplink/`, `/api/deeplink/`) - URL shortening with click analytics
+6. **Dataset Discovery** (`/datasets`, `/api/dataset/`) - Kaggle dataset search with Docker-based analysis
+7. **Video Generation** (`/video-generation`, `/api/video/`) - AI video generation with Veo API
+
+### Authentication Patterns
+- **Most routes require `@login_required`** - Firebase auth integration
+- **Session-based user data** - `session['user_id']`, `session['user_email']`, etc.
+- **CSRF protection** on all POST/PUT/DELETE via `@csrf_protect`
+- **Subscription middleware** for premium feature gating
 
 ## Deployment and Production
 
@@ -195,24 +227,28 @@ gcloud builds submit --config cloudbuild.yaml
 - **Large file uploads**: Limited by Cloud Run constraints
 - **Session management**: Uses filesystem sessions (not scalable)
 
-### File Locations Reference
+### Key File Locations
 ```
 phoenix/
-├── app.py                     # Main Flask application
-├── requirements.txt           # Python dependencies  
-├── requirements_llm.txt       # Additional LLM dependencies
-├── .env.example              # Environment template
-├── start_local.sh            # Development startup script
+├── app.py                     # Main Flask application with Firebase init
+├── requirements.txt           # 26+ core dependencies including Flask, Firebase, ML libs
+├── start_local.sh            # Development startup (handles venv, port cleanup)
 ├── start_production.sh       # Production startup script
 ├── config/
-│   ├── settings.py           # Application configuration
-│   └── gemini_models.py      # AI model definitions
-├── services/                 # Backend service modules
-├── api/                      # Flask route blueprints
-├── templates/                # Jinja2 HTML templates
-├── static/                   # CSS, JS, images
-├── tests/                    # Test files (require Firebase)
-└── scripts/                  # Utility scripts
+│   ├── settings.py           # Centralized env vars and model configs
+│   ├── gemini_models.py      # Gemini model definitions and pricing
+│   └── openai_models.py      # OpenAI/Grok model configurations
+├── services/                 # Service layer (business logic)
+│   ├── enhanced_llm_service.py  # Multi-provider LLM with fallbacks
+│   ├── subscription_middleware.py  # Feature gating and limits
+│   └── dataset_discovery/    # Kaggle integration and Docker analysis
+├── api/                      # Route blueprints (HTTP handling only)
+├── middleware/               # CSRF protection, etc.
+├── templates/                # Jinja2 templates with shared layouts
+├── static/                   # Frontend assets (Bootstrap 5 based)
+├── tests/                    # Unit tests (require Firebase setup)
+├── scripts/                  # Utility scripts (log fetching, etc.)
+└── flask_session/            # Session storage directory
 ```
 
 ## Development Workflow
