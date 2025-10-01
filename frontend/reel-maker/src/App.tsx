@@ -15,7 +15,6 @@ import { PromptPanel } from "./components/PromptPanel";
 import { SceneList } from "./components/SceneList";
 import { StitchPanel } from "./components/StitchPanel";
 import { ActionToolbar } from "./components/ActionToolbar";
-import { PromptEditorModal } from "./components/PromptEditorModal";
 import { ReelGenerationJob, ReelProject, ReelProjectSummary } from "./types";
 
 const mergeClipPaths = (existing: string[], incoming: string[]): string[] => {
@@ -35,7 +34,6 @@ export default function App() {
   const [listLoading, setListLoading] = useState(true);
   const [projectLoading, setProjectLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isPromptEditorOpen, setIsPromptEditorOpen] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
   const [generationJob, setGenerationJob] = useState<ReelGenerationJob | null>(null);
   const [isStartingGeneration, setIsStartingGeneration] = useState(false);
@@ -433,13 +431,6 @@ export default function App() {
     [activeProject]
   );
 
-  const handleEditPrompts = useCallback(() => {
-    if (!activeProject) {
-      return;
-    }
-    setIsPromptEditorOpen(true);
-  }, [activeProject]);
-
   const handleSavePrompts = useCallback(
     async (prompts: string[]) => {
       if (!activeProjectId) {
@@ -664,18 +655,12 @@ export default function App() {
               onGenerate={handleGenerateClips}
               activeJob={activeJobForProject}
             />
-            <PromptPanel project={activeProject} onEditPrompts={handleEditPrompts} />
+            <PromptPanel project={activeProject} onSavePrompts={handleSavePrompts} />
             <SceneList project={activeProject} />
             <StitchPanel project={activeProject} onStitch={handleStitchClips} />
           </>
         )}
       </main>
-      <PromptEditorModal
-        isOpen={isPromptEditorOpen}
-        initialPrompts={activeProject?.promptList ?? []}
-        onClose={() => setIsPromptEditorOpen(false)}
-        onSave={handleSavePrompts}
-      />
     </div>
   );
 }
