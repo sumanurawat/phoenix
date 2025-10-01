@@ -58,6 +58,9 @@ def list_projects():
         # Convert to API format
         project_list = []
         for project in projects:
+            # Calculate completion status for each project
+            completion = reel_project_service.get_completion_status(project, verify_gcs=False)
+            
             project_data = {
                 'projectId': project.project_id,
                 'title': project.title,
@@ -66,7 +69,9 @@ def list_projects():
                 'clipCount': len(project.clip_filenames),
                 'hasStitchedReel': bool(project.stitched_filename),
                 'createdAt': serialize_timestamp(project.created_at),
-                'updatedAt': serialize_timestamp(project.updated_at)
+                'updatedAt': serialize_timestamp(project.updated_at),
+                # Add completion metadata
+                'completionStatus': completion
             }
             project_list.append(project_data)
 
@@ -195,7 +200,9 @@ def get_project(project_id):
                 'createdAt': serialize_timestamp(project.created_at),
                 'updatedAt': serialize_timestamp(project.updated_at),
                 'clipCount': len(project.clip_filenames),
-                'hasStitchedReel': bool(project.stitched_filename)
+                'hasStitchedReel': bool(project.stitched_filename),
+                # Add completion status for smart UI display
+                'completionStatus': reel_project_service.get_completion_status(project, verify_gcs=False)
             }
         })
     
