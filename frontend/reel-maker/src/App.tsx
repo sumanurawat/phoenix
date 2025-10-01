@@ -4,6 +4,7 @@ import {
   fetchProject,
   fetchProjects,
   generateProject,
+  reconcileProject,
   renameProject,
   stitchProject,
   updateProjectPrompts,
@@ -90,32 +91,101 @@ export default function App() {
     setProjectLoading(true);
     setErrorMessage(null);
 
-    fetchProject(activeProjectId)
-      .then((project) => {
-        if (!cancelled) {
-          const normalized: ReelProject = {
-            ...project,
-            promptList: project.promptList ?? [],
-            clipFilenames: project.clipFilenames ?? [],
-          };
-          setActiveProject(normalized);
-          setGenerationJob((prev) =>
-            prev && prev.projectId === normalized.projectId && normalized.status === "generating" ? prev : null
-          );
+    // Load project and auto-reconcile if needed
+    const loadAndReconcile = async () => {
+      try {
+        // First fetch the project
+        const project = await fetchProject(activeProjectId);
+        
+        // Auto-reconcile if project is stuck in "generating" or has claimed clips
+        // This verifies clips exist in GCS and corrects status
+        const needsReconciliation = 
+          project.status === "generating" || 
+          (project.clipFilenames?.length ?? 0) > 0;
+        
+        if (needsReconciliation) {
+          console.log(`Auto-reconciling project ${activeProjectId} (status: ${project.status})`);
+          
+          try {
+            const { report } = await reconcileProject(activeProjectId);
+            
+            if (report.action === "corrected") {
+              console.log("Project state corrected:", {
+                status: `${report.originalStatus} → ${report.correctedStatus}`,
+                clips: `${report.claimedClips} → ${report.verifiedClips}`,
+                missing: report.missingClips.length
+              });
+              
+              // Refetch to get updated state after reconciliation
+              const updated = await fetchProject(activeProjectId);
+              if (!cancelled) {
+                const normalized: ReelProject = {
+                  ...updated,
+                  promptList: updated.promptList ?? [],
+                  clipFilenames: updated.clipFilenames ?? [],
+                };
+                setActiveProject(normalized);
+                setGenerationJob((prev) =>
+                  prev && prev.projectId === normalized.projectId && normalized.status === "generating" ? prev : null
+                );
+              }
+            } else {
+              // No corrections needed, use original project
+              if (!cancelled) {
+                const normalized: ReelProject = {
+                  ...project,
+                  promptList: project.promptList ?? [],
+                  clipFilenames: project.clipFilenames ?? [],
+                };
+                setActiveProject(normalized);
+                setGenerationJob((prev) =>
+                  prev && prev.projectId === normalized.projectId && normalized.status === "generating" ? prev : null
+                );
+              }
+            }
+          } catch (reconcileError) {
+            // If reconciliation fails, still show the project
+            console.warn("Reconciliation failed, using project as-is:", reconcileError);
+            if (!cancelled) {
+              const normalized: ReelProject = {
+                ...project,
+                promptList: project.promptList ?? [],
+                clipFilenames: project.clipFilenames ?? [],
+              };
+              setActiveProject(normalized);
+              setGenerationJob((prev) =>
+                prev && prev.projectId === normalized.projectId && normalized.status === "generating" ? prev : null
+              );
+            }
+          }
+        } else {
+          // No reconciliation needed
+          if (!cancelled) {
+            const normalized: ReelProject = {
+              ...project,
+              promptList: project.promptList ?? [],
+              clipFilenames: project.clipFilenames ?? [],
+            };
+            setActiveProject(normalized);
+            setGenerationJob((prev) =>
+              prev && prev.projectId === normalized.projectId && normalized.status === "generating" ? prev : null
+            );
+          }
         }
-      })
-      .catch((error: Error) => {
+      } catch (error) {
         console.error("Failed to load project", error);
         if (!cancelled) {
-          setErrorMessage(error.message ?? "Unable to load project");
+          setErrorMessage((error as Error).message ?? "Unable to load project");
           setActiveProject(null);
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) {
           setProjectLoading(false);
         }
-      });
+      }
+    };
+
+    void loadAndReconcile();
 
     return () => {
       cancelled = true;

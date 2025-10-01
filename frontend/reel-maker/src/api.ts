@@ -150,6 +150,34 @@ export async function fetchGenerationJob(projectId: string, jobId: string): Prom
   return data.job;
 }
 
+export async function reconcileProject(projectId: string): Promise<{
+  report: {
+    projectId: string;
+    originalStatus: string;
+    correctedStatus: string;
+    claimedClips: number;
+    verifiedClips: number;
+    missingClips: string[];
+    action: string;
+  };
+}> {
+  const response = await fetch(`${API_BASE}/projects/${projectId}/reconcile`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "X-CSRFToken": getCsrfToken(),
+      Accept: "application/json",
+    },
+  });
+
+  const data = await handleResponse<{
+    success: boolean;
+    report: any;
+  }>(response);
+
+  return { report: data.report };
+}
+
 export async function stitchProject(projectId: string): Promise<{
   jobId: string;
   clipCount: number;
@@ -172,3 +200,4 @@ export async function stitchProject(projectId: string): Promise<{
 
   return { jobId: data.jobId, clipCount: data.clipCount };
 }
+

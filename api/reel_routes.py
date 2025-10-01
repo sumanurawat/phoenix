@@ -10,6 +10,7 @@ from middleware.csrf_protection import csrf_protect
 from services.reel_generation_service import reel_generation_service
 from services.realtime_event_bus import realtime_event_bus
 from services.reel_project_service import reel_project_service
+from services.reel_state_reconciler import reel_state_reconciler
 
 logger = logging.getLogger(__name__)
 
@@ -211,6 +212,47 @@ def get_project(project_id):
         return jsonify({
             "success": False,
             "error": {"code": "SERVER_ERROR", "message": "Failed to retrieve project"}
+        }), 500
+
+@reel_bp.route('/projects/<project_id>/reconcile', methods=['POST'])
+@csrf_protect
+@login_required
+def reconcile_project_state(project_id):
+    """
+    Reconcile project state with actual GCS assets.
+    Verifies claimed clips exist and corrects status if needed.
+    Called automatically on project load to prevent stuck states.
+    """
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+        
+        if not user_id:
+            return jsonify({
+                "success": False,
+                "error": {"code": "AUTH_ERROR", "message": "User ID not found in session"}
+            }), 401
+        
+        # Run reconciliation
+        report = reel_state_reconciler.reconcile_project(project_id, user_id, auto_fix=True)
+        
+        if "error" in report:
+            return jsonify({
+                "success": False,
+                "error": {"code": "NOT_FOUND", "message": report["error"]},
+                "report": report
+            }), 404
+        
+        return jsonify({
+            "success": True,
+            "report": report
+        }), 200
+    
+    except Exception as e:
+        logger.exception(f"Failed to reconcile project {project_id}")
+        return jsonify({
+            "success": False,
+            "error": {"code": "SERVER_ERROR", "message": "Reconciliation failed"}
         }), 500
 
 @reel_bp.route('/projects/<project_id>', methods=['PUT'])

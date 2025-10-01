@@ -197,6 +197,74 @@ class ReelGenerationService:
         if data.get("userId") != user_id or data.get("projectId") != project_id:
             return None
         return data
+    
+    def check_stale_jobs(self, timeout_minutes: int = 30) -> List[str]:
+        """
+        Find jobs stuck in 'processing' for >timeout_minutes and mark them as failed.
+        Returns list of affected project IDs.
+        
+        This prevents projects from being stuck in 'generating' state forever
+        if generation crashes or times out.
+        """
+        from datetime import datetime, timedelta
+        
+        cutoff = datetime.utcnow() - timedelta(minutes=timeout_minutes)
+        stale_projects = []
+        
+        try:
+            # Query jobs that have been processing for too long
+            jobs = self.db.collection(JOBS_COLLECTION)\
+                .where(filter=firestore.FieldFilter('status', '==', 'processing'))\
+                .stream()
+            
+            for job_doc in jobs:
+                job_data = job_doc.to_dict()
+                started_at = job_data.get('startedAt')
+                
+                # Skip if no start time or started recently
+                if not started_at:
+                    continue
+                
+                # Convert Firestore timestamp to datetime
+                if hasattr(started_at, 'timestamp'):
+                    started_dt = datetime.fromtimestamp(started_at.timestamp())
+                else:
+                    continue
+                
+                # Check if job is stale
+                if started_dt < cutoff:
+                    project_id = job_data.get('projectId')
+                    user_id = job_data.get('userId')
+                    
+                    logger.warning(
+                        f"Detected stale job {job_doc.id} for project {project_id} "
+                        f"(started {started_dt}, cutoff {cutoff})"
+                    )
+                    
+                    # Mark job as failed
+                    job_doc.reference.update({
+                        'status': 'failed',
+                        'error': f'Job timed out after {timeout_minutes} minutes',
+                        'updatedAt': firestore.SERVER_TIMESTAMP
+                    })
+                    
+                    # Update project status
+                    if project_id and user_id:
+                        try:
+                            self.project_service.update_project(
+                                project_id,
+                                user_id,
+                                status='error',
+                                error_info={'message': f'Generation timed out after {timeout_minutes} minutes'}
+                            )
+                            stale_projects.append(project_id)
+                        except Exception as e:
+                            logger.error(f"Failed to update project {project_id} after timeout: {e}")
+        
+        except Exception as e:
+            logger.error(f"Failed to check stale jobs: {e}")
+        
+        return stale_projects
 
     # ------------------------------------------------------------------
     # Internal helpers
