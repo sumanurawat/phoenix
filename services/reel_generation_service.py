@@ -112,13 +112,47 @@ class ReelGenerationService:
         }
         self.db.collection(JOBS_COLLECTION).document(job_id).set(job_doc)
 
-        # Update project state upfront (clear clips, mark generating)
+        # Smart clip preservation: keep existing clips, only generate missing ones
+        existing_clips = project.clip_filenames or []
+        preserved_clips = []
+        
+        # Build initial clip array matching prompt count
+        # Fill with existing clips where available, None for missing
+        for idx in range(len(cleaned_prompts)):
+            if idx < len(existing_clips) and existing_clips[idx]:
+                # Verify the clip still exists in GCS (optional but safer)
+                clip_path = existing_clips[idx]
+                try:
+                    blob = self.storage._ensure_bucket().blob(clip_path)
+                    if blob.exists():
+                        preserved_clips.append(clip_path)
+                        logger.info(f"Preserving existing clip {idx} for project {project.project_id}")
+                    else:
+                        preserved_clips.append(None)
+                        logger.warning(f"Clip {idx} missing from GCS, will regenerate: {clip_path}")
+                except Exception as e:
+                    # If verification fails, assume we need to regenerate
+                    preserved_clips.append(None)
+                    logger.warning(f"Failed to verify clip {idx}, will regenerate: {e}")
+            else:
+                # No existing clip at this index
+                preserved_clips.append(None)
+        
+        clips_to_generate = sum(1 for clip in preserved_clips if clip is None)
+        clips_preserved = len(preserved_clips) - clips_to_generate
+        
+        logger.info(
+            f"Project {project.project_id}: {clips_preserved}/{len(cleaned_prompts)} clips exist, "
+            f"{clips_to_generate} need generation"
+        )
+
+        # Update project state upfront (preserve existing clips, mark generating)
         self.project_service.update_project(
             project.project_id,
             user_id,
             prompt_list=cleaned_prompts,
-            clip_filenames=[],
-            stitched_filename=None,
+            clip_filenames=preserved_clips,
+            stitched_filename=None if clips_to_generate > 0 else project.stitched_filename,
             status="generating",
             error_info=None,
         )
@@ -126,7 +160,7 @@ class ReelGenerationService:
         # Update in-memory snapshot so worker thread reads current values
         project.prompt_list = cleaned_prompts
         project.status = "generating"
-        project.clip_filenames = []
+        project.clip_filenames = preserved_clips
 
         ctx = GenerationContext(
             project=project,
@@ -169,7 +203,9 @@ class ReelGenerationService:
     # ------------------------------------------------------------------
     def _process_job(self, ctx: GenerationContext) -> None:
         job_ref = self.db.collection(JOBS_COLLECTION).document(ctx.job_id)
-        clip_paths: List[str] = []
+        
+        # Start with preserved clips from project (if prompts unchanged)
+        clip_paths: List[str] = list(ctx.project.clip_filenames or [])
         completed = 0
 
         try:
@@ -178,6 +214,23 @@ class ReelGenerationService:
             logger.debug("Failed to update job status to processing", exc_info=True)
 
         for idx, prompt in enumerate(ctx.prompts):
+            # Skip if we already have a clip for this prompt index
+            if idx < len(clip_paths) and clip_paths[idx]:
+                logger.info(f"Skipping prompt {idx} for project {ctx.project.project_id} - clip already exists: {clip_paths[idx]}")
+                completed += 1
+                
+                realtime_event_bus.publish(
+                    ctx.topic,
+                    "prompt.completed",
+                    {
+                        "jobId": ctx.job_id,
+                        "promptIndex": idx,
+                        "clipRelativePaths": [clip_paths[idx]],
+                        "skipped": True,
+                    },
+                )
+                continue
+
             realtime_event_bus.publish(
                 ctx.topic,
                 "prompt.started",
@@ -186,7 +239,13 @@ class ReelGenerationService:
 
             try:
                 clip_paths_for_prompt = self._generate_single_prompt(ctx, idx, prompt)
-                clip_paths.extend(clip_paths_for_prompt)
+                
+                # Insert the new clip at the correct index (or extend if at end)
+                if idx < len(clip_paths):
+                    clip_paths[idx] = clip_paths_for_prompt[0] if clip_paths_for_prompt else None
+                else:
+                    clip_paths.extend(clip_paths_for_prompt)
+                    
                 completed += 1
 
                 # Increment global stats for video seconds generated

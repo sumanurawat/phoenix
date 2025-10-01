@@ -278,6 +278,91 @@ class ReelProjectService:
         except Exception as e:
             logger.error(f"Failed to delete project {project_id}: {e}")
             raise
+    
+    def get_completion_status(self, project: ReelProject, verify_gcs: bool = False) -> Dict[str, Any]:
+        """
+        Calculate project completion status.
+        
+        Args:
+            project: ReelProject instance
+            verify_gcs: If True, verify each clip exists in GCS (slower but accurate)
+        
+        Returns:
+            Dict with:
+                - total_clips: Total number of prompts
+                - existing_clips: Number of clips with filenames
+                - missing_clips: Number of clips that need generation
+                - completion_percentage: 0-100
+                - is_complete: True if all clips exist
+                - status_label: "Ready" | "Incomplete" | "Not Started"
+        """
+        try:
+            total_clips = len(project.prompt_list or [])
+            
+            if total_clips == 0:
+                return {
+                    'total_clips': 0,
+                    'existing_clips': 0,
+                    'missing_clips': 0,
+                    'completion_percentage': 0,
+                    'is_complete': False,
+                    'status_label': 'Not Started'
+                }
+            
+            clip_filenames = project.clip_filenames or []
+            
+            # Count existing clips (non-None, non-empty strings)
+            if verify_gcs and hasattr(self, 'storage_service'):
+                # Verify clips exist in GCS (requires storage service)
+                from services.reel_storage_service import reel_storage_service
+                existing_count = 0
+                for clip_path in clip_filenames:
+                    if clip_path:
+                        try:
+                            blob = reel_storage_service._ensure_bucket().blob(clip_path)
+                            if blob.exists():
+                                existing_count += 1
+                        except Exception as e:
+                            logger.warning(f"Failed to verify clip in GCS: {clip_path} - {e}")
+                            continue
+            else:
+                # Quick check: count non-empty clip paths
+                existing_count = sum(1 for clip in clip_filenames if clip)
+            
+            missing_count = total_clips - existing_count
+            completion_percentage = int((existing_count / total_clips) * 100)
+            is_complete = existing_count == total_clips
+            
+            # Determine status label
+            if is_complete:
+                status_label = "Ready"
+            elif existing_count > 0:
+                status_label = f"Incomplete ({existing_count}/{total_clips})"
+            else:
+                status_label = "Not Started"
+            
+            return {
+                'total_clips': total_clips,
+                'existing_clips': existing_count,
+                'missing_clips': missing_count,
+                'completion_percentage': completion_percentage,
+                'is_complete': is_complete,
+                'status_label': status_label
+            }
+        
+        except Exception as e:
+            logger.error(f"Failed to calculate completion status: {e}")
+            return {
+                'total_clips': 0,
+                'existing_clips': 0,
+                'missing_clips': 0,
+                'completion_percentage': 0,
+                'is_complete': False,
+                'status_label': 'Error'
+            }
+
+# Singleton instance
+reel_project_service = ReelProjectService()
 
 # Singleton instance
 reel_project_service = ReelProjectService()
