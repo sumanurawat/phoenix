@@ -101,7 +101,7 @@
         </div>
         
         <div class="social-login">
-            <a href="{{ url_for('auth.google_login') }}" class="btn-social btn-google">
+            <a href="{{ url_for('auth.google_login', next=next) if next else url_for('auth.google_login') }}" class="btn-social btn-google">
                 <i class="fab fa-google"></i>
                 <span>Continue with Google</span>
             </a>

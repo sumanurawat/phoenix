@@ -48,6 +48,46 @@ A robust URL shortening service that allows authenticated users to create, manag
 ## Technology Stack
 
 - Backend: Flask (Python)
+- AI Models: Google Gemini (latest models), Claude, Grok
+- Database: Firebase Firestore
+- Authentication: Firebase Auth
+- Frontend: Bootstrap 5, React (Reel Maker)
+- Deployment: Google Cloud Run
+
+## 🚀 Quick Start - Local Development
+
+### Single Command (Builds Everything)
+```bash
+./start_local.sh
+```
+
+This script automatically:
+- ✅ Builds React frontend (Reel Maker feature)
+- ✅ Starts Flask backend on port 8080
+- ✅ Serves complete application
+
+**Access**: http://localhost:8080
+
+### Development Mode (Hot Reload)
+```bash
+./start_dev_mode.sh
+```
+
+For active frontend development with instant React updates.
+
+**Documentation**: See [RUNNING_THE_APP.md](RUNNING_THE_APP.md) for detailed startup options.
+
+## 🎬 Reel Maker Feature
+
+Create AI-powered video reels using Google's Veo. Features include:
+- Project-based video management
+- JSON prompt editing for scenes
+- Real-time generation progress
+- GCS-backed video storage
+
+**Setup**: [REEL_MAKER_SETUP.md](REEL_MAKER_SETUP.md)  
+**Quick Reference**: [REEL_MAKER_QUICK_REFERENCE.md](REEL_MAKER_QUICK_REFERENCE.md)  
+**Access**: http://localhost:8080/reel-maker
 - Frontend: HTML5, CSS3, JavaScript
 - AI Integration: Google Gemini, custom NLP models
 - Database: Firebase Firestore (for features like URL Shortener)

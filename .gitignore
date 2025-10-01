@@ -24,6 +24,9 @@ var/
 venv/
 ENV/
 
+# Node / Frontend
+node_modules/
+
 # IDE files
 .idea/
 .vscode/

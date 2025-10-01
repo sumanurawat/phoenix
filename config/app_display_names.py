@@ -16,6 +16,7 @@ DISPLAY_NAME_PREFIXES = [
     ('/datasets', 'Data Dealer'),  # dataset discovery & analysis workflow
     ('/dataset', 'Data Dealer'),
     ('/apps/deeplink', 'URL Keeper'),  # short links & analytics
+    ('/reel-maker', 'Reel Maker'),
     ('/video-generation', 'Video Maker'),
 ]
 
@@ -34,6 +35,7 @@ ENDPOINT_DISPLAY_NAMES = {
     'derplexity_legacy': 'Derplexity',
     'doogle': 'Doogle',
     'dataset_discovery': 'Data Dealer',
+    'reel_maker': 'Reel Maker',
     'video_generation': 'Video Maker',
 }
 

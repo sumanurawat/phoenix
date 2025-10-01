@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+  .reel-maker-shell {
+    min-height: 70vh;
+  }
+
+  .reel-maker-shell__fallback {
+    display: grid;
+    place-items: center;
+    text-align: center;
+    gap: 0.75rem;
+    padding: 3rem 1rem;
+    color: rgba(255, 255, 255, 0.6);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <a href="/" class="btn btn-link mb-3 text-light">
+    <i class="fas fa-arrow-left"></i> Back to Home
+  </a>
+
+  <section id="reel-maker-root" class="reel-maker-shell">
+    <div class="reel-maker-shell__fallback">
+      <i class="fas fa-compact-disc fa-spin fa-2x"></i>
+      <div class="fw-semibold">Loading Reel Maker workspace…</div>
+      <small class="text-muted">If this message does not disappear, please refresh the page.</small>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<link rel="stylesheet" href="{{ url_for('static', filename='reel_maker/assets/main.css') }}">
+<script type="module" src="{{ url_for('static', filename='reel_maker/assets/main.js') }}" defer></script>
+{% endblock %}

@@ -26,6 +26,12 @@ FINAL_FALLBACK_MODEL = GEMINI_MODELS.FINAL_FALLBACK  # gemini-1.5-flash
 HIGH_PERFORMANCE_MODEL = os.getenv("HIGH_PERFORMANCE_MODEL", GEMINI_MODELS.HIGH_PERFORMANCE)  # gemini-2.5-pro
 ULTRA_FAST_MODEL = os.getenv("ULTRA_FAST_MODEL", GEMINI_MODELS.ULTRA_FAST)  # gemini-1.5-flash-8b
 
+# Google Cloud Storage Configuration
+# For video generation and Reel Maker features
+VIDEO_STORAGE_BUCKET = os.getenv("VIDEO_STORAGE_BUCKET")
+REEL_MAKER_GCS_BUCKET = os.getenv("REEL_MAKER_GCS_BUCKET")
+VIDEO_GENERATION_BUCKET = os.getenv("VIDEO_GENERATION_BUCKET")
+
 # Flask configuration
 SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")
 FLASK_ENV = os.getenv("FLASK_ENV", "development")
