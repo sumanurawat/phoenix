@@ -1,0 +1,40 @@
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: reel-stitching-job
+  labels:
+    cloud.googleapis.com/location: us-central1
+  annotations:
+    run.googleapis.com/launch-stage: BETA
+spec:
+  template:
+    spec:
+      template:
+        metadata:
+          annotations:
+            run.googleapis.com/execution-environment: gen2
+            run.googleapis.com/cpu-throttling: "false"
+        spec:
+          serviceAccountName: reel-jobs-sa@phoenix-project-386.iam.gserviceaccount.com
+          timeoutSeconds: 900  # 15 minutes
+          containers:
+          - name: stitcher
+            image: gcr.io/phoenix-project-386/reel-stitching-job:latest
+            resources:
+              limits:
+                memory: "4Gi"
+                cpu: "2000m"
+              requests:
+                memory: "2Gi"
+                cpu: "1000m"
+            env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "phoenix-project-386"
+            - name: VIDEO_STORAGE_BUCKET
+              value: "phoenix-videos"
+            - name: JOB_TIMEOUT_MINUTES
+              value: "15"
+            - name: LOG_LEVEL
+              value: "INFO"
+          restartPolicy: Never
+          maxRetries: 3

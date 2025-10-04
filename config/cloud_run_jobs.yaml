@@ -1,0 +1,68 @@
+# Cloud Run Jobs Configuration for Phoenix Reel Maker
+# This file contains default configurations for all job types
+
+# Global settings
+global:
+  project_id: phoenix-project-386
+  region: us-central1
+  service_account: reel-jobs-sa@phoenix-project-386.iam.gserviceaccount.com
+
+# Job type configurations
+jobs:
+  video_stitching:
+    name: reel-stitching-job
+    image: gcr.io/phoenix-project-386/reel-stitching-job:latest
+    memory: 4Gi
+    cpu: 2000m
+    timeout_seconds: 900  # 15 minutes
+    max_retries: 3
+    concurrency: 5
+    environment:
+      - name: JOB_TYPE
+        value: video_stitching
+      - name: JOB_TIMEOUT_MINUTES
+        value: "15"
+      - name: MAX_RETRY_ATTEMPTS
+        value: "3"
+      - name: LOG_LEVEL
+        value: INFO
+      - name: METRICS_ENABLED
+        value: "true"
+
+  video_generation:
+    name: reel-generation-job
+    image: gcr.io/phoenix-project-386/reel-generation-job:latest
+    memory: 2Gi
+    cpu: 1000m
+    timeout_seconds: 1800  # 30 minutes
+    max_retries: 3
+    concurrency: 10
+    environment:
+      - name: JOB_TYPE
+        value: video_generation
+      - name: JOB_TIMEOUT_MINUTES
+        value: "30"
+      - name: MAX_RETRY_ATTEMPTS
+        value: "3"
+      - name: LOG_LEVEL
+        value: INFO
+      - name: METRICS_ENABLED
+        value: "true"
+
+# Resource quotas and limits
+quotas:
+  max_concurrent_jobs: 20
+  max_jobs_per_user_per_hour: 10
+  max_storage_gb_per_job: 10
+
+# Monitoring and alerting
+monitoring:
+  job_failure_threshold: 5  # Alert if >5 jobs fail in 1 hour
+  job_duration_threshold: 600  # Alert if job takes >10 minutes
+  memory_usage_threshold: 90  # Alert if memory usage >90%
+
+# Cleanup policies
+cleanup:
+  job_retention_days: 7
+  checkpoint_retention_days: 3
+  temp_file_cleanup_hours: 1

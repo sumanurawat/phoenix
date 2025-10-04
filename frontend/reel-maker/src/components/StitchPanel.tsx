@@ -5,9 +5,10 @@ import { ReelProject } from "../types";
 interface StitchPanelProps {
   project: ReelProject;
   onStitch: () => void;
+  activeStitchJobId?: string;
 }
 
-export function StitchPanel({ project, onStitch }: StitchPanelProps) {
+export function StitchPanel({ project, onStitch, activeStitchJobId }: StitchPanelProps) {
   const [isStitching, setIsStitching] = useState(false);
   
   const clipCount = project.clipFilenames?.length || 0;
@@ -58,15 +59,27 @@ export function StitchPanel({ project, onStitch }: StitchPanelProps) {
           </button>
         </div>
       ) : isStitchingNow ? (
-        <div className="stitch-panel__processing">
-          <i className="fa fa-spinner fa-spin fa-2x" aria-hidden="true" />
-          <p>
-            <strong>Stitching in progress...</strong>
-          </p>
-          <p className="text-muted">
-            Downloading clips, combining with FFmpeg, and uploading the result. This may take a few minutes.
-          </p>
-        </div>
+        <>
+          {/* Progress monitor will inject itself here automatically */}
+          <div
+            id="job-progress-monitor-container"
+            data-project-id={project.projectId}
+            data-job-id={activeStitchJobId || undefined}
+          ></div>
+          
+          {/* Fallback message (hidden when monitor appears) */}
+          <div className="stitch-panel__processing">
+            <i className="fa fa-spinner fa-spin fa-2x" aria-hidden="true" />
+            <p>
+              <strong>Stitching in progress...</strong>
+            </p>
+            <p className="text-muted">
+              {activeStitchJobId
+                ? `Initializing progress monitor for job ${activeStitchJobId}`
+                : "Initializing progress monitor..."}
+            </p>
+          </div>
+        </>
       ) : hasStitched ? (
         <div className="stitch-panel__result">
           <div className="stitch-panel__video-container">

@@ -35,5 +35,8 @@
 
 {% block extra_js %}
 <link rel="stylesheet" href="{{ url_for('static', filename='reel_maker/assets/main.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='reel_maker/components/JobProgressMonitor.css') }}">
+<script src="{{ url_for('static', filename='reel_maker/components/JobProgressMonitor.js') }}"></script>
+<script src="{{ url_for('static', filename='reel_maker/components/progress-monitor-integration.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='reel_maker/assets/main.js') }}" defer></script>
 {% endblock %}

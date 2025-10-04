@@ -17,6 +17,22 @@ export function PromptPanel({ project, onSavePrompts }: PromptPanelProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Calculate current prompt count for real-time feedback
+  const promptCount = useMemo(() => {
+    try {
+      const parsed = JSON.parse(textareaValue);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(item => String(item).trim()).length;
+      }
+    } catch {
+      // Invalid JSON - return 0
+    }
+    return 0;
+  }, [textareaValue]);
+
+  const isOverLimit = promptCount > 20;
+  const isNearLimit = promptCount >= 18 && promptCount <= 20;
+
   // Initialize textarea value from project prompts
   const initialValue = useMemo(() => {
     if (!project.promptList?.length) {
@@ -59,6 +75,12 @@ export function PromptPanel({ project, onSavePrompts }: PromptPanelProps) {
       return;
     }
 
+    // Validate 20-clip limit
+    if (prompts.length > 20) {
+      setErrorMessage("🎬 Please limit your video to 20 clips for now. Exciting upgrades coming soon for more! 🚀");
+      return;
+    }
+
     setIsSaving(true);
     setErrorMessage(null);
     try {
@@ -94,13 +116,35 @@ export function PromptPanel({ project, onSavePrompts }: PromptPanelProps) {
       </header>
       <div className="prompt-panel__grid">
         <article>
-          <h3>Prompt list (JSON array format)</h3>
+          <h3>
+            Prompt list (JSON array format)
+            {promptCount > 0 && (
+              <span style={{ 
+                marginLeft: '10px', 
+                fontSize: '0.9em',
+                color: isOverLimit ? '#dc3545' : isNearLimit ? '#ffc107' : '#6c757d'
+              }}>
+                {promptCount}/20 clips
+              </span>
+            )}
+          </h3>
           <textarea
             value={textareaValue}
             onChange={(e) => setTextareaValue(e.target.value)}
             aria-label="Prompt list"
             placeholder='[\n  "A cat playing piano in a jazz bar",\n  "Slow orbital shot of a futuristic city",\n  "Drone flyover of terraced rice fields"\n]'
+            style={isOverLimit ? { borderColor: '#dc3545' } : undefined}
           />
+          {isOverLimit && (
+            <p className="prompt-panel__error">
+              🎬 Please limit your video to 20 clips for now. Exciting upgrades coming soon for more! 🚀
+            </p>
+          )}
+          {isNearLimit && !isOverLimit && (
+            <p style={{ color: '#ffc107', marginTop: '5px', fontSize: '0.9em' }}>
+              ⚡ You're at the 20-clip limit. Want more? Upgrades coming soon!
+            </p>
+          )}
           {errorMessage && (
             <p className="prompt-panel__error">{errorMessage}</p>
           )}
