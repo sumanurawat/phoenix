@@ -24,7 +24,7 @@ steps:
     - '--service-account'
     - 'phoenix-service-account@phoenix-project-386.iam.gserviceaccount.com'
     - '--memory'
-    - '512Mi'
+    - '1Gi'
     - '--cpu'
     - '1'
     - '--max-instances'

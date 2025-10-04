@@ -100,10 +100,11 @@ export default function App() {
         // First fetch the project
         const project = await fetchProject(activeProjectId);
         
-        // Auto-reconcile if project is stuck in "generating" or has claimed clips
-        // This verifies clips exist in GCS and corrects status
+        // Auto-reconcile if project is stuck in "generating", "stitching", or has claimed clips
+        // This verifies clips/stitched video exist in GCS and corrects status
         const needsReconciliation = 
-          project.status === "generating" || 
+          project.status === "generating" ||
+          project.status === "stitching" ||
           (project.clipFilenames?.length ?? 0) > 0;
         
         if (needsReconciliation) {
@@ -128,9 +129,27 @@ export default function App() {
                   clipFilenames: updated.clipFilenames ?? [],
                 };
                 setActiveProject(normalized);
+                
+                // Update generation job state
                 setGenerationJob((prev) =>
                   prev && prev.projectId === normalized.projectId && normalized.status === "generating" ? prev : null
                 );
+                
+                // Update stitching job state
+                if (normalized.status === "stitching") {
+                  // Try to get active stitch job ID
+                  try {
+                    const job = await fetchActiveStitchJob(activeProjectId);
+                    if (job?.jobId) {
+                      setStitchingJob({ projectId: activeProjectId, jobId: job.jobId });
+                    }
+                  } catch (err) {
+                    console.warn("Could not fetch active stitch job", err);
+                  }
+                } else {
+                  // Clear stitching job if project is no longer stitching
+                  setStitchingJob((prev) => (prev?.projectId === activeProjectId ? null : prev));
+                }
               }
             } else {
               // No corrections needed, use original project
@@ -144,6 +163,20 @@ export default function App() {
                 setGenerationJob((prev) =>
                   prev && prev.projectId === normalized.projectId && normalized.status === "generating" ? prev : null
                 );
+                
+                // Update stitching job state
+                if (normalized.status === "stitching") {
+                  try {
+                    const job = await fetchActiveStitchJob(activeProjectId);
+                    if (job?.jobId) {
+                      setStitchingJob({ projectId: activeProjectId, jobId: job.jobId });
+                    }
+                  } catch (err) {
+                    console.warn("Could not fetch active stitch job", err);
+                  }
+                } else {
+                  setStitchingJob((prev) => (prev?.projectId === activeProjectId ? null : prev));
+                }
               }
             }
           } catch (reconcileError) {
@@ -159,6 +192,20 @@ export default function App() {
               setGenerationJob((prev) =>
                 prev && prev.projectId === normalized.projectId && normalized.status === "generating" ? prev : null
               );
+              
+              // Update stitching job state
+              if (normalized.status === "stitching") {
+                try {
+                  const job = await fetchActiveStitchJob(activeProjectId);
+                  if (job?.jobId) {
+                    setStitchingJob({ projectId: activeProjectId, jobId: job.jobId });
+                  }
+                } catch (err) {
+                  console.warn("Could not fetch active stitch job", err);
+                }
+              } else {
+                setStitchingJob((prev) => (prev?.projectId === activeProjectId ? null : prev));
+              }
             }
           }
         } else {
@@ -173,6 +220,20 @@ export default function App() {
             setGenerationJob((prev) =>
               prev && prev.projectId === normalized.projectId && normalized.status === "generating" ? prev : null
             );
+            
+            // Update stitching job state
+            if (normalized.status === "stitching") {
+              try {
+                const job = await fetchActiveStitchJob(activeProjectId);
+                if (job?.jobId) {
+                  setStitchingJob({ projectId: activeProjectId, jobId: job.jobId });
+                }
+              } catch (err) {
+                console.warn("Could not fetch active stitch job", err);
+              }
+            } else {
+              setStitchingJob((prev) => (prev?.projectId === activeProjectId ? null : prev));
+            }
           }
         }
       } catch (error) {
@@ -592,47 +653,30 @@ export default function App() {
 
     setErrorMessage(null);
     try {
-      const { jobId } = await stitchProject(activeProjectId);
-      setStitchingJob({ projectId: activeProjectId, jobId });
+      // Capture the project ID to avoid closure issues
+      const stitchingProjectId = activeProjectId;
       
-      // Update project status to stitching
+      const { jobId } = await stitchProject(stitchingProjectId);
+      setStitchingJob({ projectId: stitchingProjectId, jobId });
+      
+      // Update project status to stitching (only if still viewing this project)
       setActiveProject((prev) =>
-        prev && prev.projectId === activeProjectId
+        prev && prev.projectId === stitchingProjectId
           ? {
               ...prev,
               status: "stitching",
             }
           : prev
       );
-      syncProjectSummary(activeProjectId, {
+      syncProjectSummary(stitchingProjectId, {
         status: "stitching",
       });
       
-      // Refresh project after delays to get the stitched file
-      // Check multiple times as stitching can take time
-      // Extended intervals to cover longer jobs (up to 2 minutes)
-      const checkStatuses = [5000, 10000, 15000, 30000, 45000, 60000, 90000, 120000]; // 5s to 2 minutes
-      checkStatuses.forEach((delay) => {
-        setTimeout(async () => {
-          if (activeProjectId) {
-            try {
-              const updated = await fetchProject(activeProjectId);
-              setActiveProject(updated);
-              syncProjectSummary(activeProjectId, {
-                status: updated.status,
-                hasStitchedReel: !!updated.stitchedFilename,
-              });
-              
-              // If stitching is complete, stop polling
-              if (updated.status !== 'stitching') {
-                console.log('Stitching complete, status:', updated.status);
-              }
-            } catch (err) {
-              console.error("Failed to refresh project:", err);
-            }
-          }
-        }, delay);
-      });
+      // Note: We removed the setTimeout polling here because:
+      // 1. Cloud Run Jobs are async - user should be able to navigate away
+      // 2. Progress is monitored by JobProgressMonitor component
+      // 3. When user returns to the project, useEffect will reconcile state
+      // 4. No need to force refresh on a project that user may have left
       
     } catch (error) {
       const errorMsg = (error as Error).message ?? "Unable to start stitching";
