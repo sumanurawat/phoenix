@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createProject,
+  deleteProject,
   fetchProject,
   fetchProjects,
   fetchActiveStitchJob,
@@ -532,6 +533,27 @@ export default function App() {
     }
   }, [activeProject]);
 
+  const handleDeleteProject = useCallback(async (projectId: string) => {
+    try {
+      // Call delete API
+      await deleteProject(projectId);
+
+      // Remove from project list
+      setProjects((prev) => prev.filter((p) => p.projectId !== projectId));
+
+      // If deleted project was active, clear it
+      if (activeProjectId === projectId) {
+        setActiveProjectId(null);
+        setActiveProject(null);
+      }
+
+      console.log(`Project ${projectId} deleted successfully`);
+    } catch (error) {
+      console.error("Failed to delete project", error);
+      setErrorMessage((error as Error).message ?? "Unable to delete project");
+    }
+  }, [activeProjectId]);
+
   const handleOrientationChange = useCallback(
     async (orientation: "portrait" | "landscape") => {
       if (!activeProject || activeProject.orientation === orientation) {
@@ -870,6 +892,7 @@ export default function App() {
         activeProjectId={activeProjectId}
         onSelect={setActiveProjectId}
         onCreate={handleCreateProject}
+        onDelete={handleDeleteProject}
         isLoading={listLoading}
       />
       <main className="reel-app__content" role="main">
