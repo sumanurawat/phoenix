@@ -37,7 +37,7 @@ steps:
       - '2'
       - '--memory'
       - '4Gi'
-      - '--timeout'
+      - '--task-timeout'
       - '900'
       - '--max-retries'
       - '2'
