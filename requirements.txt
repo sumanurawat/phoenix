@@ -24,3 +24,6 @@ openai==1.54.4  # For Grok API integration (OpenAI-compatible)
 httpx==0.27.2  # For HTTP requests in enhanced LLM service
 stripe==10.12.0  # For Stripe payment processing
 google-cloud-storage==2.18.2  # For Reel Maker media storage (GCS)
+google-cloud-tasks==2.16.4  # For Cloud Run Jobs orchestration
+google-cloud-run==0.10.12  # For Cloud Run Jobs API
+psutil==5.9.5  # For system monitoring in jobs

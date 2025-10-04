@@ -3,6 +3,7 @@ import {
   createProject,
   fetchProject,
   fetchProjects,
+  fetchActiveStitchJob,
   generateProject,
   reconcileProject,
   renameProject,
@@ -40,6 +41,8 @@ export default function App() {
   const [isStartingGeneration, setIsStartingGeneration] = useState(false);
   const [hasAutoStitched, setHasAutoStitched] = useState(false);
   const autoStitchAttemptedRef = useRef(false);
+  const [stitchingJob, setStitchingJob] = useState<{ projectId: string; jobId: string } | null>(null);
+  const stitchingJobFetchRef = useRef<string | null>(null);
 
   const syncProjectSummary = useCallback(
     (projectId: string, updates: Partial<ReelProjectSummary>) => {
@@ -545,7 +548,8 @@ export default function App() {
           ? {
               ...prev,
               status: "generating",
-              clipFilenames: [],
+              // Preserve existing clips - backend will keep them and only generate missing ones
+              clipFilenames: prev.clipFilenames || [],
               stitchedFilename: undefined,
               errorInfo: undefined,
             }
@@ -553,7 +557,8 @@ export default function App() {
       );
       syncProjectSummary(activeProjectId, {
         status: "generating",
-        clipCount: 0,
+        // Keep existing clip count - backend preserves clips
+        clipCount: activeProject.clipFilenames?.filter(Boolean).length ?? 0,
         hasStitchedReel: false,
       });
     } catch (error) {
@@ -587,7 +592,8 @@ export default function App() {
 
     setErrorMessage(null);
     try {
-      await stitchProject(activeProjectId);
+      const { jobId } = await stitchProject(activeProjectId);
+      setStitchingJob({ projectId: activeProjectId, jobId });
       
       // Update project status to stitching
       setActiveProject((prev) =>
@@ -604,7 +610,8 @@ export default function App() {
       
       // Refresh project after delays to get the stitched file
       // Check multiple times as stitching can take time
-      const checkStatuses = [5000, 10000, 15000, 30000]; // 5s, 10s, 15s, 30s
+      // Extended intervals to cover longer jobs (up to 2 minutes)
+      const checkStatuses = [5000, 10000, 15000, 30000, 45000, 60000, 90000, 120000]; // 5s to 2 minutes
       checkStatuses.forEach((delay) => {
         setTimeout(async () => {
           if (activeProjectId) {
@@ -615,6 +622,11 @@ export default function App() {
                 status: updated.status,
                 hasStitchedReel: !!updated.stitchedFilename,
               });
+              
+              // If stitching is complete, stop polling
+              if (updated.status !== 'stitching') {
+                console.log('Stitching complete, status:', updated.status);
+              }
             } catch (err) {
               console.error("Failed to refresh project:", err);
             }
@@ -623,11 +635,96 @@ export default function App() {
       });
       
     } catch (error) {
-      console.error("Failed to start stitching", error);
       const errorMsg = (error as Error).message ?? "Unable to start stitching";
+      
+      // If job is already running, treat it as success and fetch the job ID
+      if (errorMsg.includes("already running")) {
+        console.warn("Stitch job already in progress for project", activeProjectId);
+        setActiveProject((prev) =>
+          prev && prev.projectId === activeProjectId
+            ? { ...prev, status: "stitching" }
+            : prev
+        );
+        syncProjectSummary(activeProjectId, { status: "stitching" });
+        
+        // Try to fetch the existing job ID
+        try {
+          const job = await fetchActiveStitchJob(activeProjectId);
+          if (job?.jobId) {
+            setStitchingJob({ projectId: activeProjectId, jobId: job.jobId });
+          }
+        } catch (fetchErr) {
+          console.warn("Could not fetch existing stitch job", fetchErr);
+        }
+        return;
+      }
+      
+      console.error("Failed to start stitching", error);
       setErrorMessage(errorMsg);
+      setStitchingJob((prev) => (prev?.projectId === activeProjectId ? null : prev));
     }
   }, [activeProject, activeProjectId, syncProjectSummary]);
+
+  useEffect(() => {
+    if (!activeProject || !stitchingJob) {
+      return;
+    }
+
+    if (stitchingJob.projectId !== activeProject.projectId) {
+      return;
+    }
+
+    if (activeProject.status !== "stitching") {
+      setStitchingJob(null);
+    }
+  }, [activeProject, stitchingJob]);
+
+  useEffect(() => {
+    if (!stitchingJob) {
+      return;
+    }
+
+    if (stitchingJob.projectId !== activeProjectId) {
+      setStitchingJob(null);
+    }
+  }, [activeProjectId, stitchingJob]);
+
+  useEffect(() => {
+    if (!activeProject) {
+      return;
+    }
+
+    if (activeProject.status !== "stitching") {
+      stitchingJobFetchRef.current = null;
+      return;
+    }
+
+    if (stitchingJob?.projectId === activeProject.projectId) {
+      return;
+    }
+
+    if (stitchingJobFetchRef.current === activeProject.projectId) {
+      return;
+    }
+
+    stitchingJobFetchRef.current = activeProject.projectId;
+
+    const loadExistingJob = async () => {
+      try {
+        const job = await fetchActiveStitchJob(activeProject.projectId);
+        if (job?.jobId) {
+          setStitchingJob({ projectId: activeProject.projectId, jobId: job.jobId });
+        } else {
+          stitchingJobFetchRef.current = null;
+        }
+      } catch (error) {
+        console.warn("Failed to fetch active stitching job", error);
+        stitchingJobFetchRef.current = null;
+      }
+    };
+
+    void loadExistingJob();
+  }, [activeProject, stitchingJob]);
 
   // Auto-stitch when all clips are ready
   useEffect(() => {
@@ -654,6 +751,45 @@ export default function App() {
       autoStitchAttemptedRef.current = false;
     }
   }, [activeProject, activeProjectId, handleStitchClips]);
+
+  // Listen for stitch job completion from progress monitor
+  useEffect(() => {
+    console.log('[App] Setting up stitchJobComplete event listener');
+    
+    const handleStitchComplete = async (event: Event) => {
+      const customEvent = event as CustomEvent<{ status: string; projectId: string }>;
+      console.log('[App] ========================================');
+      console.log('[App] STITCH JOB COMPLETE EVENT RECEIVED');
+      console.log('[App] Event detail:', customEvent.detail);
+      console.log('[App] ========================================');
+      
+      const { status, projectId } = customEvent.detail;
+      
+      if (status === 'SUCCESS' && projectId === activeProjectId) {
+        console.log('[App] Success status for active project, fetching updated project data...');
+        try {
+          const updated = await fetchProject(projectId);
+          console.log('[App] Updated project data:', updated);
+          setActiveProject(updated);
+          syncProjectSummary(projectId, {
+            status: updated.status,
+            hasStitchedReel: !!updated.stitchedFilename,
+          });
+          console.log('[App] React state updated with stitched video');
+        } catch (err) {
+          console.error('[App] Failed to fetch updated project:', err);
+        }
+      }
+    };
+    
+    window.addEventListener('stitchJobComplete', handleStitchComplete);
+    console.log('[App] Event listener attached');
+    
+    return () => {
+      console.log('[App] Cleaning up stitchJobComplete event listener');
+      window.removeEventListener('stitchJobComplete', handleStitchComplete);
+    };
+  }, [activeProjectId, syncProjectSummary]);
 
   const listErrorNotice = useMemo(() => {
     if (!errorMessage) {
@@ -727,7 +863,13 @@ export default function App() {
             />
             <PromptPanel project={activeProject} onSavePrompts={handleSavePrompts} />
             <SceneList project={activeProject} />
-            <StitchPanel project={activeProject} onStitch={handleStitchClips} />
+            <StitchPanel
+              project={activeProject}
+              onStitch={handleStitchClips}
+              activeStitchJobId={
+                stitchingJob?.projectId === activeProject.projectId ? stitchingJob.jobId : undefined
+              }
+            />
           </>
         )}
       </main>

@@ -201,3 +201,65 @@ export async function stitchProject(projectId: string): Promise<{
   return { jobId: data.jobId, clipCount: data.clipCount };
 }
 
+export interface ProjectJobSummary {
+  jobId: string;
+  jobType: string;
+  status: string;
+  progress?: number;
+  message?: string | null;
+  createdAt?: string | null;
+}
+
+export async function fetchActiveStitchJob(projectId: string): Promise<ProjectJobSummary | null> {
+  const response = await fetch(`/api/jobs/project/${projectId}?limit=5`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch jobs for project ${projectId} (status ${response.status})`);
+  }
+
+  const data = (await response.json()) as {
+    success?: boolean;
+    jobs?: Array<{
+      job_id?: string;
+      jobId?: string;
+      job_type?: string;
+      jobType?: string;
+      status?: string;
+      progress?: number;
+      message?: string | null;
+      created_at?: string | null;
+      createdAt?: string | null;
+    }>;
+  };
+
+  if (!data?.jobs?.length) {
+    return null;
+  }
+
+  const preferredStatuses = new Set(["queued", "running", "failed"]);
+  const job = data.jobs.find((entry) => {
+    const jobType = entry.job_type ?? entry.jobType;
+    const status = (entry.status ?? "").toLowerCase();
+    return jobType === "video_stitching" && preferredStatuses.has(status);
+  });
+
+  if (!job) {
+    return null;
+  }
+
+  return {
+    jobId: job.job_id ?? job.jobId ?? "",
+    jobType: job.job_type ?? job.jobType ?? "",
+    status: job.status ?? "",
+    progress: job.progress,
+    message: job.message,
+    createdAt: job.created_at ?? job.createdAt,
+  };
+}
+

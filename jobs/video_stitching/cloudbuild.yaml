@@ -1,0 +1,56 @@
+# Cloud Build configuration for Video Stitching Job
+# This builds AND deploys the stitching job container
+
+steps:
+  # Build the stitching job image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/reel-stitching-job:latest'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/reel-stitching-job:$BUILD_ID'
+      - '-f'
+      - 'jobs/video_stitching/Dockerfile'
+      - '.'
+  
+  # Push both tags to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/reel-stitching-job:latest']
+  
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/reel-stitching-job:$BUILD_ID']
+
+  # Deploy to Cloud Run Jobs
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'jobs'
+      - 'update'
+      - 'reel-stitching-job'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/reel-stitching-job:latest'
+      - '--region'
+      - 'us-central1'
+      - '--cpu'
+      - '2'
+      - '--memory'
+      - '4Gi'
+      - '--timeout'
+      - '900'
+      - '--max-retries'
+      - '2'
+
+images:
+  - 'gcr.io/$PROJECT_ID/reel-stitching-job:latest'
+  - 'gcr.io/$PROJECT_ID/reel-stitching-job:$BUILD_ID'
+
+timeout: '1800s'  # 30 minutes timeout
+
+options:
+  machineType: 'E2_HIGHCPU_8'  # More modern machine type
+  diskSizeGb: 100  # Adequate disk space
+  logging: CLOUD_LOGGING_ONLY
+  env:
+    - 'DOCKER_BUILDKIT=1'  # Enable faster builds

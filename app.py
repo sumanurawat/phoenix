@@ -57,6 +57,7 @@ from api.dataset_routes import dataset_bp
 from api.video_routes import video_bp
 from api.stripe_routes import stripe_bp, subscription_bp
 from api.reel_routes import reel_bp
+from api.job_routes import job_bp
 
 # Import services (AFTER Firebase initialization)
 from services.chat_service import ChatService
@@ -165,6 +166,7 @@ def create_app():
     app.register_blueprint(stripe_bp)
     app.register_blueprint(subscription_bp)
     app.register_blueprint(reel_bp)
+    app.register_blueprint(job_bp)
     
     # Setup subscription middleware
     @app.before_request

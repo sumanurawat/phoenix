@@ -478,6 +478,90 @@ def get_generation_job(project_id, job_id):
         }), 500
 
 
+@reel_bp.route('/projects/<project_id>/jobs/<job_id>/progress', methods=['GET'])
+@login_required
+def get_job_progress_logs(project_id, job_id):
+    """
+    Get progress logs for a job.
+    Returns real-time progress updates from Cloud Run Job execution.
+    
+    Query params:
+    - since: Only return logs after this log number (for polling)
+    - limit: Maximum number of logs to return (default: 50)
+    """
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+
+        if not user_id:
+            return jsonify({
+                "success": False,
+                "error": {"code": "AUTH_ERROR", "message": "User ID not found in session"}
+            }), 401
+
+        # Verify project ownership
+        project = reel_project_service.get_project(project_id, user_id)
+        if not project:
+            return jsonify({
+                "success": False,
+                "error": {"code": "NOT_FOUND", "message": "Project not found"}
+            }), 404
+
+        # Get query parameters
+        since_log_number = request.args.get('since', type=int, default=0)
+        limit = request.args.get('limit', type=int, default=50)
+        
+        # Fetch progress logs from Firestore
+        from firebase_admin import firestore
+        db = firestore.client()
+        
+        progress_ref = (
+            db.collection('reel_jobs')
+            .document(job_id)
+            .collection('progress_logs')
+            .where('log_number', '>', since_log_number)
+            .order_by('log_number')
+            .limit(limit)
+        )
+        
+        logs = []
+        for doc in progress_ref.stream():
+            log_data = doc.to_dict()
+            # Serialize timestamp
+            if 'timestamp' in log_data:
+                log_data['timestamp'] = serialize_timestamp(log_data['timestamp'])
+            logs.append(log_data)
+        
+        # Also get current job status
+        job_ref = db.collection('reel_jobs').document(job_id)
+        job_doc = job_ref.get()
+        
+        job_status = {}
+        if job_doc.exists:
+            job_data = job_doc.to_dict()
+            job_status = {
+                'status': job_data.get('status'),
+                'progress_percent': job_data.get('progress_percent', 0),
+                'current_stage': job_data.get('current_stage', ''),
+                'last_progress_message': job_data.get('last_progress_message', ''),
+                'last_progress_update': serialize_timestamp(job_data.get('last_progress_update'))
+            }
+
+        return jsonify({
+            "success": True,
+            "logs": logs,
+            "job_status": job_status,
+            "has_more": len(logs) >= limit
+        })
+
+    except Exception as e:  # noqa: BLE001
+        logger.exception("Failed to fetch progress logs for job %s", job_id)
+        return jsonify({
+            "success": False,
+            "error": {"code": "SERVER_ERROR", "message": "Failed to retrieve progress logs"}
+        }), 500
+
+
 @reel_bp.route('/projects/<project_id>/events', methods=['GET'])
 @login_required
 def stream_project_events(project_id):
@@ -529,11 +613,15 @@ def stream_project_events(project_id):
 @csrf_protect
 @login_required
 def stitch_clips(project_id):
-    """Start video stitching job to combine all clips into a single reel."""
-    import threading
-    from services.video_stitching_service import video_stitching_service
-    from datetime import datetime
-    
+    """Start video stitching job using Cloud Run Jobs to combine all clips into a single reel."""
+    try:
+        from services.job_orchestrator import get_job_orchestrator
+        from jobs.shared.schemas import JobAlreadyRunningError, InsufficientResourcesError, JobError
+        JOB_ORCHESTRATOR_AVAILABLE = True
+    except ImportError as e:
+        logger.warning(f"Job orchestrator not available: {e}")
+        JOB_ORCHESTRATOR_AVAILABLE = False
+
     user = get_current_user()
     user_id = user['user_id']
 
@@ -566,53 +654,140 @@ def stitch_clips(project_id):
         }), 409
 
     try:
-        # Generate job ID for progress tracking
-        job_id = f"stitch_{project_id}_{int(datetime.utcnow().timestamp())}"
-        
-        # Update project status
-        reel_project_service.update_project_status(project_id, user_id, "stitching")
-        
-        # Start stitching in background thread
-        def stitch_worker():
-            try:
-                logger.info(f"Starting stitch job {job_id} for project {project_id}")
-                
-                stitched_path = video_stitching_service.stitch_clips(
-                    user_id=user_id,
-                    project_id=project_id,
-                    clip_paths=project.clip_filenames,
-                    job_id=job_id
-                )
-                
-                if stitched_path:
-                    # Update project with stitched filename
-                    reel_project_service.update_project_stitched_file(
-                        project_id, 
-                        user_id, 
-                        stitched_path
+        if not JOB_ORCHESTRATOR_AVAILABLE:
+            # Fallback to local processing for development
+            import threading
+            from services.video_stitching_service import video_stitching_service
+            from datetime import datetime
+
+            logger.warning("Using local video stitching service - Cloud Run Jobs not available")
+
+            # Generate job ID for progress tracking
+            job_id = f"stitch_{project_id}_{int(datetime.utcnow().timestamp())}"
+
+            # Update project status
+            reel_project_service.update_project_status(project_id, user_id, "stitching")
+
+            # Start stitching in background thread
+            def stitch_worker():
+                try:
+                    logger.info(f"Starting local stitch job {job_id} for project {project_id}")
+
+                    stitched_path = video_stitching_service.stitch_clips(
+                        user_id=user_id,
+                        project_id=project_id,
+                        clip_paths=project.clip_filenames,
+                        job_id=job_id
                     )
-                    reel_project_service.update_project_status(project_id, user_id, "ready")
-                    logger.info(f"Stitch job {job_id} completed successfully")
-                else:
+
+                    if stitched_path:
+                        # Update project with stitched filename
+                        reel_project_service.update_project_stitched_file(
+                            project_id,
+                            user_id,
+                            stitched_path
+                        )
+                        reel_project_service.update_project_status(project_id, user_id, "ready")
+                        logger.info(f"Local stitch job {job_id} completed successfully")
+                    else:
+                        reel_project_service.update_project_status(project_id, user_id, "error")
+                        logger.error(f"Local stitch job {job_id} failed")
+
+                except Exception as e:
+                    logger.exception(f"Local stitch worker failed for job {job_id}: {e}")
                     reel_project_service.update_project_status(project_id, user_id, "error")
-                    logger.error(f"Stitch job {job_id} failed")
-                    
-            except Exception as e:
-                logger.exception(f"Stitch worker failed for job {job_id}: {e}")
-                reel_project_service.update_project_status(project_id, user_id, "error")
+
+            thread = threading.Thread(target=stitch_worker, daemon=True)
+            thread.start()
+
+            return jsonify({
+                "success": True,
+                "message": "Stitching started (local mode)",
+                "jobId": job_id,
+                "clipCount": len(project.clip_filenames),
+                "mode": "local"
+            })
+
+        # Use Cloud Run Jobs
+        logger.info(f"Using Cloud Run Jobs for stitching project {project_id}")
+
+        # Build output path using the naming convention from video_stitching_service
+        output_path = f"reel-maker/{user_id}/{project_id}/stitched/stitched_{project_id}.mp4"
+
+        # Update project status to stitching
+        reel_project_service.update_project_status(project_id, user_id, "stitching")
+
+        # Trigger Cloud Run Jobs stitching
+        job_orchestrator = get_job_orchestrator()
+        job_execution = job_orchestrator.trigger_stitching_job(
+            project_id=project_id,
+            user_id=user_id,
+            clip_paths=project.clip_filenames,
+            output_path=output_path,
+            orientation="portrait",  # Default to portrait
+            compression="optimized",  # Default to optimized
+            force_restart=False
+        )
+
+        logger.info(f"Cloud Run Job triggered: {job_execution.job_id}")
         
-        thread = threading.Thread(target=stitch_worker, daemon=True)
-        thread.start()
-        
+        # Publish SSE event to notify frontend of stitching start
+        from services.realtime_event_bus import realtime_event_bus
+        topic = reel_generation_service.topic_for_project(project_id)
+        realtime_event_bus.publish(
+            topic,
+            "stitching.started",
+            {
+                "projectId": project_id,
+                "jobId": job_execution.job_id,
+                "jobType": job_execution.job_type,
+                "clipCount": len(project.clip_filenames),
+                "status": "stitching"
+            }
+        )
+
         return jsonify({
             "success": True,
-            "message": "Stitching started",
-            "jobId": job_id,
-            "clipCount": len(project.clip_filenames)
+            "message": "Stitching started via Cloud Run Jobs",
+            "jobId": job_execution.job_id,
+            "clipCount": len(project.clip_filenames),
+            "mode": "cloud_run_jobs",
+            "job": {
+                "job_id": job_execution.job_id,
+                "job_type": job_execution.job_type,
+                "status": job_execution.status,
+                "created_at": job_execution.created_at.isoformat()
+            }
         })
-        
+
+    except JobAlreadyRunningError as e:
+        # Revert project status
+        reel_project_service.update_project_status(project_id, user_id, "ready")
+        return jsonify({
+            "success": False,
+            "error": {"code": "ALREADY_PROCESSING", "message": str(e)}
+        }), 409
+
+    except InsufficientResourcesError as e:
+        # Revert project status
+        reel_project_service.update_project_status(project_id, user_id, "ready")
+        return jsonify({
+            "success": False,
+            "error": {"code": "INVALID_REQUEST", "message": str(e)}
+        }), 400
+
+    except JobError as e:
+        # Revert project status
+        reel_project_service.update_project_status(project_id, user_id, "error")
+        return jsonify({
+            "success": False,
+            "error": {"code": "JOB_ERROR", "message": str(e)}
+        }), 500
+
     except Exception as e:
         logger.exception(f"Failed to start stitching for project {project_id}: {e}")
+        # Revert project status
+        reel_project_service.update_project_status(project_id, user_id, "error")
         return jsonify({
             "success": False,
             "error": {"code": "SERVER_ERROR", "message": "Failed to start stitching"}
@@ -732,10 +907,119 @@ def stream_clip(project_id, clip_path):
         }), 500
 
 
+@reel_bp.route('/projects/<project_id>/stitch', methods=['POST'])
+@csrf_protect
+@login_required
+def stitch_project_clips(project_id):
+    """
+    Trigger video stitching job for a project using Cloud Run Jobs.
+
+    This endpoint triggers a separate Cloud Run Job to handle video stitching,
+    providing better resource isolation and cost optimization.
+    """
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+
+        if not user_id:
+            return jsonify({
+                "success": False,
+                "error": {"code": "AUTH_ERROR", "message": "User ID not found in session"}
+            }), 401
+
+        # Get project details
+        try:
+            project = reel_project_service.get_project(project_id, user_id)
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "error": {"code": "NOT_FOUND", "message": f"Project not found: {str(e)}"}
+            }), 404
+
+        # Validate project has clips for stitching
+        if not project.clip_filenames or len(project.clip_filenames) < 2:
+            return jsonify({
+                "success": False,
+                "error": {"code": "INSUFFICIENT_CLIPS", "message": "Project needs at least 2 clips for stitching"}
+            }), 400
+
+        # Check if already stitched
+        if project.stitched_filename and not request.json.get('force_restart', False):
+            return jsonify({
+                "success": False,
+                "error": {"code": "ALREADY_STITCHED", "message": "Project already has a stitched video"}
+            }), 409
+
+        # Import job orchestrator
+        try:
+            from services.job_orchestrator import get_job_orchestrator
+            job_orchestrator = get_job_orchestrator()
+        except ImportError:
+            return jsonify({
+                "success": False,
+                "error": {"code": "SERVICE_UNAVAILABLE", "message": "Job orchestrator service not available"}
+            }), 503
+        from services.reel_storage_service import reel_storage_service
+
+        # Prepare clip paths (full GCS paths)
+        bucket_name = reel_storage_service.bucket_name
+        clip_paths = [f"gs://{bucket_name}/{clip}" for clip in project.clip_filenames]
+
+        # Generate output path
+        import uuid
+        output_filename = f"reel_stitched_{uuid.uuid4().hex[:8]}.mp4"
+        output_path = f"gs://{bucket_name}/reel-maker/{user_id}/{project_id}/stitched/{output_filename}"
+
+        # Trigger stitching job
+        job_execution = job_orchestrator.trigger_stitching_job(
+            project_id=project_id,
+            user_id=user_id,
+            clip_paths=clip_paths,
+            output_path=output_path,
+            orientation=project.orientation,
+            compression=project.compression,
+            force_restart=request.json.get('force_restart', False)
+        )
+
+        # Update project status to indicate stitching in progress
+        reel_project_service.update_project_status(project_id, "stitching")
+
+        return jsonify({
+            "success": True,
+            "job": {
+                "jobId": job_execution.job_id,
+                "projectId": project_id,
+                "status": job_execution.status,
+                "clipCount": len(clip_paths),
+                "estimatedDuration": "5-10 minutes"
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to trigger stitching job for project {project_id}: {e}", exc_info=True)
+
+        # Handle specific job errors
+        if "JobAlreadyRunningError" in str(type(e)):
+            return jsonify({
+                "success": False,
+                "error": {"code": "JOB_RUNNING", "message": "Stitching job already running for this project"}
+            }), 409
+        elif "InsufficientResourcesError" in str(type(e)):
+            return jsonify({
+                "success": False,
+                "error": {"code": "INSUFFICIENT_RESOURCES", "message": str(e)}
+            }), 400
+        else:
+            return jsonify({
+                "success": False,
+                "error": {"code": "SERVER_ERROR", "message": "Failed to start stitching job"}
+            }), 500
+
+
 # Health check endpoint for testing
 @reel_bp.route('/health', methods=['GET'])
 def health_check():
-    """Simple health check endpoint.""" 
+    """Simple health check endpoint."""
     return jsonify({
         "success": True,
         "service": "reel-maker-api",
