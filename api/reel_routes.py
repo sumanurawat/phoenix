@@ -386,11 +386,21 @@ def delete_project(project_id):
                     "error": {"code": "FORBIDDEN", "message": "You do not have permission to delete this project"}
                 }), 403
             
-            # Check if project not found
+            # Check if project not found and no cleanup done
             if any("not found" in err for err in report["errors"]):
+                # If we cleaned up some GCS files, treat as success with warning
+                if report["deleted"]["gcs_files"] > 0:
+                    return jsonify({
+                        "success": True,
+                        "message": "Project was already deleted from database, but cleaned up remaining storage files",
+                        "deleted": report["deleted"],
+                        "warnings": report["errors"]
+                    })
+                
+                # Nothing to delete - already gone
                 return jsonify({
                     "success": False,
-                    "error": {"code": "NOT_FOUND", "message": "Project not found"}
+                    "error": {"code": "NOT_FOUND", "message": "Project not found or already deleted"}
                 }), 404
             
             # Other errors
@@ -404,11 +414,17 @@ def delete_project(project_id):
             }), 500
         
         # Success
-        return jsonify({
+        response_data = {
             "success": True,
             "message": "Project and all associated resources deleted successfully",
             "deleted": report["deleted"]
-        })
+        }
+        
+        # Include warnings if any (e.g., project already deleted from Firestore)
+        if report["errors"]:
+            response_data["warnings"] = report["errors"]
+        
+        return jsonify(response_data)
     
     except Exception as e:
         logger.error(f"Failed to delete project {project_id}: {e}", exc_info=True)

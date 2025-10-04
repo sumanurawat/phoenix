@@ -71,43 +71,67 @@ class ReelDeletionService:
         }
 
         try:
-            # 1. Verify project exists and user owns it
+            # 1. Check if project exists in Firestore
             project_ref = db.collection('reel_projects').document(project_id)
             project_doc = project_ref.get()
-
-            if not project_doc.exists:
-                report["errors"].append(f"Project {project_id} not found")
-                return report
-
-            project_data = project_doc.to_dict()
-            if project_data.get('userId') != user_id:
-                report["errors"].append(f"User {user_id} does not own project {project_id}")
-                return report
-
-            logger.info(f"Project {project_id} verified - owned by user {user_id}")
+            project_exists = project_doc.exists
+            
+            if project_exists:
+                project_data = project_doc.to_dict()
+                # Verify ownership
+                if project_data.get('userId') != user_id:
+                    report["errors"].append(f"User {user_id} does not own project {project_id}")
+                    return report
+                logger.info(f"Project {project_id} verified - owned by user {user_id}")
+            else:
+                # Project doesn't exist in Firestore, but we'll still try to clean up GCS files
+                logger.warning(f"Project {project_id} not found in Firestore, but will attempt GCS cleanup for user {user_id}")
+                report["errors"].append(f"Project {project_id} not found in Firestore database")
 
             # 2. Delete GCS files (clips, stitched video, prompt files)
+            # This runs even if Firestore doc is missing, to clean up orphaned files
             gcs_result = self._delete_gcs_files(project_id, user_id, dry_run)
             report["deleted"]["gcs_files"] = gcs_result["files_deleted"]
             report["deleted"]["gcs_bytes"] = gcs_result["bytes_deleted"]
             if gcs_result["errors"]:
                 report["errors"].extend(gcs_result["errors"])
 
-            # 3. Delete Firestore documents
-            firestore_result = self._delete_firestore_docs(project_id, dry_run)
-            report["deleted"]["firestore_docs"] = firestore_result["docs_deleted"]
-            if firestore_result["errors"]:
-                report["errors"].extend(firestore_result["errors"])
+            # 3. Delete Firestore documents (only if project exists)
+            if project_exists:
+                firestore_result = self._delete_firestore_docs(project_id, dry_run)
+                report["deleted"]["firestore_docs"] = firestore_result["docs_deleted"]
+                if firestore_result["errors"]:
+                    report["errors"].extend(firestore_result["errors"])
+            else:
+                # Still try to clean up any orphaned job documents
+                logger.info(f"Checking for orphaned job documents for project {project_id}")
+                firestore_result = self._delete_firestore_docs(project_id, dry_run)
+                report["deleted"]["firestore_docs"] = firestore_result["docs_deleted"]
+                if firestore_result["errors"]:
+                    report["errors"].extend(firestore_result["errors"])
 
-            # 4. Mark as success if no critical errors
-            report["success"] = len(report["errors"]) == 0
-
-            logger.info(
-                f"{'[DRY RUN] ' if dry_run else ''}Deletion complete for project {project_id}: "
-                f"{report['deleted']['firestore_docs']} Firestore docs, "
-                f"{report['deleted']['gcs_files']} GCS files "
-                f"({report['deleted']['gcs_bytes'] / (1024*1024):.2f} MB)"
+            # 4. Mark as success if we cleaned up something, even with warnings
+            # Success = either deleted some files OR there was nothing to delete
+            has_deletions = (
+                report["deleted"]["firestore_docs"] > 0 or
+                report["deleted"]["gcs_files"] > 0
             )
+            has_critical_errors = any(
+                "does not own" in err or "Unexpected error" in err 
+                for err in report["errors"]
+            )
+            
+            report["success"] = has_deletions or (not has_critical_errors and not project_exists)
+            
+            if not project_exists and report["deleted"]["gcs_files"] == 0:
+                logger.info(f"Project {project_id} already deleted (not in Firestore, no GCS files found)")
+            else:
+                logger.info(
+                    f"{'[DRY RUN] ' if dry_run else ''}Deletion complete for project {project_id}: "
+                    f"{report['deleted']['firestore_docs']} Firestore docs, "
+                    f"{report['deleted']['gcs_files']} GCS files "
+                    f"({report['deleted']['gcs_bytes'] / (1024*1024):.2f} MB)"
+                )
 
             return report
 
