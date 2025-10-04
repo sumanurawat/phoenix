@@ -344,7 +344,19 @@ def update_project(project_id):
 @csrf_protect
 @login_required
 def delete_project(project_id):
-    """Delete a project."""
+    """
+    Delete a project and ALL associated resources.
+    
+    This will permanently delete:
+    - All video clips from GCS
+    - Stitched video from GCS
+    - Prompt files from GCS
+    - Project document from Firestore
+    - All job documents from Firestore
+    - All progress logs from Firestore
+    
+    WARNING: This action cannot be undone!
+    """
     try:
         user = get_current_user()
         user_id = user['user_id']
@@ -354,21 +366,52 @@ def delete_project(project_id):
                 "success": False,
                 "error": {"code": "AUTH_ERROR", "message": "User ID not found in session"}
             }), 401
-        success = reel_project_service.delete_project(project_id, user_id)
         
-        if not success:
+        # Import deletion service
+        from services.reel_deletion_service import get_deletion_service
+        deletion_service = get_deletion_service()
+        
+        # Perform comprehensive deletion
+        report = deletion_service.delete_project(
+            project_id=project_id,
+            user_id=user_id,
+            dry_run=False
+        )
+        
+        if not report["success"]:
+            # Check if it's an authorization error
+            if any("does not own" in err for err in report["errors"]):
+                return jsonify({
+                    "success": False,
+                    "error": {"code": "FORBIDDEN", "message": "You do not have permission to delete this project"}
+                }), 403
+            
+            # Check if project not found
+            if any("not found" in err for err in report["errors"]):
+                return jsonify({
+                    "success": False,
+                    "error": {"code": "NOT_FOUND", "message": "Project not found"}
+                }), 404
+            
+            # Other errors
             return jsonify({
                 "success": False,
-                "error": {"code": "NOT_FOUND", "message": "Project not found or access denied"}
-            }), 404
+                "error": {
+                    "code": "DELETION_ERROR",
+                    "message": "Failed to delete project completely",
+                    "details": report["errors"]
+                }
+            }), 500
         
+        # Success
         return jsonify({
             "success": True,
-            "message": "Project deleted successfully"
+            "message": "Project and all associated resources deleted successfully",
+            "deleted": report["deleted"]
         })
     
     except Exception as e:
-        logger.error(f"Failed to delete project {project_id}: {e}")
+        logger.error(f"Failed to delete project {project_id}: {e}", exc_info=True)
         return jsonify({
             "success": False,
             "error": {"code": "SERVER_ERROR", "message": "Failed to delete project"}
