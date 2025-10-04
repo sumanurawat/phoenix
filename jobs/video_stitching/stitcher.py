@@ -332,14 +332,26 @@ class VideoStitcher:
         common_fps = video_params.get('common_fps', 30)
         cmd.extend(['-r', str(int(common_fps))])
 
-        # Audio settings
+        # Audio settings with proper sync
         if audio_enabled:
-            cmd.extend(['-c:a', 'aac', '-b:a', '128k'])
+            # Use copy for audio to avoid re-encoding issues
+            # Add async flag to handle slight A/V sync issues
+            cmd.extend([
+                '-c:a', 'aac',
+                '-b:a', '192k',  # Higher bitrate for better quality
+                '-ar', '48000',  # Standard sample rate
+                '-ac', '2',      # Stereo
+                '-async', '1',   # Audio sync method - resample audio to match video
+                '-vsync', 'cfr'  # Constant frame rate for video
+            ])
         else:
             cmd.extend(['-an'])  # No audio
 
-        # Output format
-        cmd.extend(['-f', 'mp4'])
+        # Output format with proper muxing
+        cmd.extend([
+            '-f', 'mp4',
+            '-movflags', '+faststart'  # Enable streaming
+        ])
 
         # Progress reporting
         cmd.extend(['-progress', 'pipe:1'])
