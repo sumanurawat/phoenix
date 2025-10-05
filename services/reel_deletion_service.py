@@ -71,11 +71,11 @@ class ReelDeletionService:
         }
 
         try:
-            # 1. Check if project exists in Firestore
-            project_ref = db.collection('reel_projects').document(project_id)
+            # 1. Check if project exists in Firestore (new collection name)
+            project_ref = db.collection('reel_maker_projects').document(project_id)
             project_doc = project_ref.get()
             project_exists = project_doc.exists
-            
+
             if project_exists:
                 project_data = project_doc.to_dict()
                 # Verify ownership
@@ -235,19 +235,29 @@ class ReelDeletionService:
         }
 
         try:
-            # 1. Delete reel_jobs and their subcollections
+            # 1. Delete reel_jobs and their subcollections (new Cloud Run Jobs)
             jobs_result = self._delete_project_jobs(project_id, dry_run)
             result["docs_deleted"] += jobs_result["docs_deleted"]
             result["errors"].extend(jobs_result["errors"])
 
+            # 1b. Delete legacy reel_maker_jobs
+            legacy_jobs_result = self._delete_legacy_maker_jobs(project_id, dry_run)
+            result["docs_deleted"] += legacy_jobs_result["docs_deleted"]
+            result["errors"].extend(legacy_jobs_result["errors"])
+
+            # 1c. Delete reel_job_checkpoints
+            checkpoints_result = self._delete_job_checkpoints(project_id, dry_run)
+            result["docs_deleted"] += checkpoints_result["docs_deleted"]
+            result["errors"].extend(checkpoints_result["errors"])
+
             # 2. Delete the project document itself
-            project_ref = db.collection('reel_projects').document(project_id)
-            
-            logger.info(f"{'[DRY RUN] ' if dry_run else ''}Deleting project document: reel_projects/{project_id}")
-            
+            project_ref = db.collection('reel_maker_projects').document(project_id)
+
+            logger.info(f"{'[DRY RUN] ' if dry_run else ''}Deleting project document: reel_maker_projects/{project_id}")
+
             if not dry_run:
                 project_ref.delete()
-            
+
             result["docs_deleted"] += 1
 
         except Exception as e:
@@ -358,6 +368,136 @@ class ReelDeletionService:
 
         except Exception as e:
             error_msg = f"Failed to delete progress logs for job {job_id}: {str(e)}"
+            logger.error(error_msg)
+            result["errors"].append(error_msg)
+
+        return result
+
+    def _delete_legacy_maker_jobs(
+        self,
+        project_id: str,
+        dry_run: bool
+    ) -> Dict[str, Any]:
+        """
+        Delete legacy reel_maker_jobs associated with a project.
+
+        Returns:
+            {
+                "docs_deleted": int,
+                "errors": List[str]
+            }
+        """
+        result = {
+            "docs_deleted": 0,
+            "errors": []
+        }
+
+        try:
+            # Query all legacy jobs for this project
+            jobs_query = db.collection('reel_maker_jobs').where(
+                filter=firestore.FieldFilter('projectId', '==', project_id)
+            )
+
+            jobs = list(jobs_query.stream())
+
+            if not jobs:
+                logger.info(f"No legacy reel_maker_jobs found for project {project_id}")
+                return result
+
+            logger.info(f"{'[DRY RUN] ' if dry_run else ''}Found {len(jobs)} legacy jobs for project {project_id}")
+
+            for job_doc in jobs:
+                job_id = job_doc.id
+
+                try:
+                    # Delete the legacy job document
+                    logger.info(f"{'[DRY RUN] ' if dry_run else ''}Deleting legacy job document: reel_maker_jobs/{job_id}")
+
+                    if not dry_run:
+                        job_doc.reference.delete()
+
+                    result["docs_deleted"] += 1
+
+                except Exception as e:
+                    error_msg = f"Failed to delete legacy job {job_id}: {str(e)}"
+                    logger.error(error_msg)
+                    result["errors"].append(error_msg)
+
+        except Exception as e:
+            error_msg = f"Failed to query/delete legacy jobs for project {project_id}: {str(e)}"
+            logger.error(error_msg)
+            result["errors"].append(error_msg)
+
+        return result
+
+    def _delete_job_checkpoints(
+        self,
+        project_id: str,
+        dry_run: bool
+    ) -> Dict[str, Any]:
+        """
+        Delete all reel_job_checkpoints associated with a project.
+
+        Returns:
+            {
+                "docs_deleted": int,
+                "errors": List[str]
+            }
+        """
+        result = {
+            "docs_deleted": 0,
+            "errors": []
+        }
+
+        try:
+            # Find all jobs for this project and delete their checkpoints
+            jobs_query = db.collection('reel_jobs').where(
+                filter=firestore.FieldFilter('payload.project_id', '==', project_id)
+            )
+
+            jobs = list(jobs_query.stream())
+
+            if not jobs:
+                logger.info(f"No Cloud Run jobs found for project {project_id}, checking for orphaned checkpoints")
+                return result
+
+            for job_doc in jobs:
+                job_data = job_doc.to_dict()
+                job_id = job_data.get('payload', {}).get('job_id')
+
+                if not job_id:
+                    continue
+
+                try:
+                    # Query checkpoints for this job
+                    checkpoints_query = db.collection('reel_job_checkpoints').where(
+                        filter=firestore.FieldFilter('jobId', '==', job_id)
+                    )
+
+                    checkpoints = list(checkpoints_query.stream())
+
+                    if not checkpoints:
+                        continue
+
+                    logger.info(f"{'[DRY RUN] ' if dry_run else ''}Found {len(checkpoints)} checkpoints for job {job_id}")
+
+                    for checkpoint_doc in checkpoints:
+                        checkpoint_id = checkpoint_doc.id
+
+                        logger.info(f"{'[DRY RUN] ' if dry_run else ''}Deleting checkpoint: reel_job_checkpoints/{checkpoint_id}")
+
+                        if not dry_run:
+                            checkpoint_doc.reference.delete()
+
+                        result["docs_deleted"] += 1
+
+                except Exception as e:
+                    error_msg = f"Failed to delete checkpoints for job {job_id}: {str(e)}"
+                    logger.error(error_msg)
+                    result["errors"].append(error_msg)
+
+        except Exception as e:
+            error_msg = f"Failed to query/delete checkpoints for project {project_id}: {str(e)}"
             logger.error(error_msg)
             result["errors"].append(error_msg)
 
