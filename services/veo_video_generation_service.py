@@ -187,7 +187,10 @@ class VeoVideoGenerationService:
             "instances": params.build_instances(),
             "parameters": params.build_parameters(),
         }
-        logger.info("Submitting Veo generation request model=%s duration=%s sampleCount=%s", model, params.duration_seconds, params.sample_count)
+        logger.info("Submitting Veo generation request model=%s duration=%s sampleCount=%s storageUri=%s", 
+                   model, params.duration_seconds, params.sample_count, params.storage_uri)
+        logger.debug("Request body: %s", json.dumps(body, indent=2))
+        
         r = requests.post(url, headers={
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
@@ -217,8 +220,45 @@ class VeoVideoGenerationService:
                 return VeoOperationResult(success=False, error=f"poll failed {r.status_code}: {r.text}")
             op = r.json()
             if op.get("done"):
+                # Log the full operation for debugging
+                logger.info("Veo operation completed. Operation name: %s", operation_name)
+                
+                # Check for error in operation
+                if "error" in op:
+                    error_info = op["error"]
+                    error_msg = error_info.get("message", str(error_info))
+                    logger.error("Veo operation failed: %s", error_msg)
+                    logger.debug("Full error response: %s", json.dumps(op, indent=2))
+                    return VeoOperationResult(success=False, error=f"Operation error: {error_msg}")
+                
                 response = op.get("response", {})
                 videos = response.get("videos", [])
+                
+                # Log response structure for debugging if no videos found
+                if not videos:
+                    logger.warning("Veo operation completed but no videos in response. Response keys: %s", list(response.keys()))
+                    
+                    # Log metadata if available (might contain useful info)
+                    if "metadata" in op:
+                        logger.info("Operation metadata: %s", json.dumps(op["metadata"], indent=2))
+                    
+                    # Check for alternative response structures
+                    # Some API versions might use "predictions" instead of "videos"
+                    if "predictions" in response:
+                        predictions = response.get("predictions", [])
+                        logger.info("Found predictions field with %d items", len(predictions))
+                        # Try to extract from predictions
+                        for pred in predictions:
+                            if isinstance(pred, dict):
+                                if "gcsUri" in pred:
+                                    videos.append(pred)
+                                elif "videoUrl" in pred:
+                                    videos.append({"gcsUri": pred["videoUrl"]})
+                    
+                    # If still no videos, log the full response for debugging
+                    if not videos:
+                        logger.error("Full operation response: %s", json.dumps(op, indent=2)[:5000])  # Truncate to avoid huge logs
+                
                 gcs_uris: List[str] = []
                 video_bytes: List[bytes] = []
                 for idx, v in enumerate(videos):
