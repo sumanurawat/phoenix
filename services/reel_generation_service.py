@@ -430,6 +430,8 @@ class ReelGenerationService:
     def _generate_single_prompt(self, ctx: GenerationContext, prompt_index: int, prompt: str) -> List[str]:
         """Generate clips for a single prompt and persist the outputs."""
         storage_uri = self._build_storage_uri(ctx, prompt_index)
+        logger.info("Generating video for prompt %d with storage_uri: %s", prompt_index, storage_uri)
+        
         params = VeoGenerationParams(
             model=ctx.project.model or "veo-3.0-fast-generate-001",
             prompt=prompt,
@@ -444,7 +446,9 @@ class ReelGenerationService:
 
         result = self.veo.start_generation(params, poll=True)
         if not result.success:
-            raise RuntimeError(result.error or "Video generation failed")
+            error_msg = result.error or "Video generation failed"
+            logger.error("Veo generation failed for prompt %d: %s", prompt_index, error_msg)
+            raise RuntimeError(error_msg)
 
         clip_uris: List[str] = []
         if result.gcs_uris:
@@ -453,7 +457,17 @@ class ReelGenerationService:
             clip_uris.extend(self._persist_non_gcs_outputs(ctx, prompt_index, result))
 
         if not clip_uris:
-            raise RuntimeError("Generation completed but no video outputs were returned")
+            logger.error(
+                "Generation completed but no video outputs were returned. "
+                "GCS URIs: %s, Video bytes count: %d, Local paths: %s",
+                result.gcs_uris,
+                len(result.video_bytes) if result.video_bytes else 0,
+                result.local_paths
+            )
+            raise RuntimeError(
+                "Generation completed but no video outputs were returned. "
+                "This may indicate an API error or unexpected response format."
+            )
 
         return [self.storage.extract_relative_path(uri) for uri in clip_uris]
 
