@@ -201,6 +201,20 @@ export async function stitchProject(projectId: string): Promise<{
   return { jobId: data.jobId, clipCount: data.clipCount };
 }
 
+export async function deleteStitchedVideo(projectId: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/projects/${projectId}/stitched`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCsrfToken(),
+      Accept: "application/json",
+    },
+  });
+
+  await handleResponse<{ success: boolean }>(response);
+}
+
 export interface ProjectJobSummary {
   jobId: string;
   jobType: string;
