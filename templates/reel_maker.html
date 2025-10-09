@@ -14,6 +14,53 @@
     padding: 3rem 1rem;
     color: rgba(255, 255, 255, 0.6);
   }
+
+  /* Mobile-specific improvements */
+  @media (max-width: 768px) {
+    .container-fluid {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+
+    .btn-link {
+      font-size: 0.9rem;
+      padding: 0.5rem 0;
+    }
+
+    .reel-maker-shell {
+      min-height: 60vh;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .container-fluid {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+    }
+
+    .btn-link {
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem !important;
+    }
+
+    .reel-maker-shell__fallback {
+      padding: 2rem 0.75rem;
+    }
+  }
+
+  /* Prevent horizontal scroll on mobile */
+  @media (max-width: 768px) {
+    body {
+      overflow-x: hidden;
+    }
+
+    #reel-maker-root {
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
+  }
 </style>
 {% endblock %}
 

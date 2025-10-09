@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reel Maker Mobile UI Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f4f6fb;
+            padding: 20px;
+        }
+
+        .demo-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .breakpoint-demo {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .breakpoint-demo h2 {
+            color: #5b5bd6;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .breakpoint-info {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .info-value {
+            color: #777;
+        }
+
+        .layout-preview {
+            border: 2px solid #e2e8f4;
+            border-radius: 8px;
+            padding: 15px;
+            background: #fafbfc;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .current-width {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #5b5bd6;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(91, 91, 214, 0.3);
+            z-index: 1000;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 15px;
+        }
+
+        .feature-list li {
+            padding: 6px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        /* Responsive demo */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .breakpoint-demo {
+                padding: 15px;
+            }
+
+            .current-width {
+                top: 10px;
+                right: 10px;
+                padding: 8px 12px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .breakpoint-demo h2 {
+                font-size: 1.1rem;
+            }
+
+            .layout-preview {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="current-width" id="widthDisplay">Width: <span id="width"></span>px</div>
+
+    <div class="demo-container">
+        <h1>🎬 Reel Maker Mobile UI Improvements Demo</h1>
+
+        <!-- Desktop -->
+        <div class="breakpoint-demo">
+            <h2>💻 Desktop Layout (> 992px)</h2>
+            <div class="breakpoint-info">
+                <div class="info-item">
+                    <span class="info-label">Layout:</span>
+                    <span class="info-value">Two-column grid (300px sidebar + main content)</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Sidebar:</span>
+                    <span class="info-value">Fixed 300px width, scrollable project list</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Content:</span>
+                    <span class="info-value">Flexible width, 2rem padding</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Touch Targets:</span>
+                    <span class="info-value">Standard sizes (optimized for mouse)</span>
+                </div>
+            </div>
+            <div class="layout-preview">┌───────────────┬─────────────────────────────────────────┐
+│   Sidebar     │                                         │
+│   (300px)     │          Main Content Area              │
+│               │                                         │
+│  Project 1    │  ┌───────────────────────────────────┐ │
+│  Project 2    │  │   Project Summary (Compact)       │ │
+│  Project 3    │  └───────────────────────────────────┘ │
+│  Project 4    │                                         │
+│               │  ┌───────────────────────────────────┐ │
+│  [+ New]      │  │   Prompt Editor                   │ │
+│               │  └───────────────────────────────────┘ │
+└───────────────┴─────────────────────────────────────────┘</div>
+            <ul class="feature-list">
+                <li>Full two-column layout</li>
+                <li>Sidebar always visible</li>
+                <li>Hover effects enabled</li>
+                <li>Multi-column scene cards</li>
+            </ul>
+        </div>
+
+        <!-- Tablet -->
+        <div class="breakpoint-demo">
+            <h2>📱 Tablet Layout (768px - 992px)</h2>
+            <div class="breakpoint-info">
+                <div class="info-item">
+                    <span class="info-label">Layout:</span>
+                    <span class="info-value">Single column, sticky sidebar</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Sidebar:</span>
+                    <span class="info-value">Max-height 380px, sticky at top</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Content:</span>
+                    <span class="info-value">Full width, 1.5rem padding</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Changes:</span>
+                    <span class="info-value highlight">Reduced font sizes, wrapped buttons</span>
+                </div>
+            </div>
+            <div class="layout-preview">┌─────────────────────────────────────────┐
+│   Sticky Sidebar (max-height: 380px)   │
+│   Project 1 | Project 2 | Project 3    │
+└─────────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│  Project Summary                        │
+│  [Rename Button - Full Width]           │
+└─────────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│  Prompt Editor                          │
+│  [Actions - May Stack]                  │
+└─────────────────────────────────────────┘</div>
+            <ul class="feature-list">
+                <li>Sidebar collapses to top</li>
+                <li>Full-width action buttons</li>
+                <li>Optimized spacing (1.5rem → 1.25rem)</li>
+                <li>Better for portrait tablets</li>
+            </ul>
+        </div>
+
+        <!-- Mobile -->
+        <div class="breakpoint-demo">
+            <h2>📱 Mobile Layout (< 600px)</h2>
+            <div class="breakpoint-info">
+                <div class="info-item">
+                    <span class="info-label">Layout:</span>
+                    <span class="info-value">Vertical stack, maximum space efficiency</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Sidebar:</span>
+                    <span class="info-value">Max-height 300px, minimal padding</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Content:</span>
+                    <span class="info-value">1rem padding, compact spacing</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Touch Targets:</span>
+                    <span class="info-value highlight">Minimum 44×44px (Apple/Google standard)</span>
+                </div>
+            </div>
+            <div class="layout-preview">┌─────────────────────────┐
+│  Sidebar (300px max)    │
+│  ⚑ Project 1            │
+│  ⚑ Project 2            │
+└─────────────────────────┘
+┌─────────────────────────┐
+│  Project: My Reel       │
+│  ┌───────────────────┐  │
+│  │ [Rename - Full]   │  │
+│  └───────────────────┘  │
+└─────────────────────────┘
+┌─────────────────────────┐
+│  Scene 1                │
+│  ┌───────────────────┐  │
+│  │   Video Player    │  │
+│  │   (Full Width)    │  │
+│  └───────────────────┘  │
+│  [↓] [♡] [⋯] Actions   │
+└─────────────────────────┘</div>
+            <ul class="feature-list">
+                <li>Full-width video players</li>
+                <li>Stacked action buttons (100% width)</li>
+                <li>16px minimum font size (prevents iOS zoom)</li>
+                <li>Compact modal dialogs</li>
+                <li>Touch-optimized controls (44px min)</li>
+                <li>Delete buttons always visible</li>
+            </ul>
+        </div>
+
+        <!-- Extra Small -->
+        <div class="breakpoint-demo">
+            <h2>📱 Extra Small (< 400px)</h2>
+            <div class="breakpoint-info">
+                <div class="info-item">
+                    <span class="info-label">Layout:</span>
+                    <span class="info-value">Ultra-compact, minimal chrome</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Padding:</span>
+                    <span class="info-value">0.75rem (reduced from 1rem)</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Border Radius:</span>
+                    <span class="info-value">8px (reduced from 12px)</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Typography:</span>
+                    <span class="info-value highlight">Further reduced while maintaining readability</span>
+                </div>
+            </div>
+            <ul class="feature-list">
+                <li>Maximum space efficiency</li>
+                <li>Maintains 44px touch targets</li>
+                <li>Readable text sizes preserved</li>
+                <li>Optimized for iPhone SE, Galaxy Fold</li>
+            </ul>
+        </div>
+
+        <!-- Key Features -->
+        <div class="breakpoint-demo">
+            <h2>🎯 Key Mobile Features</h2>
+            <div style="display: grid; gap: 15px; margin-top: 20px;">
+                <div style="padding: 15px; background: #e8f5e9; border-radius: 8px;">
+                    <strong>✓ Touch-Friendly</strong><br>
+                    All interactive elements meet 44×44px minimum size
+                </div>
+                <div style="padding: 15px; background: #e3f2fd; border-radius: 8px;">
+                    <strong>✓ No Zoom Issues</strong><br>
+                    16px minimum font prevents iOS auto-zoom on input focus
+                </div>
+                <div style="padding: 15px; background: #fff3e0; border-radius: 8px;">
+                    <strong>✓ Scroll Optimized</strong><br>
+                    No horizontal scroll, smooth vertical scrolling
+                </div>
+                <div style="padding: 15px; background: #f3e5f5; border-radius: 8px;">
+                    <strong>✓ Responsive Media</strong><br>
+                    Video players scale to 100% width on mobile
+                </div>
+                <div style="padding: 15px; background: #fce4ec; border-radius: 8px;">
+                    <strong>✓ Efficient Layout</strong><br>
+                    Single column, stacked buttons, compact spacing
+                </div>
+                <div style="padding: 15px; background: #e0f2f1; border-radius: 8px;">
+                    <strong>✓ Modal Friendly</strong><br>
+                    Dialogs fit screen, full-width actions on mobile
+                </div>
+            </div>
+        </div>
+
+        <!-- Testing Info -->
+        <div class="breakpoint-demo">
+            <h2>🧪 Testing Instructions</h2>
+            <p style="margin-bottom: 15px; color: #555;">
+                <strong>Resize your browser window</strong> to see how the layout adapts at different breakpoints.
+                The width indicator at the top-right shows your current viewport size.
+            </p>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                <strong>Breakpoints to test:</strong>
+                <ul style="margin-top: 10px; margin-left: 20px; color: #555;">
+                    <li>1400px - Desktop (max-width)</li>
+                    <li>1200px - Large tablet</li>
+                    <li>992px - Tablet landscape</li>
+                    <li>768px - Tablet portrait</li>
+                    <li>600px - Large phone</li>
+                    <li>400px - Small phone</li>
+                    <li>375px - iPhone SE</li>
+                    <li>360px - Common Android</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateWidth() {
+            const width = window.innerWidth;
+            document.getElementById('width').textContent = width;
+        }
+
+        updateWidth();
+        window.addEventListener('resize', updateWidth);
+    </script>
+</body>
+</html>
