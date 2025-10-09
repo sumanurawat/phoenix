@@ -882,7 +882,13 @@ def stream_clip(project_id, clip_path):
     is_stitched = project.stitched_filename == clip_path
     is_raw_clip = clip_path in project.clip_filenames
     
+    # Debug logging
+    logger.info(f"Stream clip request - project: {project_id}, clip_path: {clip_path}")
+    logger.info(f"Project stitched_filename: {project.stitched_filename}")
+    logger.info(f"is_stitched: {is_stitched}, is_raw_clip: {is_raw_clip}")
+    
     if not (is_stitched or is_raw_clip):
+        logger.warning(f"Clip {clip_path} not found in project {project_id}")
         return jsonify({
             "success": False,
             "error": {"code": "NOT_FOUND", "message": "Video not found in project"}
@@ -892,6 +898,7 @@ def stream_clip(project_id, clip_path):
         # Get blob from GCS
         bucket = reel_storage_service._ensure_bucket()
         blob = bucket.blob(clip_path)
+        logger.info(f"GCS blob path: {blob.name}, exists: {blob.exists()}")
         
         if not blob.exists():
             logger.error(f"Clip not found in GCS: {clip_path}")
@@ -919,21 +926,22 @@ def stream_clip(project_id, clip_path):
             
             # Stream the requested range from GCS
             def generate_range():
-                # Download only the requested byte range
+                # Download the requested byte range in chunks
                 chunk_size = 256 * 1024  # 256KB chunks
-                downloaded = 0
+                current_pos = start
                 
-                with blob.open('rb') as f:
-                    f.seek(start)
-                    remaining = length
-                    
-                    while remaining > 0:
-                        chunk_to_read = min(chunk_size, remaining)
-                        chunk = f.read(chunk_to_read)
+                while current_pos <= end:
+                    chunk_end = min(current_pos + chunk_size - 1, end)
+                    try:
+                        # Download specific byte range
+                        chunk = blob.download_as_bytes(start=current_pos, end=chunk_end + 1)
                         if not chunk:
                             break
                         yield chunk
-                        remaining -= len(chunk)
+                        current_pos = chunk_end + 1
+                    except Exception as e:
+                        logger.error(f"Error downloading range {current_pos}-{chunk_end}: {e}")
+                        break
             
             response = Response(generate_range(), 206, mimetype='video/mp4')
             response.headers['Content-Range'] = f'bytes {start}-{end}/{file_size}'
@@ -942,15 +950,22 @@ def stream_clip(project_id, clip_path):
             response.headers['Cache-Control'] = 'public, max-age=3600'
             return response
         else:
-            # Stream entire file
+            # Stream entire file in chunks
             def generate_full():
                 chunk_size = 512 * 1024  # 512KB chunks
-                with blob.open('rb') as f:
-                    while True:
-                        chunk = f.read(chunk_size)
+                current_pos = 0
+                
+                while current_pos < file_size:
+                    chunk_end = min(current_pos + chunk_size, file_size)
+                    try:
+                        chunk = blob.download_as_bytes(start=current_pos, end=chunk_end)
                         if not chunk:
                             break
                         yield chunk
+                        current_pos = chunk_end
+                    except Exception as e:
+                        logger.error(f"Error downloading chunk at {current_pos}: {e}")
+                        break
             
             response = Response(generate_full(), 200, mimetype='video/mp4')
             response.headers['Content-Length'] = str(file_size)
