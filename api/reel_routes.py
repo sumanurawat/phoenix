@@ -783,8 +783,8 @@ def stitch_clips(project_id):
             user_id=user_id,
             clip_paths=project.clip_filenames,
             output_path=output_path,
-            orientation="portrait",  # Default to portrait
-            compression="optimized",  # Default to optimized
+            orientation=project.orientation,  # Use project's orientation setting
+            compression=project.compression,  # Use project's compression setting
             force_restart=False
         )
 
