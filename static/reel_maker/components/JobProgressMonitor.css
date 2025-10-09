@@ -258,14 +258,120 @@
     color: rgba(196, 203, 255, 0.85);
 }
 
+/* Tablet Responsiveness */
 @media (max-width: 768px) {
     .job-progress-monitor {
-        padding: 1.1rem;
+        padding: 1rem;
+        border-radius: 12px;
     }
 
     .jp-progress-header {
         flex-direction: column;
         align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .jp-progress-title {
+        font-size: 0.95rem;
+    }
+
+    .jp-log-container {
+        max-height: 320px;
+    }
+
+    .jp-log-entry {
+        padding: 0.75rem;
+    }
+
+    .jp-log-metrics {
+        gap: 0.45rem;
+    }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+    .job-progress-monitor {
+        padding: 0.875rem;
+        margin: 0.75rem 0;
+    }
+
+    .jp-progress-header {
+        gap: 0.5rem;
+    }
+
+    .jp-progress-title {
+        font-size: 0.9rem;
+        gap: 0.5rem;
+    }
+
+    .jp-status-badge {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    .jp-progress-bar-wrapper {
+        height: 28px;
+        margin-bottom: 0.875rem;
+    }
+
+    .jp-log-container {
+        max-height: 280px;
+        padding-right: 0.2rem;
+    }
+
+    .jp-log-entry {
+        padding: 0.65rem 0.75rem;
+        margin-bottom: 0.65rem;
+        border-left-width: 3px;
+    }
+
+    .jp-log-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .jp-log-stage {
+        font-size: 0.8rem;
+    }
+
+    .jp-log-time {
+        font-size: 0.7rem;
+    }
+
+    .jp-log-message {
+        font-size: 0.88rem;
+        line-height: 1.4;
+    }
+
+    .jp-log-metrics {
+        gap: 0.4rem;
+    }
+
+    .jp-metric-chip {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.72rem;
+    }
+}
+
+/* Extra Small Screens */
+@media (max-width: 400px) {
+    .job-progress-monitor {
+        padding: 0.75rem;
+        border-radius: 10px;
+    }
+
+    .jp-progress-title {
+        font-size: 0.85rem;
+    }
+
+    .jp-log-entry {
+        padding: 0.5rem;
+        border-radius: 8px;
+    }
+
+    .jp-log-message {
+        font-size: 0.82rem;
     }
 }
 
