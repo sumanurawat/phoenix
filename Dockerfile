@@ -23,4 +23,6 @@ ENV FALLBACK_MODEL=gemini-1.5-flash
 # The API key should be provided at runtime, not baked into the image
 # GEMINI_API_KEY will be injected at runtime
 
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 300 app:app
+# Timeout increased to 3600s (60 min) to handle long-running video generation
+# Each video can take 60-120s, and we might generate 15+ videos sequentially
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 3600 app:app

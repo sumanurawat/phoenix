@@ -8,6 +8,8 @@ interface ActionToolbarProps {
   isRequestingGeneration: boolean;
   onGenerate: () => void;
   activeJob: ReelGenerationJob | null;
+  clipCount?: number;
+  promptCount?: number;
 }
 
 export function ActionToolbar({
@@ -17,11 +19,24 @@ export function ActionToolbar({
   isRequestingGeneration,
   onGenerate,
   activeJob,
+  clipCount = 0,
+  promptCount = 0,
 }: ActionToolbarProps) {
-  const isGenerating = projectStatus === "generating";
-  const isGenerateDisabled = !canGenerate || isGenerating || isRequestingGeneration;
-  const showSpinner = isGenerating || isRequestingGeneration;
+  // Show resume button when:
+  // - Project status is "generating" BUT
+  // - No active SSE job running (means generation was interrupted) AND
+  // - Clips are incomplete (clipCount < promptCount)
+  const isStuckGenerating = projectStatus === "generating" && !activeJob && clipCount < promptCount && promptCount > 0;
+  
+  // Only show spinner when we have an ACTIVE job or we're starting generation
+  const isActivelyGenerating = projectStatus === "generating" && activeJob !== null;
+  const showSpinner = isActivelyGenerating || isRequestingGeneration;
+  
+  // Disable generate button only when actually running or starting (not when stuck)
+  const isGenerateDisabled = !canGenerate || isActivelyGenerating || isRequestingGeneration;
+  
   const generateLabel = showSpinner ? "Generating clips" : "Generate clips";
+  const resumeLabel = isRequestingGeneration ? "Resuming…" : "Resume generation";
 
   const statusLabel = (() => {
     if (showSpinner) {
@@ -31,6 +46,9 @@ export function ActionToolbar({
         return `Rendering ${completed}/${total} clips…`;
       }
       return "Rendering clips…";
+    }
+    if (isStuckGenerating) {
+      return `Generation interrupted at ${clipCount}/${promptCount} clips. Click Resume to continue.`;
     }
     if (projectStatus === "ready") {
       return "Clips are ready. Stitch to combine scenes.";
@@ -47,9 +65,25 @@ export function ActionToolbar({
         <button type="button" className="btn btn-outline-primary" disabled>
           <i className="fa fa-check" aria-hidden="true" /> Validate prompts
         </button>
-        <button type="button" className="btn btn-primary" disabled={isGenerateDisabled} onClick={onGenerate}>
-          <i className={clsx("fa", showSpinner ? "fa-spinner fa-spin" : "fa-play")} aria-hidden="true" /> {generateLabel}
-        </button>
+        
+        {/* Show Resume button when generation is stuck/interrupted */}
+        {isStuckGenerating ? (
+          <button 
+            type="button" 
+            className="btn btn-warning" 
+            disabled={isRequestingGeneration} 
+            onClick={onGenerate}
+            title={`Resume from ${clipCount}/${promptCount} clips`}
+          >
+            <i className={clsx("fa", isRequestingGeneration ? "fa-spinner fa-spin" : "fa-rotate-right")} aria-hidden="true" /> 
+            {resumeLabel}
+          </button>
+        ) : (
+          <button type="button" className="btn btn-primary" disabled={isGenerateDisabled} onClick={onGenerate}>
+            <i className={clsx("fa", showSpinner ? "fa-spinner fa-spin" : "fa-play")} aria-hidden="true" /> {generateLabel}
+          </button>
+        )}
+        
         <button type="button" className="btn btn-outline" disabled>
           <i className="fa fa-bolt" aria-hidden="true" /> Quick iterate
         </button>
