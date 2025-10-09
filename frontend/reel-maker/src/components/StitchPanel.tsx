@@ -5,11 +5,13 @@ import { ReelProject } from "../types";
 interface StitchPanelProps {
   project: ReelProject;
   onStitch: () => void;
+  onDeleteStitched: () => void;
   activeStitchJobId?: string;
 }
 
-export function StitchPanel({ project, onStitch, activeStitchJobId }: StitchPanelProps) {
+export function StitchPanel({ project, onStitch, onDeleteStitched, activeStitchJobId }: StitchPanelProps) {
   const [isStitching, setIsStitching] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const clipCount = project.clipFilenames?.length || 0;
   const hasStitched = !!project.stitchedFilename;
@@ -23,6 +25,19 @@ export function StitchPanel({ project, onStitch, activeStitchJobId }: StitchPane
     } finally {
       // Keep button disabled until status updates from backend
       setTimeout(() => setIsStitching(false), 1000);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Delete the stitched video? You can re-stitch anytime.")) {
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      await onDeleteStitched();
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -106,6 +121,15 @@ export function StitchPanel({ project, onStitch, activeStitchJobId }: StitchPane
               disabled={!canStitch || isStitching}
             >
               <i className="fa fa-rotate" aria-hidden="true" /> Re-stitch
+            </button>
+            <button
+              className="btn btn-outline-danger"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              title="Delete stitched video"
+            >
+              <i className={clsx("fa", isDeleting ? "fa-spinner fa-spin" : "fa-trash")} aria-hidden="true" />
+              {isDeleting ? "Deleting..." : "Delete"}
             </button>
           </div>
           <p className="stitch-panel__filename text-muted">

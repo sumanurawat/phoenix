@@ -731,6 +731,42 @@ export default function App() {
     }
   }, [activeProject, activeProjectId, syncProjectSummary]);
 
+  const handleDeleteStitchedVideo = useCallback(async () => {
+    if (!activeProjectId || !activeProject) {
+      return;
+    }
+
+    if (!activeProject.stitchedFilename) {
+      setErrorMessage("No stitched video to delete.");
+      return;
+    }
+
+    setErrorMessage(null);
+    try {
+      const { deleteStitchedVideo } = await import("./api");
+      await deleteStitchedVideo(activeProjectId);
+
+      // Update project - remove stitched filename
+      setActiveProject((prev) =>
+        prev && prev.projectId === activeProjectId
+          ? {
+              ...prev,
+              stitchedFilename: undefined,
+            }
+          : prev
+      );
+      syncProjectSummary(activeProjectId, {
+        hasStitchedReel: false,
+      });
+
+      console.log(`Deleted stitched video for project ${activeProjectId}`);
+    } catch (error) {
+      const errorMsg = (error as Error).message ?? "Unable to delete stitched video";
+      console.error("Failed to delete stitched video", error);
+      setErrorMessage(errorMsg);
+    }
+  }, [activeProject, activeProjectId, syncProjectSummary]);
+
   useEffect(() => {
     if (!activeProject || !stitchingJob) {
       return;
@@ -935,6 +971,7 @@ export default function App() {
             <StitchPanel
               project={activeProject}
               onStitch={handleStitchClips}
+              onDeleteStitched={handleDeleteStitchedVideo}
               activeStitchJobId={
                 stitchingJob?.projectId === activeProject.projectId ? stitchingJob.jobId : undefined
               }

@@ -668,6 +668,87 @@ def stream_project_events(project_id):
     return Response(stream_with_context(event_stream()), mimetype='text/event-stream')
 
 
+@reel_bp.route('/projects/<project_id>/stitched', methods=['DELETE'])
+@csrf_protect
+@login_required
+def delete_stitched_video(project_id):
+    """
+    Delete the stitched video for a project.
+    This resets the project to a state before stitching, allowing re-stitch.
+    """
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+
+        if not user_id:
+            return jsonify({
+                "success": False,
+                "error": {"code": "AUTH_ERROR", "message": "User ID not found in session"}
+            }), 401
+
+        # Verify project ownership
+        project = reel_project_service.get_project(project_id, user_id)
+        if not project:
+            return jsonify({
+                "success": False,
+                "error": {"code": "NOT_FOUND", "message": "Project not found or access denied"}
+            }), 404
+
+        # Check if there's a stitched video to delete
+        if not project.stitched_filename:
+            return jsonify({
+                "success": False,
+                "error": {"code": "NOT_FOUND", "message": "No stitched video to delete"}
+            }), 404
+
+        # Don't allow deletion while stitching
+        if project.status == "stitching":
+            return jsonify({
+                "success": False,
+                "error": {"code": "INVALID_STATE", "message": "Cannot delete while stitching is in progress"}
+            }), 409
+
+        # Delete from GCS
+        from services.reel_storage_service import reel_storage_service
+        try:
+            bucket = reel_storage_service._ensure_bucket()
+            blob = bucket.blob(project.stitched_filename)
+            if blob.exists():
+                blob.delete()
+                logger.info(f"Deleted stitched video from GCS: {project.stitched_filename}")
+            else:
+                logger.warning(f"Stitched video not found in GCS (already deleted?): {project.stitched_filename}")
+        except Exception as e:
+            logger.error(f"Failed to delete stitched video from GCS: {e}")
+            # Continue anyway to update Firestore
+
+        # Update project in Firestore - remove stitched filename and reset status if needed
+        updates = {
+            'stitched_filename': None,
+        }
+        
+        # If project was in ready state (has stitched video), reset to ready state
+        # This allows the user to re-stitch
+        if project.status == "ready":
+            updates['status'] = "ready"  # Keep ready status since clips still exist
+        
+        reel_project_service.update_project(project_id, user_id, **updates)
+        
+        logger.info(f"Deleted stitched video for project {project_id}")
+
+        return jsonify({
+            "success": True,
+            "message": "Stitched video deleted successfully"
+        })
+
+    except Exception as e:
+        logger.exception(f"Failed to delete stitched video for project {project_id}")
+        return jsonify({
+            "success": False,
+            "error": {"code": "SERVER_ERROR", "message": "Failed to delete stitched video"}
+        }), 500
+
+
 @reel_bp.route('/projects/<project_id>/stitch', methods=['POST'])
 @csrf_protect
 @login_required

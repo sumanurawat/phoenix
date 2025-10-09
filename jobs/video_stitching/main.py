@@ -147,7 +147,10 @@ class VideoStitchingJob(BaseJobRunner):
                 "stitching_result": stitching_result
             })
 
-            # Step 4: Upload result
+            # Step 4: Delete old stitched video if it exists (for re-stitch)
+            await self._delete_old_stitched_video(payload.output_path)
+
+            # Step 5: Upload result
             await self.save_checkpoint("upload_started", {
                 "local_output": str(self.local_output_file),
                 "gcs_output": payload.output_path
@@ -257,6 +260,25 @@ class VideoStitchingJob(BaseJobRunner):
         asyncio.create_task(self.update_progress(95, f"Uploaded {size_mb:.1f} MB to GCS"))
 
     # Helper methods
+
+    async def _delete_old_stitched_video(self, output_path: str) -> None:
+        """
+        Delete old stitched video if it exists (for re-stitch scenarios).
+        This ensures clean slate before uploading new version.
+        """
+        try:
+            blob_name = self.gcs_client._clean_gcs_path(output_path)
+            blob = self.gcs_client.bucket.blob(blob_name)
+            
+            if await self.gcs_client._async_operation(blob.exists):
+                logger.info(f"Deleting old stitched video: {output_path}")
+                await self.gcs_client._async_operation(blob.delete)
+                logger.info(f"✅ Deleted old stitched video: {output_path}")
+            else:
+                logger.info(f"No existing stitched video to delete at {output_path}")
+        except Exception as e:
+            # Non-fatal error - log and continue
+            logger.warning(f"Failed to delete old stitched video (continuing anyway): {e}")
 
     async def _update_project_status(self, project_id: str, output_path: str) -> None:
         """Update project status in Firestore."""
