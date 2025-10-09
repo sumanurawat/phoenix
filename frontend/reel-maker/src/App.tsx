@@ -927,6 +927,8 @@ export default function App() {
               isRequestingGeneration={isStartingGeneration}
               onGenerate={handleGenerateClips}
               activeJob={activeJobForProject}
+              clipCount={activeProject.clipFilenames?.filter(Boolean).length ?? 0}
+              promptCount={activeProject.promptList?.filter(p => p.trim()).length ?? 0}
             />
             <PromptPanel project={activeProject} onSavePrompts={handleSavePrompts} />
             <SceneList project={activeProject} />

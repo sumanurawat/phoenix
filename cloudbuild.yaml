@@ -25,6 +25,8 @@ steps:
     - '1Gi'
     - '--cpu'
     - '1'
+    - '--timeout'
+    - '3600'
     - '--service-account'
     - 'phoenix-service-account@phoenix-project-386.iam.gserviceaccount.com'
     - '--update-secrets'
