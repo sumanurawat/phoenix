@@ -1190,8 +1190,12 @@ def stream_clip(project_id, clip_path):
 
         logger.info(f"Generated signed URL for {clip_path}")
 
-        # Redirect to the signed URL for direct streaming from GCS
-        return redirect(signed_url)
+        # Return the signed URL as JSON for the frontend to use
+        # This avoids cookie/session issues with <video> tags
+        return jsonify({
+            "success": True,
+            "url": signed_url
+        })
 
     except Exception as e:
         logger.exception(f"Failed to generate signed URL for {clip_path} in project {project_id}")
