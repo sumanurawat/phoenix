@@ -10,10 +10,9 @@
 This script automatically:
 1. ✅ Activates virtual environment (or creates if missing)
 2. ✅ Cleans up port 8080 if in use
-3. ✅ Creates Flask session directory
-4. ✅ Installs frontend dependencies (first run only)
-5. ✅ **Builds React frontend** (Vite → static assets)
-6. ✅ Starts Flask backend on port 8080
+3. ✅ Installs frontend dependencies (first run only)
+4. ✅ **Builds React frontend** (Vite → static assets)
+5. ✅ Starts Flask backend on port 8080
 
 **Result**: Complete working application at http://localhost:8080
 

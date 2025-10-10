@@ -524,6 +524,5 @@ Keep your response concise and actionable."""
 app = create_app()
 
 if __name__ == '__main__':
-    # Create session directory if it doesn't exist
-    os.makedirs(SESSION_FILE_DIR, exist_ok=True)
+    # Note: flask_session directory no longer needed with cookie-based sessions
     app.run(debug=FLASK_DEBUG, host='0.0.0.0', port=8080)
