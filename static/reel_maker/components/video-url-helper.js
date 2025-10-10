@@ -39,6 +39,32 @@
         });
 
         if (!response.ok) {
+            // Handle authentication failures specially
+            if (response.status === 401) {
+                console.error('[VideoURLHelper] Authentication required - session may have expired');
+                
+                // Try to parse error response
+                try {
+                    const errorData = await response.json();
+                    if (errorData.redirect) {
+                        console.error('[VideoURLHelper] Redirecting to login...');
+                        // Show user-friendly message before redirecting
+                        if (!window.__authAlertShown) {
+                            window.__authAlertShown = true;
+                            alert('Your session has expired. Please log in again.');
+                            window.location.href = errorData.redirect;
+                        }
+                        throw new Error('Authentication required');
+                    }
+                } catch (jsonError) {
+                    // If not JSON, try text
+                    const errorText = await response.text();
+                    console.error('[VideoURLHelper] Auth error details:', errorText);
+                }
+                
+                throw new Error('Authentication required - please refresh the page and log in again');
+            }
+            
             const errorText = await response.text();
             console.error('[VideoURLHelper] Failed to fetch signed URL:', response.status, errorText);
             throw new Error(`Failed to fetch video URL: ${response.status}`);

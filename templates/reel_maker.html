@@ -34,11 +34,11 @@
 {% endblock %}
 
 {% block extra_js %}
-<link rel="stylesheet" href="{{ url_for('static', filename='reel_maker/assets/main.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='reel_maker/components/JobProgressMonitor.css') }}">
-<script src="{{ url_for('static', filename='reel_maker/components/video-url-helper.js') }}"></script>
-<script src="{{ url_for('static', filename='reel_maker/components/video-patcher.js') }}"></script>
-<script src="{{ url_for('static', filename='reel_maker/components/JobProgressMonitor.js') }}"></script>
-<script src="{{ url_for('static', filename='reel_maker/components/progress-monitor-integration.js') }}"></script>
-<script type="module" src="{{ url_for('static', filename='reel_maker/assets/main.js') }}" defer></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='reel_maker/assets/main.css') }}?v=20251010-2">
+<link rel="stylesheet" href="{{ url_for('static', filename='reel_maker/components/JobProgressMonitor.css') }}?v=20251010-2">
+<script src="{{ url_for('static', filename='reel_maker/components/video-url-helper.js') }}?v=20251010-2"></script>
+<script src="{{ url_for('static', filename='reel_maker/components/video-patcher.js') }}?v=20251010-2"></script>
+<script src="{{ url_for('static', filename='reel_maker/components/JobProgressMonitor.js') }}?v=20251010-2"></script>
+<script src="{{ url_for('static', filename='reel_maker/components/progress-monitor-integration.js') }}?v=20251010-2"></script>
+<script type="module" src="{{ url_for('static', filename='reel_maker/assets/main.js') }}?v=20251010-2" defer></script>
 {% endblock %}
