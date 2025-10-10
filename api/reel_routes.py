@@ -4,7 +4,7 @@ Reel Maker API routes - REST endpoints for reel project management.
 import json
 import logging
 import time
-from flask import Blueprint, Response, jsonify, request, session, stream_with_context
+from flask import Blueprint, Response, jsonify, request, session, stream_with_context, redirect
 from api.auth_routes import login_required
 from middleware.csrf_protection import csrf_protect
 from services.reel_generation_service import reel_generation_service
@@ -749,6 +749,188 @@ def delete_stitched_video(project_id):
         }), 500
 
 
+@reel_bp.route('/projects/<project_id>/clips/<int:clip_index>', methods=['DELETE'])
+@csrf_protect
+@login_required
+def delete_single_clip(project_id, clip_index):
+    """
+    Delete a single clip by its index position.
+    This removes the clip from GCS and updates the project.
+    """
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+
+        if not user_id:
+            return jsonify({
+                "success": False,
+                "error": {"code": "AUTH_ERROR", "message": "User ID not found in session"}
+            }), 401
+
+        # Verify project ownership
+        project = reel_project_service.get_project(project_id, user_id)
+        if not project:
+            return jsonify({
+                "success": False,
+                "error": {"code": "NOT_FOUND", "message": "Project not found or access denied"}
+            }), 404
+
+        # Validate clip index
+        clip_filenames = project.clip_filenames or []
+        if clip_index < 0 or clip_index >= len(clip_filenames):
+            return jsonify({
+                "success": False,
+                "error": {"code": "INVALID_INDEX", "message": f"Invalid clip index: {clip_index}"}
+            }), 400
+
+        # Don't allow deletion while generating or stitching
+        if project.status in ["generating", "stitching"]:
+            return jsonify({
+                "success": False,
+                "error": {"code": "INVALID_STATE", "message": f"Cannot delete clip while {project.status}"}
+            }), 409
+
+        clip_path = clip_filenames[clip_index]
+
+        # Delete from GCS
+        from services.reel_storage_service import reel_storage_service
+        try:
+            bucket = reel_storage_service._ensure_bucket()
+            blob = bucket.blob(clip_path)
+            if blob.exists():
+                blob.delete()
+                logger.info(f"Deleted clip from GCS: {clip_path}")
+            else:
+                logger.warning(f"Clip not found in GCS (already deleted?): {clip_path}")
+        except Exception as e:
+            logger.error(f"Failed to delete clip from GCS: {e}")
+            # Continue anyway to update Firestore
+
+        # Remove clip from the list
+        updated_clips = clip_filenames.copy()
+        updated_clips[clip_index] = None  # Set to None to maintain prompt alignment
+
+        # Update project
+        updates = {
+            'clip_filenames': updated_clips
+        }
+
+        # If this was a stitched project, invalidate the stitched video
+        if project.stitched_filename:
+            updates['stitched_filename'] = None
+            logger.info(f"Invalidated stitched video due to clip deletion")
+
+        reel_project_service.update_project(project_id, user_id, **updates)
+        logger.info(f"Deleted clip {clip_index} from project {project_id}")
+
+        return jsonify({
+            "success": True,
+            "message": f"Clip {clip_index} deleted successfully",
+            "clipIndex": clip_index
+        })
+
+    except Exception as e:
+        logger.exception(f"Failed to delete clip {clip_index} for project {project_id}")
+        return jsonify({
+            "success": False,
+            "error": {"code": "SERVER_ERROR", "message": "Failed to delete clip"}
+        }), 500
+
+
+@reel_bp.route('/projects/<project_id>/clips/<int:clip_index>/regenerate', methods=['POST'])
+@csrf_protect
+@login_required
+def regenerate_single_clip(project_id, clip_index):
+    """
+    Regenerate a single clip by deleting it and triggering generation again.
+    This is useful when a clip didn't turn out as expected.
+    """
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+
+        if not user_id:
+            return jsonify({
+                "success": False,
+                "error": {"code": "AUTH_ERROR", "message": "User ID not found in session"}
+            }), 401
+
+        # Verify project ownership
+        project = reel_project_service.get_project(project_id, user_id)
+        if not project:
+            return jsonify({
+                "success": False,
+                "error": {"code": "NOT_FOUND", "message": "Project not found or access denied"}
+            }), 404
+
+        # Validate clip index
+        clip_filenames = project.clip_filenames or []
+        prompts = project.prompt_list or []
+
+        if clip_index < 0 or clip_index >= len(prompts):
+            return jsonify({
+                "success": False,
+                "error": {"code": "INVALID_INDEX", "message": f"Invalid clip index: {clip_index}"}
+            }), 400
+
+        # Don't allow regeneration while generating or stitching
+        if project.status in ["generating", "stitching"]:
+            return jsonify({
+                "success": False,
+                "error": {"code": "INVALID_STATE", "message": f"Cannot regenerate while {project.status}"}
+            }), 409
+
+        # Delete existing clip if present
+        if clip_index < len(clip_filenames) and clip_filenames[clip_index]:
+            clip_path = clip_filenames[clip_index]
+
+            from services.reel_storage_service import reel_storage_service
+            try:
+                bucket = reel_storage_service._ensure_bucket()
+                blob = bucket.blob(clip_path)
+                if blob.exists():
+                    blob.delete()
+                    logger.info(f"Deleted old clip for regeneration: {clip_path}")
+            except Exception as e:
+                logger.error(f"Failed to delete old clip: {e}")
+
+        # Update clip list to mark this clip for regeneration
+        updated_clips = clip_filenames.copy()
+        if clip_index < len(updated_clips):
+            updated_clips[clip_index] = None
+
+        # Invalidate stitched video if present
+        updates = {
+            'clip_filenames': updated_clips,
+            'status': 'generating'
+        }
+        if project.stitched_filename:
+            updates['stitched_filename'] = None
+
+        reel_project_service.update_project(project_id, user_id, **updates)
+
+        # Trigger generation for just this prompt
+        # We'll use the existing generation service but only generate missing clips
+        from services.reel_generation_service import reel_generation_service
+
+        logger.info(f"Starting regeneration of clip {clip_index} for project {project_id}")
+        reel_generation_service.start_generation(project_id, user_id)
+
+        return jsonify({
+            "success": True,
+            "message": f"Clip {clip_index} regeneration started",
+            "clipIndex": clip_index,
+            "status": "generating"
+        })
+
+    except Exception as e:
+        logger.exception(f"Failed to regenerate clip {clip_index} for project {project_id}")
+        return jsonify({
+            "success": False,
+            "error": {"code": "SERVER_ERROR", "message": "Failed to regenerate clip"}
+        }), 500
+
+
 @reel_bp.route('/projects/<project_id>/stitch', methods=['POST'])
 @csrf_protect
 @login_required
@@ -937,11 +1119,16 @@ def stitch_clips(project_id):
 @reel_bp.route('/projects/<project_id>/clips/<path:clip_path>', methods=['GET'])
 @login_required
 def stream_clip(project_id, clip_path):
-    """Stream a video clip from GCS with efficient chunked streaming."""
+    """
+    Generate a signed URL for streaming video clips from GCS.
+
+    This endpoint validates ownership and returns a temporary signed URL
+    that allows the browser to stream directly from GCS, avoiding
+    session cookie issues with <video> tags and reducing server load.
+    """
     from services.reel_storage_service import reel_storage_service
-    from flask import Response
-    import io
-    
+    from datetime import timedelta
+
     user = get_current_user()
     user_id = user['user_id']
 
@@ -962,12 +1149,12 @@ def stream_clip(project_id, clip_path):
     # Verify clip belongs to this project (either a raw clip or the stitched video)
     is_stitched = project.stitched_filename == clip_path
     is_raw_clip = clip_path in project.clip_filenames
-    
+
     # Debug logging
-    logger.info(f"Stream clip request - project: {project_id}, clip_path: {clip_path}")
+    logger.info(f"Signed URL request - project: {project_id}, clip_path: {clip_path}")
     logger.info(f"Project stitched_filename: {project.stitched_filename}")
     logger.info(f"is_stitched: {is_stitched}, is_raw_clip: {is_raw_clip}")
-    
+
     if not (is_stitched or is_raw_clip):
         logger.warning(f"Clip {clip_path} not found in project {project_id}")
         return jsonify({
@@ -979,8 +1166,7 @@ def stream_clip(project_id, clip_path):
         # Get blob from GCS
         bucket = reel_storage_service._ensure_bucket()
         blob = bucket.blob(clip_path)
-        logger.info(f"GCS blob path: {blob.name}, exists: {blob.exists()}")
-        
+
         if not blob.exists():
             logger.error(f"Clip not found in GCS: {clip_path}")
             return jsonify({
@@ -988,77 +1174,24 @@ def stream_clip(project_id, clip_path):
                 "error": {"code": "NOT_FOUND", "message": "Video file not found"}
             }), 404
 
-        # Get blob size for Content-Length header
-        blob.reload()
-        file_size = blob.size
-        
-        # Check for range request
-        range_header = request.headers.get('Range')
-        
-        if range_header:
-            # Parse range header (e.g., "bytes=0-1023")
-            byte_range = range_header.replace('bytes=', '').split('-')
-            start = int(byte_range[0]) if byte_range[0] else 0
-            end = int(byte_range[1]) if len(byte_range) > 1 and byte_range[1] else file_size - 1
-            
-            # Ensure end doesn't exceed file size
-            end = min(end, file_size - 1)
-            length = end - start + 1
-            
-            # Stream the requested range from GCS
-            def generate_range():
-                # Download the requested byte range in chunks
-                chunk_size = 256 * 1024  # 256KB chunks
-                current_pos = start
-                
-                while current_pos <= end:
-                    chunk_end = min(current_pos + chunk_size - 1, end)
-                    try:
-                        # Download specific byte range
-                        chunk = blob.download_as_bytes(start=current_pos, end=chunk_end + 1)
-                        if not chunk:
-                            break
-                        yield chunk
-                        current_pos = chunk_end + 1
-                    except Exception as e:
-                        logger.error(f"Error downloading range {current_pos}-{chunk_end}: {e}")
-                        break
-            
-            response = Response(generate_range(), 206, mimetype='video/mp4')
-            response.headers['Content-Range'] = f'bytes {start}-{end}/{file_size}'
-            response.headers['Content-Length'] = str(length)
-            response.headers['Accept-Ranges'] = 'bytes'
-            response.headers['Cache-Control'] = 'public, max-age=3600'
-            return response
-        else:
-            # Stream entire file in chunks
-            def generate_full():
-                chunk_size = 512 * 1024  # 512KB chunks
-                current_pos = 0
-                
-                while current_pos < file_size:
-                    chunk_end = min(current_pos + chunk_size, file_size)
-                    try:
-                        chunk = blob.download_as_bytes(start=current_pos, end=chunk_end)
-                        if not chunk:
-                            break
-                        yield chunk
-                        current_pos = chunk_end
-                    except Exception as e:
-                        logger.error(f"Error downloading chunk at {current_pos}: {e}")
-                        break
-            
-            response = Response(generate_full(), 200, mimetype='video/mp4')
-            response.headers['Content-Length'] = str(file_size)
-            response.headers['Accept-Ranges'] = 'bytes'
-            response.headers['Cache-Control'] = 'public, max-age=3600'
-            return response
-    
+        # Generate signed URL (valid for 2 hours)
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(hours=2),
+            method="GET",
+            response_type="video/mp4"
+        )
+
+        logger.info(f"Generated signed URL for {clip_path}")
+
+        # Redirect to the signed URL for direct streaming from GCS
+        return redirect(signed_url)
+
     except Exception as e:
-        logger.exception(f"Failed to stream clip {clip_path} for project {project_id}")
+        logger.exception(f"Failed to generate signed URL for {clip_path} in project {project_id}")
         return jsonify({
             "success": False,
-            "error": {"code": "SERVER_ERROR", "message": "Failed to stream video"}
+            "error": {"code": "SERVER_ERROR", "message": "Failed to access video"}
         }), 500
 
 
