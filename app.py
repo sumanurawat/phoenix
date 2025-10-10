@@ -20,7 +20,9 @@ logger = logging.getLogger(__name__)
 from config.settings import (
     SECRET_KEY, FLASK_ENV, FLASK_DEBUG,
     SESSION_TYPE, SESSION_PERMANENT, SESSION_USE_SIGNER,
-    SESSION_FILE_DIR, SESSION_FILE_THRESHOLD
+    SESSION_FILE_DIR, SESSION_FILE_THRESHOLD,
+    SESSION_COOKIE_SECURE, SESSION_COOKIE_HTTPONLY,
+    SESSION_COOKIE_SAMESITE, PERMANENT_SESSION_LIFETIME
 )
 
 # Initialize Firebase Admin SDK FIRST (before importing services)
@@ -126,12 +128,22 @@ def create_app():
         raise RuntimeError("SECURITY CRITICAL: Default SECRET_KEY is not allowed in production/staging. Please set a strong, unique SECRET_KEY in the environment configuration.")
     
     # Configure session
-    app.config["SESSION_TYPE"] = SESSION_TYPE
+    # Cookie-based sessions for Cloud Run multi-instance compatibility
+    if SESSION_TYPE is not None:
+        # Use flask-session for server-side sessions
+        app.config["SESSION_TYPE"] = SESSION_TYPE
+        app.config["SESSION_FILE_DIR"] = SESSION_FILE_DIR
+        app.config["SESSION_FILE_THRESHOLD"] = SESSION_FILE_THRESHOLD
+        Session(app)
+    # else: Use Flask's built-in cookie-based sessions (no Session() call needed)
+    
+    # Common session configuration (applies to both flask-session and built-in)
     app.config["SESSION_PERMANENT"] = SESSION_PERMANENT
     app.config["SESSION_USE_SIGNER"] = SESSION_USE_SIGNER
-    app.config["SESSION_FILE_DIR"] = SESSION_FILE_DIR
-    app.config["SESSION_FILE_THRESHOLD"] = SESSION_FILE_THRESHOLD
-    Session(app)
+    app.config["SESSION_COOKIE_SECURE"] = SESSION_COOKIE_SECURE
+    app.config["SESSION_COOKIE_HTTPONLY"] = SESSION_COOKIE_HTTPONLY
+    app.config["SESSION_COOKIE_SAMESITE"] = SESSION_COOKIE_SAMESITE
+    app.config["PERMANENT_SESSION_LIFETIME"] = PERMANENT_SESSION_LIFETIME
 
     # --- Centralized CSRF Protection ---
     from middleware.csrf_protection import csrf
