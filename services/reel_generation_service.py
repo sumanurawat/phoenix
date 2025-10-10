@@ -409,12 +409,29 @@ class ReelGenerationService:
         except Exception:
             logger.debug("Failed to update job status to completed", exc_info=True)
 
+        # Get current project to preserve stitched filename if it exists
+        try:
+            current_project = self.project_service.get_project(ctx.project.project_id, ctx.user_id)
+            stitched_filename = current_project.stitched_filename
+        except Exception:
+            stitched_filename = None
+            logger.debug("Could not fetch project to preserve stitched filename", exc_info=True)
+
+        update_fields = {
+            "clip_filenames": clip_paths,
+            "status": "ready",
+            "error_info": None,
+        }
+        
+        # Preserve stitched filename if it exists
+        if stitched_filename:
+            update_fields["stitched_filename"] = stitched_filename
+            logger.info(f"Preserved stitched filename for project {ctx.project.project_id}: {stitched_filename}")
+
         self.project_service.update_project(
             ctx.project.project_id,
             ctx.user_id,
-            clip_filenames=clip_paths,
-            status="ready",
-            error_info=None,
+            **update_fields
         )
 
         realtime_event_bus.publish(
