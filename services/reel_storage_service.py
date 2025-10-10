@@ -205,30 +205,39 @@ class ReelStorageService:
             logger.error(f"Blob does not exist: {blob_path}")
             return None
         
+        logger.debug(f"Generating signed URL for blob: {blob_path}, method: {method}, expiration: {expiration}")
+        
         try:
             # Try to generate signed URL with current credentials
-            return blob.generate_signed_url(
+            signed_url = blob.generate_signed_url(
                 version="v4",
                 expiration=expiration,
                 method=method,
                 response_type="video/mp4"
             )
+            logger.info(f"Successfully generated signed URL with default credentials for {blob_path}")
+            return signed_url
         except (AttributeError, NotImplementedError, TypeError) as e:
             # Current credentials don't support signing
-            logger.warning(f"Default credentials don't support signing, trying alternative methods: {e}")
+            logger.info(f"Default credentials don't support signing ({type(e).__name__}: {e}), trying IAM API fallback")
 
             # Try IAM signBlob API (works for Cloud Run service accounts)
             try:
+                logger.info(f"Attempting IAM signBlob API for {blob_path}")
                 signed_url = self._generate_signed_url_with_iam(blob_path, expiration, method)
                 if signed_url:
                     logger.info(f"Successfully generated signed URL using IAM API for {blob_path}")
                     return signed_url
+                else:
+                    logger.warning(f"IAM signBlob returned None for {blob_path}")
             except Exception as iam_error:
-                logger.warning(f"IAM signBlob failed: {iam_error}")
+                logger.warning(f"IAM signBlob failed for {blob_path}: {iam_error}", exc_info=True)
 
             # Try to load service account from file (works for local dev with proper credentials)
             service_account_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', 'firebase-credentials.json')
+            logger.debug(f"Checking for service account file at: {service_account_path}")
             if os.path.exists(service_account_path):
+                logger.info(f"Attempting to sign with service account file: {service_account_path}")
                 try:
                     credentials = service_account.Credentials.from_service_account_file(
                         service_account_path
@@ -238,14 +247,18 @@ class ReelStorageService:
                     signing_bucket = signing_client.bucket(self.bucket_name)
                     signing_blob = signing_bucket.blob(blob_path)
 
-                    return signing_blob.generate_signed_url(
+                    signed_url = signing_blob.generate_signed_url(
                         version="v4",
                         expiration=expiration,
                         method=method,
                         response_type="video/mp4"
                     )
+                    logger.info(f"Successfully generated signed URL with service account file for {blob_path}")
+                    return signed_url
                 except Exception as sa_error:
-                    logger.warning(f"Failed to sign with service account file: {sa_error}")
+                    logger.warning(f"Failed to sign with service account file: {sa_error}", exc_info=True)
+            else:
+                logger.debug(f"Service account file not found at {service_account_path}")
 
             logger.error(f"All signing methods failed for {blob_path}")
             return None
@@ -266,37 +279,69 @@ class ReelStorageService:
         """
         from google.auth import iam
 
+        logger.info(f"[IAM Signing] Starting IAM-based URL signing for blob: {blob_path}")
+
         # Get current credentials and determine service account email
         credentials, project_id = google.auth.default()
+        logger.debug(f"[IAM Signing] Default credentials type: {type(credentials).__name__}, project: {project_id}")
+        
         if hasattr(credentials, "with_scopes_if_required"):
             credentials = credentials.with_scopes_if_required(["https://www.googleapis.com/auth/cloud-platform"])
+            logger.debug(f"[IAM Signing] Credentials scoped for cloud-platform")
 
         # Get service account email
         if hasattr(credentials, 'service_account_email'):
             service_account_email = credentials.service_account_email
+            logger.debug(f"[IAM Signing] Retrieved service_account_email from credentials: {service_account_email}")
         elif hasattr(credentials, 'signer_email'):
             service_account_email = credentials.signer_email
+            logger.debug(f"[IAM Signing] Retrieved signer_email from credentials: {service_account_email}")
         elif isinstance(credentials, compute_engine.Credentials):
             # For Compute Engine, need to fetch service account email
+            logger.debug(f"[IAM Signing] Detected Compute Engine credentials, fetching from metadata")
             service_account_email = self._get_compute_engine_service_account()
         else:
-            logger.error("Cannot determine service account email for IAM signing")
+            service_account_email = None
+            logger.debug(f"[IAM Signing] Credentials type {type(credentials).__name__} has no direct email attribute")
+
+        if service_account_email in (None, "default", ""):
+            logger.info(f"[IAM Signing] Service account email is placeholder or missing: '{service_account_email}', checking env override")
+            # Allow explicit override via environment for edge deployments
+            service_account_email = os.getenv("GOOGLE_SERVICE_ACCOUNT_EMAIL")
+            if service_account_email:
+                logger.info(f"[IAM Signing] Using service account from GOOGLE_SERVICE_ACCOUNT_EMAIL: {service_account_email}")
+
+        # Some credential types (notably on Cloud Run) expose "default" as a
+        # placeholder service account email. Treat that the same as missing.
+        if service_account_email in (None, "default", ""):
+            logger.info(f"[IAM Signing] Attempting to fetch service account from metadata server")
+            service_account_email = self._get_compute_engine_service_account()
+
+        if not service_account_email or "@" not in service_account_email:
+            logger.error(
+                "[IAM Signing] Cannot determine service account email for IAM signing; got %s",
+                service_account_email or "<empty>"
+            )
             return None
         
         if not service_account_email:
-            logger.error("Service account email is None, cannot sign URL")
+            logger.error("[IAM Signing] Service account email is None, cannot sign URL")
             return None
         
-        logger.info(f"Using service account {service_account_email} for IAM signing")
+        logger.info(f"[IAM Signing] Using service account {service_account_email} for IAM signing")
         
         # Create IAM signer
+        logger.debug(f"[IAM Signing] Creating IAM signer with service account: {service_account_email}")
         auth_request = AuthRequest()
         credentials.refresh(auth_request)
+        logger.debug(f"[IAM Signing] Credentials refreshed, token valid: {bool(credentials.token)}")
+        
         signer = iam.Signer(
             request=auth_request,
             credentials=credentials,
             service_account_email=service_account_email
         )
+        logger.debug(f"[IAM Signing] IAM signer created successfully")
 
         class _IAMCredentials:
             def __init__(self, signer, email):
@@ -308,13 +353,14 @@ class ReelStorageService:
         
         # Generate signed URL using the signer
         expiration_time = datetime.now(timezone.utc) + expiration
+        logger.debug(f"[IAM Signing] Generating signed URL with expiration: {expiration_time}")
         
         try:
             # Use blob's generate_signed_url with the IAM signer
             bucket = self._ensure_bucket()
             blob = bucket.blob(blob_path)
 
-            return blob.generate_signed_url(
+            signed_url = blob.generate_signed_url(
                 version="v4",
                 expiration=expiration_time,
                 method=method,
@@ -323,12 +369,15 @@ class ReelStorageService:
                 access_token=credentials.token,
                 response_type="video/mp4"
             )
+            logger.info(f"[IAM Signing] Successfully generated signed URL for {blob_path}")
+            return signed_url
         except Exception as e:
-            logger.error(f"Failed to generate signed URL with IAM signer: {e}")
+            logger.error(f"[IAM Signing] Failed to generate signed URL with IAM signer: {e}", exc_info=True)
             return None
     
     def _get_compute_engine_service_account(self) -> Optional[str]:
         """Get the service account email for Compute Engine credentials."""
+        logger.debug("[IAM Signing] Querying metadata server for service account email")
         try:
             import requests
             metadata_url = "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email"
@@ -336,10 +385,12 @@ class ReelStorageService:
             response = requests.get(metadata_url, headers=headers, timeout=2)
             if response.status_code == 200:
                 email = response.text
-                logger.info(f"Retrieved Compute Engine service account: {email}")
+                logger.info(f"[IAM Signing] Retrieved service account from metadata: {email}")
                 return email
+            else:
+                logger.warning(f"[IAM Signing] Metadata server returned status {response.status_code}")
         except Exception as e:
-            logger.error(f"Failed to get Compute Engine service account: {e}")
+            logger.warning(f"[IAM Signing] Failed to get service account from metadata: {e}")
         return None
 
 
