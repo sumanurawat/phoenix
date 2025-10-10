@@ -17,7 +17,7 @@ from urllib.parse import quote
 from google.cloud import storage
 from google.api_core import exceptions as gcs_exceptions
 from google.oauth2 import service_account
-from google.auth.transport import requests as google_requests
+from google.auth.transport.requests import Request as AuthRequest
 from google.auth import compute_engine
 import google.auth
 
@@ -213,10 +213,10 @@ class ReelStorageService:
                 method=method,
                 response_type="video/mp4"
             )
-        except AttributeError as e:
+        except (AttributeError, NotImplementedError, TypeError) as e:
             # Current credentials don't support signing
             logger.warning(f"Default credentials don't support signing, trying alternative methods: {e}")
-            
+
             # Try IAM signBlob API (works for Cloud Run service accounts)
             try:
                 signed_url = self._generate_signed_url_with_iam(blob_path, expiration, method)
@@ -225,7 +225,7 @@ class ReelStorageService:
                     return signed_url
             except Exception as iam_error:
                 logger.warning(f"IAM signBlob failed: {iam_error}")
-            
+
             # Try to load service account from file (works for local dev with proper credentials)
             service_account_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', 'firebase-credentials.json')
             if os.path.exists(service_account_path):
@@ -233,11 +233,11 @@ class ReelStorageService:
                     credentials = service_account.Credentials.from_service_account_file(
                         service_account_path
                     )
-                    
+
                     signing_client = storage.Client(credentials=credentials)
                     signing_bucket = signing_client.bucket(self.bucket_name)
                     signing_blob = signing_bucket.blob(blob_path)
-                    
+
                     return signing_blob.generate_signed_url(
                         version="v4",
                         expiration=expiration,
@@ -246,18 +246,10 @@ class ReelStorageService:
                     )
                 except Exception as sa_error:
                     logger.warning(f"Failed to sign with service account file: {sa_error}")
-            
-            # Last resort: make blob public and return public URL
-            logger.warning(f"All signing methods failed for {blob_path}, attempting to make public")
-            try:
-                blob.make_public()
-                public_url = blob.public_url
-                logger.info(f"Made blob public, returning URL: {public_url}")
-                return public_url
-            except Exception as public_error:
-                logger.error(f"Failed to make blob public: {public_error}")
-                return None
-        except Exception as e:
+
+            logger.error(f"All signing methods failed for {blob_path}")
+            return None
+        except Exception:
             logger.exception(f"Unexpected error generating signed URL for {blob_path}")
             return None
 
@@ -273,11 +265,12 @@ class ReelStorageService:
         private key access but can use the IAM API to sign blobs.
         """
         from google.auth import iam
-        from google.auth.transport.requests import Request as AuthRequest
-        
+
         # Get current credentials and determine service account email
         credentials, project_id = google.auth.default()
-        
+        if hasattr(credentials, "with_scopes_if_required"):
+            credentials = credentials.with_scopes_if_required(["https://www.googleapis.com/auth/cloud-platform"])
+
         # Get service account email
         if hasattr(credentials, 'service_account_email'):
             service_account_email = credentials.service_account_email
@@ -297,11 +290,21 @@ class ReelStorageService:
         logger.info(f"Using service account {service_account_email} for IAM signing")
         
         # Create IAM signer
+        auth_request = AuthRequest()
+        credentials.refresh(auth_request)
         signer = iam.Signer(
-            request=AuthRequest(),
+            request=auth_request,
             credentials=credentials,
             service_account_email=service_account_email
         )
+
+        class _IAMCredentials:
+            def __init__(self, signer, email):
+                self.signer = signer
+                self.signer_email = email
+
+            def sign_bytes(self, payload):
+                return self.signer.sign(payload)
         
         # Generate signed URL using the signer
         expiration_time = datetime.now(timezone.utc) + expiration
@@ -310,18 +313,15 @@ class ReelStorageService:
             # Use blob's generate_signed_url with the IAM signer
             bucket = self._ensure_bucket()
             blob = bucket.blob(blob_path)
-            
+
             return blob.generate_signed_url(
                 version="v4",
                 expiration=expiration_time,
                 method=method,
                 service_account_email=service_account_email,
-                access_token=None,  # Force use of signer
-                credentials=type('obj', (object,), {
-                    'signer_email': service_account_email,
-                    'signer': signer,
-                    'sign_bytes': signer.sign
-                })()
+                credentials=_IAMCredentials(signer, service_account_email),
+                access_token=credentials.token,
+                response_type="video/mp4"
             )
         except Exception as e:
             logger.error(f"Failed to generate signed URL with IAM signer: {e}")
