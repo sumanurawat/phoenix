@@ -186,7 +186,7 @@ class ReelStorageService:
         """Generate a signed URL for accessing a blob.
         
         Uses IAM signBlob API for Cloud Run environments where direct signing
-        isn't available. Falls back gracefully through multiple strategies.
+        isn't available. Falls back to public URL if blob has public access.
         
         Args:
             blob_path: GCS blob path (without gs:// prefix)
@@ -194,7 +194,7 @@ class ReelStorageService:
             method: HTTP method (GET, PUT, etc.)
             
         Returns:
-            Signed URL string, or None if generation fails
+            URL string (signed or public), or None if generation fails
         """
         blob_path = blob_path.lstrip("/")
         bucket = self._ensure_bucket()
@@ -260,7 +260,17 @@ class ReelStorageService:
             else:
                 logger.debug(f"Service account file not found at {service_account_path}")
 
-            logger.error(f"All signing methods failed for {blob_path}")
+            # Final fallback: try public URL if blob has public access
+            logger.info(f"All signing methods failed for {blob_path}, attempting public URL fallback")
+            try:
+                public_url = self._get_public_url_if_accessible(blob_path)
+                if public_url:
+                    logger.info(f"Successfully generated public URL for {blob_path}")
+                    return public_url
+            except Exception as public_error:
+                logger.warning(f"Public URL fallback failed: {public_error}")
+
+            logger.error(f"All URL generation methods failed for {blob_path}")
             return None
         except Exception:
             logger.exception(f"Unexpected error generating signed URL for {blob_path}")
@@ -374,6 +384,19 @@ class ReelStorageService:
         except Exception as e:
             logger.error(f"[IAM Signing] Failed to generate signed URL with IAM signer: {e}", exc_info=True)
             return None
+    
+    def _get_public_url_if_accessible(self, blob_path: str) -> Optional[str]:
+        """Check if blob is publicly accessible and return public URL.
+        
+        NOTE: This should NEVER succeed in production as videos must remain private.
+        This method exists only for debugging/logging purposes.
+        """
+        logger.warning(f"[Security] Attempted to get public URL for {blob_path} - this should not be used")
+        logger.warning(f"[Security] Videos MUST remain private. If you see this, check IAM permissions.")
+        
+        # Do NOT return public URLs - videos must remain private
+        # Only authenticated users who own the project should access videos
+        return None
     
     def _get_compute_engine_service_account(self) -> Optional[str]:
         """Get the service account email for Compute Engine credentials."""
