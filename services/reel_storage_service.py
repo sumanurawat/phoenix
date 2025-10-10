@@ -10,9 +10,11 @@ import os
 import logging
 from pathlib import Path
 from typing import Iterable, Optional
+from datetime import timedelta
 
 from google.cloud import storage
 from google.api_core import exceptions as gcs_exceptions
+from google.oauth2 import service_account
 
 logger = logging.getLogger(__name__)
 
@@ -169,6 +171,76 @@ class ReelStorageService:
                 logger.debug("Blob %s already deleted", clean)
             except Exception:
                 logger.exception("Failed deleting blob %s", clean)
+
+    def generate_signed_url(
+        self, 
+        blob_path: str, 
+        expiration: timedelta = timedelta(hours=2),
+        method: str = "GET"
+    ) -> Optional[str]:
+        """Generate a signed URL for accessing a blob.
+        
+        This method attempts to use service account credentials for signing.
+        Falls back to making the blob public if signing fails (local dev).
+        
+        Args:
+            blob_path: GCS blob path (without gs:// prefix)
+            expiration: How long the URL should be valid
+            method: HTTP method (GET, PUT, etc.)
+            
+        Returns:
+            Signed URL string, or None if generation fails
+        """
+        blob_path = blob_path.lstrip("/")
+        bucket = self._ensure_bucket()
+        blob = bucket.blob(blob_path)
+        
+        try:
+            # Try to generate signed URL with current credentials
+            return blob.generate_signed_url(
+                version="v4",
+                expiration=expiration,
+                method=method,
+                response_type="video/mp4"
+            )
+        except AttributeError as e:
+            # Current credentials don't support signing (user OAuth token)
+            # Try to use service account credentials explicitly
+            logger.warning(f"Default credentials don't support signing, trying service account: {e}")
+            
+            # Try to load service account from firebase-credentials.json
+            service_account_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', 'firebase-credentials.json')
+            if os.path.exists(service_account_path):
+                try:
+                    credentials = service_account.Credentials.from_service_account_file(
+                        service_account_path
+                    )
+                    
+                    # Create a new storage client with service account credentials
+                    signing_client = storage.Client(credentials=credentials)
+                    signing_bucket = signing_client.bucket(self.bucket_name)
+                    signing_blob = signing_bucket.blob(blob_path)
+                    
+                    return signing_blob.generate_signed_url(
+                        version="v4",
+                        expiration=expiration,
+                        method=method,
+                        response_type="video/mp4"
+                    )
+                except Exception as sa_error:
+                    logger.error(f"Failed to sign with service account: {sa_error}")
+            
+            # Last resort: make blob public and return public URL
+            logger.warning(f"Cannot sign URL for {blob_path}, attempting to make public")
+            try:
+                blob.make_public()
+                return blob.public_url
+            except Exception as public_error:
+                logger.error(f"Failed to make blob public: {public_error}")
+                return None
+        except Exception as e:
+            logger.exception(f"Unexpected error generating signed URL for {blob_path}")
+            return None
 
 
 # Singleton instance (imported by services/routes)

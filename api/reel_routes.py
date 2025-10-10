@@ -1174,13 +1174,19 @@ def stream_clip(project_id, clip_path):
                 "error": {"code": "NOT_FOUND", "message": "Video file not found"}
             }), 404
 
-        # Generate signed URL (valid for 2 hours)
-        signed_url = blob.generate_signed_url(
-            version="v4",
+        # Generate signed URL using storage service (handles credentials properly)
+        signed_url = reel_storage_service.generate_signed_url(
+            blob_path=clip_path,
             expiration=timedelta(hours=2),
-            method="GET",
-            response_type="video/mp4"
+            method="GET"
         )
+
+        if not signed_url:
+            logger.error(f"Failed to generate signed URL for {clip_path}")
+            return jsonify({
+                "success": False,
+                "error": {"code": "SERVER_ERROR", "message": "Failed to generate video access URL"}
+            }), 500
 
         logger.info(f"Generated signed URL for {clip_path}")
 
