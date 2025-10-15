@@ -51,7 +51,7 @@ Each document (`projectId` = Firestore-generated UUID):
   "orientation": "portrait",           // "portrait" | "landscape"
   "durationSeconds": 8,
   "compression": "optimized",           // enum
-  "model": "veo-3.0-fast-generate-001",
+  "model": "veo-3.1-fast-generate-preview",
   "audioEnabled": true,
   "promptList": ["prompt 1", "prompt 2"],
   "clipFilenames": ["clip_20250926T120501.mp4", "clip_20250926T121010.mp4"],
@@ -185,7 +185,7 @@ frontend/
 1. **POST `/api/reel/projects/<id>/generate`** receives prompts JSON from React, validates shape, enforces ≤50 prompts, orientation consistency, etc.
 2. Build Veo request with defaults:
    - `duration_seconds = 8`
-   - `model = "veo-3.0-fast-generate-001"`
+  - `model = "veo-3.1-fast-generate-preview"`
    - `compression_quality = "optimized"`
    - `generate_audio = true`
    - `aspect_ratio` derived from orientation.

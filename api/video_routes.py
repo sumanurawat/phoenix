@@ -29,7 +29,7 @@ def _run_generation(job_id: str, prompts, base_options):
         realtime_event_bus.publish(evt_topic, 'prompt.started', {"prompt_index": idx})
         try:
             params = VeoGenerationParams(
-                model=base_options.get('model', 'veo-3.0-fast-generate-001'),
+                model=base_options.get('model', 'veo-3.1-fast-generate-preview'),
                 prompt=prompt,
                 aspect_ratio=base_options.get('aspect_ratio', '16:9'),
                 duration_seconds=base_options.get('duration_seconds', 8),

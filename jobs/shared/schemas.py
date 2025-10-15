@@ -57,7 +57,7 @@ class GenerationJobPayload:
     prompts: List[str]
     output_dir: str
     retry_attempt: int = 0
-    model: str = "veo-3.0-fast-generate-001"
+    model: str = "veo-3.1-fast-generate-preview"
     duration_seconds: int = 8
 
     def to_dict(self) -> Dict[str, Any]:

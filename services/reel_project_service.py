@@ -24,7 +24,7 @@ class ReelProject:
     orientation: str = "portrait"  # "portrait" | "landscape"  
     duration_seconds: int = 8
     compression: str = "optimized"
-    model: str = "veo-3.0-fast-generate-001"
+    model: str = "veo-3.1-fast-generate-preview"
     audio_enabled: bool = True
     prompt_list: List[str] = None
     clip_filenames: List[str] = None
@@ -76,7 +76,7 @@ class ReelProject:
             orientation=data.get('orientation', 'portrait'),
             duration_seconds=data.get('durationSeconds', 8),
             compression=data.get('compression', 'optimized'),
-            model=data.get('model', 'veo-3.0-fast-generate-001'),
+            model=data.get('model', 'veo-3.1-fast-generate-preview'),
             audio_enabled=data.get('audioEnabled', True),
             prompt_list=data.get('promptList', []),
             clip_filenames=data.get('clipFilenames', []),

@@ -170,7 +170,7 @@ Extract the logged response and examine:
 ## Known Good Configuration
 
 ### Request Parameters (Working Before)
-- **Model**: `veo-3.0-fast-generate-001`
+- **Model**: `veo-3.1-fast-generate-preview`
 - **Duration**: 8 seconds
 - **Aspect Ratio**: `9:16` (portrait) or `16:9` (landscape)
 - **Sample Count**: 1
