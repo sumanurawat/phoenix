@@ -450,7 +450,7 @@ class ReelGenerationService:
         logger.info("Generating video for prompt %d with storage_uri: %s", prompt_index, storage_uri)
         
         params = VeoGenerationParams(
-            model=ctx.project.model or "veo-3.0-fast-generate-001",
+            model=ctx.project.model or "veo-3.1-fast-generate-preview",
             prompt=prompt,
             aspect_ratio=ctx.aspect_ratio,
             duration_seconds=ctx.project.duration_seconds or 8,

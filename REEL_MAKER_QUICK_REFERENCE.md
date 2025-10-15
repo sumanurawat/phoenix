@@ -41,7 +41,7 @@
 ### Project Configuration (Fixed Defaults)
 - **Orientation**: Portrait (9:16)
 - **Duration**: 8 seconds per clip
-- **Model**: veo-3.0-fast-generate-001
+- **Model**: veo-3.1-fast-generate-preview
 - **Compression**: Optimized
 - **Audio**: Enabled
 
@@ -123,7 +123,7 @@ phoenix/
   "title": "My Reel",
   "orientation": "portrait",
   "durationSeconds": 8,
-  "model": "veo-3.0-fast-generate-001",
+  "model": "veo-3.1-fast-generate-preview",
   "promptList": ["prompt1", "prompt2"],
   "clipFilenames": ["clip1.mp4", "clip2.mp4"],
   "status": "ready",

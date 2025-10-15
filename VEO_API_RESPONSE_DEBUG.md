@@ -88,7 +88,7 @@ from services.veo_video_generation_service import VeoVideoGenerationService, Veo
 
 veo = VeoVideoGenerationService()
 params = VeoGenerationParams(
-    model="veo-3.0-fast-generate-001",
+  model="veo-3.1-fast-generate-preview",
     prompt="A cat sitting on a couch",
     duration_seconds=8,
     aspect_ratio="9:16",
