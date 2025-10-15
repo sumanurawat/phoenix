@@ -43,8 +43,7 @@ else
     echo "Port 8080 is not in use."
 fi
 
-echo "Creating session directory if it doesn't exist..."
-mkdir -p ./flask_session
+echo "Note: Flask session directory no longer needed (using cookie-based sessions)"
 
 echo "Starting Phoenix AI Platform in production mode..."
 echo "🌐 Server will be available at: http://localhost:8080"

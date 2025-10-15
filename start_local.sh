@@ -45,8 +45,7 @@ else
     echo "Port 8080 is not in use."
 fi
 
-echo "Creating session directory if it doesn't exist..."
-mkdir -p ./flask_session
+echo "Note: Flask session directory no longer needed (using cookie-based sessions)"
 
 # Build Reel Maker frontend bundle so Flask can serve the latest assets
 FRONTEND_DIR="frontend/reel-maker"

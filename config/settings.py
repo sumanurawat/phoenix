@@ -3,6 +3,7 @@ Application settings and configuration.
 Centralizes all configuration variables for easier management.
 """
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 from config.gemini_models import GEMINI_MODELS
 
@@ -42,8 +43,18 @@ MAX_RETRIES = 3
 RETRY_DELAY = 1  # seconds
 
 # Session configuration
-SESSION_TYPE = "filesystem"
-SESSION_PERMANENT = False
-SESSION_USE_SIGNER = True
+# Use None for cookie-based sessions (compatible with Cloud Run multi-instance)
+# Previously used "filesystem" which doesn't work across Cloud Run instances
+SESSION_TYPE = None
+SESSION_PERMANENT = True  # Enable permanent sessions with configurable lifetime
+SESSION_USE_SIGNER = True  # Sign cookies for security
+# SESSION_COOKIE_SECURE: Only send cookies over HTTPS
+# Default to False for local development, set to True in production
+SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False").lower() == "true"
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to cookies (XSS protection)
+SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection while allowing some cross-site requests
+# Session lifetime: 7 days
+PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+# Legacy settings (no longer used with cookie-based sessions)
 SESSION_FILE_DIR = "./flask_session"
 SESSION_FILE_THRESHOLD = 500

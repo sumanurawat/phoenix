@@ -51,8 +51,7 @@ if [ -n "$PIDS" ]; then
     done
 fi
 
-# Create session directory
-mkdir -p ./flask_session
+# Note: Flask session directory no longer needed (using cookie-based sessions)
 
 echo ""
 echo "🚀 Starting development servers..."
