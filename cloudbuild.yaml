@@ -37,6 +37,8 @@ steps:
     - 'GEMINI_API_KEY=phoenix-gemini-api-key:latest,SECRET_KEY=phoenix-secret-key:latest,GOOGLE_API_KEY=phoenix-google-api-key:latest,GOOGLE_SEARCH_ENGINE_ID=phoenix-search-engine-id:latest,NEWSDATA_API_KEY=phoenix-newsdata-api-key:latest,KAGGLE_USERNAME=phoenix-kaggle-username:latest,KAGGLE_KEY=phoenix-kaggle-key:latest,CLAUDE_API_KEY=phoenix-claude-api-key:latest,GROK_API_KEY=phoenix-grok-api-key:latest,OPENAI_API_KEY=phoenix-openai-api-key:latest,GOOGLE_CLIENT_ID=phoenix-google-client-id:latest,GOOGLE_CLIENT_SECRET=phoenix-google-client-secret:latest,FIREBASE_API_KEY=phoenix-firebase-api-key:latest'
     - '--update-env-vars'
     - 'DEFAULT_MODEL=gemini-1.5-flash-8b,FALLBACK_MODEL=gemini-1.5-flash,FLASK_ENV=production,GOOGLE_CLOUD_PROJECT=phoenix-project-386,PRODUCTION_URL=https://phoenix-234619602247.us-central1.run.app,VIDEO_STORAGE_BUCKET=phoenix-videos'
+    - '--max-instances'
+    - '1'
 
 images:
   - 'gcr.io/$PROJECT_ID/phoenix'

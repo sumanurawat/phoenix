@@ -161,6 +161,21 @@ response = llm.generate_text(prompt, enable_fallback=True)
 - **No local database** - All persistent data in cloud (Firebase)
 - **Service account authentication** - Via `firebase-credentials.json` or Application Default Credentials
 
+### Session Management Architecture (Single Instance Solution)
+**Problem**: Users experiencing "session expired" errors when Cloud Run auto-scales to new instances.
+
+**Solution**: Disabled autoscaling by setting `max-instances=1` in Cloud Build configs:
+- **Single instance** means all requests go to the same server
+- **Same server** means all sessions stored in the same `./flask_session/` directory
+- **No autoscaling** means no new instances, therefore no session loss
+- **Zero cost** solution that stays in Cloud Run FREE TIER
+
+**Key Implementation Details**:
+- `cloudbuild.yaml` and `cloudbuild-dev.yaml` set `--max-instances=1`
+- Simple filesystem sessions work perfectly with single instance
+- No Redis, no VPC connector, no additional infrastructure costs
+- Trade-off: Limited to ~100 concurrent requests (sufficient for prototype/MVP)
+
 ## Core Features and Routing Patterns
 
 ### Application Structure
@@ -265,7 +280,7 @@ phoenix/
 - **API rate limits** - Gemini, Claude APIs have usage quotas
 - **No automated testing** without Firebase setup
 - **Single-threaded development server** - use gunicorn for production
-- **Session storage** - not suitable for multi-instance deployment
+- ~~**Session storage** - not suitable for multi-instance deployment~~ **FIXED**: Set max-instances=1 to prevent autoscaling and session loss
 ## Cloud Run Jobs Integration (Reel Maker Video Stitching)
 
 ### Architecture Overview
