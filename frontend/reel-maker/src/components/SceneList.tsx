@@ -107,7 +107,6 @@ export function SceneList({ project }: SceneListProps) {
                       <video
                         controls
                         preload="metadata"
-                        poster={getClipUrl(clip)}
                         className="scene-card__video-player"
                       >
                         <source src={`${getClipUrl(clip)}#t=0.1`} type="video/mp4" />
