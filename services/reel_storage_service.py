@@ -234,9 +234,17 @@ class ReelStorageService:
                 logger.warning(f"IAM signBlob failed for {blob_path}: {iam_error}", exc_info=True)
 
             # Try to load service account from file (works for local dev with proper credentials)
-            service_account_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', 'firebase-credentials.json')
-            logger.debug(f"Checking for service account file at: {service_account_path}")
-            if os.path.exists(service_account_path):
+            # Try firebase-credentials.json first (most common in local dev)
+            possible_paths = [
+                'firebase-credentials.json',
+                os.getenv('GOOGLE_APPLICATION_CREDENTIALS', ''),
+                os.path.expanduser('~/.config/gcloud/application_default_credentials.json')
+            ]
+            
+            for service_account_path in possible_paths:
+                if not service_account_path or not os.path.exists(service_account_path):
+                    continue
+                    
                 logger.info(f"Attempting to sign with service account file: {service_account_path}")
                 try:
                     credentials = service_account.Credentials.from_service_account_file(
@@ -256,7 +264,8 @@ class ReelStorageService:
                     logger.info(f"Successfully generated signed URL with service account file for {blob_path}")
                     return signed_url
                 except Exception as sa_error:
-                    logger.warning(f"Failed to sign with service account file: {sa_error}", exc_info=True)
+                    logger.debug(f"Failed to sign with {service_account_path}: {sa_error}")
+                    continue  # Try next path
             else:
                 logger.debug(f"Service account file not found at {service_account_path}")
 
