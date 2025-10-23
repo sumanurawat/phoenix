@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { useState } from "react";
 import { ReelProject } from "../types";
+import { VideoPlayer } from "./VideoPlayer";
 
 interface SceneListProps {
   project: ReelProject;
@@ -104,14 +105,12 @@ export function SceneList({ project }: SceneListProps) {
                   
                   {clipStatus === "done" && clip && (
                     <div className="scene-card__video">
-                      <video
+                      <VideoPlayer
+                        apiUrl={getClipUrl(clip)}
+                        className="scene-card__video-player"
                         controls
                         preload="metadata"
-                        className="scene-card__video-player"
-                      >
-                        <source src={`${getClipUrl(clip)}#t=0.1`} type="video/mp4" />
-                        Your browser does not support the video tag.
-                      </video>
+                      />
                     </div>
                   )}
                   

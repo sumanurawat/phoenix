@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { useState } from "react";
 import { ReelProject } from "../types";
+import { VideoPlayer } from "./VideoPlayer";
 
 interface StitchPanelProps {
   project: ReelProject;
@@ -98,14 +99,12 @@ export function StitchPanel({ project, onStitch, onDeleteStitched, activeStitchJ
       ) : hasStitched ? (
         <div className="stitch-panel__result">
           <div className="stitch-panel__video-container">
-            <video
+            <VideoPlayer
+              apiUrl={getStitchedVideoUrl()}
+              className="stitch-panel__video-player"
               controls
               preload="metadata"
-              className="stitch-panel__video-player"
-            >
-              <source src={`${getStitchedVideoUrl()}#t=0.1`} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+            />
           </div>
           <div className="stitch-panel__actions">
             <a
