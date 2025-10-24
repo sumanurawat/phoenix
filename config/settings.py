@@ -32,6 +32,11 @@ VIDEO_STORAGE_BUCKET = os.getenv("VIDEO_STORAGE_BUCKET")
 REEL_MAKER_GCS_BUCKET = os.getenv("REEL_MAKER_GCS_BUCKET")
 VIDEO_GENERATION_BUCKET = os.getenv("VIDEO_GENERATION_BUCKET")
 
+# Instagram OAuth Configuration
+INSTAGRAM_CLIENT_ID = os.getenv("INSTAGRAM_CLIENT_ID")
+INSTAGRAM_CLIENT_SECRET = os.getenv("INSTAGRAM_CLIENT_SECRET")
+INSTAGRAM_REDIRECT_URI = os.getenv("INSTAGRAM_REDIRECT_URI")  # e.g., https://phoenix.app/api/socials/instagram/callback
+
 # Flask configuration
 SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")
 FLASK_ENV = os.getenv("FLASK_ENV", "development")

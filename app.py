@@ -58,6 +58,7 @@ from api.video_routes import video_bp
 from api.stripe_routes import stripe_bp, subscription_bp
 from api.reel_routes import reel_bp
 from api.job_routes import job_bp
+from api.socials_routes import socials_bp
 
 # Import services (AFTER Firebase initialization)
 from services.chat_service import ChatService
@@ -167,6 +168,7 @@ def create_app():
     app.register_blueprint(subscription_bp)
     app.register_blueprint(reel_bp)
     app.register_blueprint(job_bp)
+    app.register_blueprint(socials_bp)
     
     # Setup subscription middleware
     @app.before_request
@@ -237,6 +239,12 @@ def create_app():
     def dataset_discovery():
         """Render the Dataset Discovery page."""
         return render_template('dataset_discovery.html', title='Dataset Discovery - Phoenix AI')
+    
+    @app.route('/socials')
+    @login_required
+    def socials_page():
+        """Render the Social Media Timeline page."""
+        return render_template('socials.html', title='Social Timeline - Phoenix AI')
     
     @app.route('/blogs')
     def blogs():

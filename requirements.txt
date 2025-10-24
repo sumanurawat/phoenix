@@ -13,9 +13,9 @@ firebase-admin==6.2.0  # For Firebase Authentication
 requests==2.31.0  # For HTTP requests
 google-cloud-logging==3.8.0  # For GCP Cloud Logging API (log fetching script)
 kaggle==1.6.6  # For Kaggle API integration (dataset discovery)
-pandas==2.1.4  # For dataset analysis and preview
+pandas==2.2.3  # For dataset analysis and preview (Python 3.13 compatible)
 anthropic==0.40.0  # For Claude API integration (analysis)
-matplotlib==3.8.2  # For data visualization in analysis
+matplotlib==3.9.3  # For data visualization in analysis (Python 3.13 compatible)
 seaborn==0.13.0  # For statistical data visualization
 numpy==1.26.2  # For numerical computing in analysis
 docker==7.1.0  # For Docker container execution in dataset analysis
@@ -27,3 +27,5 @@ google-cloud-storage==2.18.2  # For Reel Maker media storage (GCS)
 google-cloud-tasks==2.16.4  # For Cloud Run Jobs orchestration
 google-cloud-run==0.10.12  # For Cloud Run Jobs API
 psutil==5.9.5  # For system monitoring in jobs
+cryptography==41.0.7  # For social media token encryption
+instaloader==4.13  # For Instagram public profile scraping (Socials feature)
