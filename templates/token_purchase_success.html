@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Successful - Phoenix AI Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+    .success-container {
+        max-width: 800px;
+        margin: 60px auto;
+        padding: 40px 20px;
+        text-align: center;
+    }
+    
+    .success-icon {
+        font-size: 5rem;
+        color: #10b981;
+        margin-bottom: 20px;
+        animation: scaleIn 0.5s ease-out;
+    }
+    
+    @keyframes scaleIn {
+        from {
+            transform: scale(0);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+    
+    .success-card {
+        background: white;
+        border-radius: 15px;
+        padding: 40px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+    }
+    
+    .success-title {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #1f2937;
+        margin-bottom: 15px;
+    }
+    
+    .success-message {
+        font-size: 1.1rem;
+        color: #6b7280;
+        margin-bottom: 30px;
+    }
+    
+    .balance-display {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin: 30px 0;
+    }
+    
+    .balance-label {
+        font-size: 1rem;
+        opacity: 0.9;
+        margin-bottom: 10px;
+    }
+    
+    .balance-amount {
+        font-size: 3rem;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+    
+    .confetti-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 9999;
+    }
+    
+    .confetti {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: #f39c12;
+        animation: confetti-fall 3s linear forwards;
+    }
+    
+    @keyframes confetti-fall {
+        to {
+            transform: translateY(100vh) rotate(360deg);
+            opacity: 0;
+        }
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 30px;
+    }
+    
+    .btn-action {
+        padding: 12px 30px;
+        font-size: 1rem;
+        font-weight: 600;
+        border-radius: 10px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+    }
+    
+    .btn-primary-gradient:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .transaction-info {
+        background: #f9fafb;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+        font-size: 0.9rem;
+        color: #6b7280;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="success-container">
+    <!-- Confetti container -->
+    <div class="confetti-container" id="confettiContainer"></div>
+    
+    <div class="success-card">
+        <div class="success-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        
+        <h1 class="success-title">Payment Successful!</h1>
+        <p class="success-message">
+            Your token purchase has been processed successfully. Your new tokens are now available in your account.
+        </p>
+        
+        <div class="balance-display">
+            <div class="balance-label">Your New Token Balance</div>
+            <div class="balance-amount" id="tokenBalance">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <div class="balance-label">
+                <i class="fas fa-coins me-2"></i>tokens available
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <a href="/dashboard" class="btn btn-action btn-primary-gradient">
+                <i class="fas fa-rocket me-2"></i>Start Creating
+            </a>
+            <a href="/buy-tokens" class="btn btn-action btn-outline-primary">
+                <i class="fas fa-shopping-cart me-2"></i>Buy More Tokens
+            </a>
+        </div>
+        
+        <div class="transaction-info">
+            <i class="fas fa-info-circle me-2"></i>
+            A receipt has been sent to your email. You can view your transaction history in your account settings.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Create confetti effect
+    function createConfetti() {
+        const container = document.getElementById('confettiContainer');
+        const colors = ['#f39c12', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#f1c40f'];
+        const confettiCount = 150;
+        
+        for (let i = 0; i < confettiCount; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + '%';
+            confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.animationDelay = Math.random() * 3 + 's';
+            confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            container.appendChild(confetti);
+            
+            // Remove confetti after animation
+            setTimeout(() => confetti.remove(), 5000);
+        }
+    }
+    
+    // Load updated token balance
+    async function loadBalance() {
+        try {
+            const response = await fetch('/api/tokens/balance', {
+                headers: {
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const balanceElement = document.getElementById('tokenBalance');
+                balanceElement.textContent = data.balance.toLocaleString();
+                
+                // Animate number count-up
+                animateValue(balanceElement, 0, data.balance, 1500);
+            } else {
+                document.getElementById('tokenBalance').textContent = '--';
+            }
+        } catch (error) {
+            console.error('Failed to load balance:', error);
+            document.getElementById('tokenBalance').textContent = '--';
+        }
+    }
+    
+    // Animate number count-up
+    function animateValue(element, start, end, duration) {
+        const range = end - start;
+        const increment = range / (duration / 16); // 60 FPS
+        let current = start;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= end) {
+                element.textContent = end.toLocaleString();
+                clearInterval(timer);
+            } else {
+                element.textContent = Math.floor(current).toLocaleString();
+            }
+        }, 16);
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        createConfetti();
+        loadBalance();
+    });
+</script>
+{% endblock %}

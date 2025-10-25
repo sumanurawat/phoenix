@@ -117,8 +117,10 @@ class TransactionService:
         self,
         user_id: str,
         amount: int,
+        package_id: str,
         stripe_session_id: str,
-        payment_amount_usd: float
+        stripe_customer_id: str,
+        amount_paid: float
     ) -> str:
         """
         Record a token purchase via Stripe.
@@ -126,8 +128,10 @@ class TransactionService:
         Args:
             user_id: Firebase Auth UID
             amount: Number of tokens purchased
+            package_id: Token package identifier (starter, popular, pro, creator)
             stripe_session_id: Stripe checkout session ID
-            payment_amount_usd: Amount paid in USD
+            stripe_customer_id: Stripe customer ID
+            amount_paid: Amount paid in USD
             
         Returns:
             Transaction document ID
@@ -137,10 +141,41 @@ class TransactionService:
             transaction_type=TransactionType.PURCHASE,
             amount=amount,
             details={
+                'packageId': package_id,
                 'stripeSessionId': stripe_session_id,
-                'paymentAmountUSD': payment_amount_usd
+                'stripeCustomerId': stripe_customer_id,
+                'paymentAmountUSD': amount_paid
             }
         )
+    
+    def get_by_stripe_session(self, stripe_session_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Check if a Stripe session has already been processed (idempotency check).
+        
+        Args:
+            stripe_session_id: Stripe checkout session ID
+            
+        Returns:
+            Transaction data if found, None otherwise
+        """
+        try:
+            query = self.db.collection(self.collection)\
+                .where('details.stripeSessionId', '==', stripe_session_id)\
+                .limit(1)
+            
+            results = list(query.stream())
+            
+            if results:
+                tx_data = results[0].to_dict()
+                tx_data['id'] = results[0].id
+                logger.info(f"Found existing transaction for session {stripe_session_id}")
+                return tx_data
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error checking Stripe session {stripe_session_id}: {e}", exc_info=True)
+            return None
     
     def record_generation_spend(
         self,

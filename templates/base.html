@@ -69,6 +69,13 @@
                                     {% endif %}
                                 </h6></li>
                                 <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('buy_tokens_page') }}">
+                                    <i class="fas fa-coins me-2 text-warning"></i>
+                                    <span id="tokenBalanceWidget">
+                                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                                    </span> Tokens
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
                                     <i class="fas fa-user me-2"></i>Profile
                                 </a></li>
@@ -255,5 +262,31 @@
     
     <!-- CSRF Protection Script -->
     <script src="{{ url_for('static', filename='js/csrf-protection.js') }}"></script>
+    
+    <!-- Token Balance Widget Script -->
+    <script>
+        // Load token balance for header widget
+        (function() {
+            const balanceWidget = document.getElementById('tokenBalanceWidget');
+            if (!balanceWidget) return;
+            
+            fetch('/api/tokens/balance', {
+                headers: {
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && typeof data.balance === 'number') {
+                    balanceWidget.innerHTML = `<strong>${data.balance.toLocaleString()}</strong>`;
+                } else {
+                    balanceWidget.textContent = '--';
+                }
+            })
+            .catch(() => {
+                balanceWidget.textContent = '--';
+            });
+        })();
+    </script>
 </body>
 </html>

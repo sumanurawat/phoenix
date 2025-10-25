@@ -7,6 +7,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Dict, Optional, Any, List
 from firebase_admin import firestore
+from services.token_security_service import TokenSecurityService
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,13 @@ class StripeService:
         if self.stripe_secret_key:
             stripe.api_key = self.stripe_secret_key
             self.is_configured = True
-            logger.info("Stripe service initialized successfully")
+            
+            # Enhanced diagnostic logging
+            key_prefix = self.stripe_secret_key[:15] if self.stripe_secret_key else "None"
+            mode = "TEST" if self.stripe_secret_key.startswith('sk_test_') else "LIVE"
+            logger.info(f"🔑 Stripe service initialized successfully")
+            logger.info(f"🔑 API Key: {key_prefix}... (Mode: {mode})")
+            
             if self.premium_price_id:
                 logger.info("✅ Price ID configured")
             else:
@@ -42,6 +49,11 @@ class StripeService:
         # Initialize Firestore
         try:
             self.db = firestore.client()
+            self.security_service = TokenSecurityService(self.db)
+        except Exception as e:
+            logger.error(f"Failed to initialize Firestore: {e}")
+            self.db = None
+            self.security_service = None
         except Exception as e:
             logger.error(f"Failed to initialize Firestore: {e}")
             self.db = None
@@ -228,6 +240,135 @@ class StripeService:
             logger.error(f"Failed to create checkout session: {e}")
             return None
     
+    
+    def get_or_create_customer(self, firebase_uid: str, email: str) -> Optional[str]:
+        """
+        Get existing Stripe customer or create new one.
+        Convenience method for token purchases and subscriptions.
+        
+        Args:
+            firebase_uid: Firebase user ID
+            email: User email address
+            
+        Returns:
+            Stripe customer ID or None on failure
+        """
+        if not self.is_configured:
+            logger.error("Stripe not configured")
+            return None
+        
+        try:
+            # Try to get existing customer
+            customer_id = self.get_customer_by_firebase_uid(firebase_uid)
+            
+            if customer_id:
+                logger.info(f"Found existing Stripe customer {customer_id} for user {firebase_uid}")
+                return customer_id
+            
+            # Create new customer
+            logger.info(f"Creating new Stripe customer for user {firebase_uid}")
+            customer_id = self.create_customer(email=email, firebase_uid=firebase_uid)
+            
+            if customer_id:
+                logger.info(f"Created Stripe customer {customer_id} for user {firebase_uid}")
+            else:
+                logger.error(f"Failed to create Stripe customer for user {firebase_uid}")
+            
+            return customer_id
+            
+        except Exception as e:
+            logger.error(f"Error in get_or_create_customer: {e}", exc_info=True)
+            return None
+
+
+    def create_token_checkout_session(self, customer_id: str, price_id: str, 
+                                     metadata: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Create a Stripe checkout session for one-time token purchase.
+        
+        Args:
+            customer_id: Stripe customer ID
+            price_id: Stripe price ID for the token package
+            metadata: Dictionary containing firebase_uid, package_id, tokens, purchase_type
+            
+        Returns:
+            Dictionary with session_id and url, or None on failure
+        """
+        if not self.is_configured:
+            logger.error("Stripe not configured - cannot create token checkout session")
+            return None
+        
+        try:
+            # Build success and cancel URLs
+            base_url = os.getenv('APP_BASE_URL', 'http://localhost:8080')
+            success_url = f"{base_url}/token-purchase-success?session_id={{CHECKOUT_SESSION_ID}}"
+            cancel_url = f"{base_url}/token-purchase-cancel"
+            
+            # Enhanced diagnostic logging
+            logger.info(f"🔍 Creating checkout session with Price ID: {price_id}")
+            logger.info(f"🔍 API Key being used: {stripe.api_key[:15]}...")
+            logger.info(f"🔍 Customer ID: {customer_id}")
+            logger.info(f"🔍 Package metadata: {metadata}")
+            
+            # Verify customer exists in this Stripe account
+            try:
+                stripe.Customer.retrieve(customer_id)
+                logger.info(f"✅ Customer {customer_id} verified in current Stripe account")
+            except stripe.error.InvalidRequestError as customer_error:
+                logger.warning(f"⚠️ Customer {customer_id} not found in current Stripe account: {customer_error}")
+                logger.warning(f"🔄 Creating new customer for user {metadata.get('firebase_uid')}")
+                # Customer doesn't exist in this account, create a new one
+                firebase_uid = metadata.get('firebase_uid')
+                if firebase_uid and self.db:
+                    # Delete old customer mapping
+                    user_ref = self.db.collection('users').document(firebase_uid)
+                    user_doc = user_ref.get()
+                    if user_doc.exists:
+                        email = user_doc.to_dict().get('email')
+                        # Create new customer in current account
+                        new_customer = stripe.Customer.create(
+                            email=email,
+                            metadata={'firebase_uid': firebase_uid}
+                        )
+                        customer_id = new_customer.id
+                        # Update Firestore with new customer ID
+                        user_ref.update({'stripe_customer_id': customer_id})
+                        logger.info(f"✅ Created new customer {customer_id} in current Stripe account")
+                    else:
+                        logger.error(f"❌ User {firebase_uid} not found in Firestore")
+                        return None
+                else:
+                    logger.error("❌ Cannot create new customer: missing firebase_uid or database")
+                    return None
+            
+            # Create checkout session for one-time payment
+            session_params = {
+                'payment_method_types': ['card'],
+                'line_items': [{
+                    'price': price_id,
+                    'quantity': 1,
+                }],
+                'mode': 'payment',  # One-time payment, not subscription
+                'customer': customer_id,
+                'success_url': success_url,
+                'cancel_url': cancel_url,
+                'metadata': metadata
+            }
+            
+            checkout_session = stripe.checkout.Session.create(**session_params)
+            
+            logger.info(f"Created token checkout session {checkout_session.id} for customer {customer_id}")
+            logger.info(f"Package: {metadata.get('package_id')}, Tokens: {metadata.get('tokens')}")
+            
+            return {
+                'session_id': checkout_session.id,
+                'url': checkout_session.url
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to create token checkout session: {e}", exc_info=True)
+            return None
+
     def get_subscription_status(self, firebase_uid: str) -> Dict[str, Any]:
         """Get current subscription status for a user."""
         result = {
@@ -468,6 +609,14 @@ class StripeService:
                 logger.error(f"Available metadata: {metadata}")
                 return {'error': 'Missing firebase_uid'}
 
+            # Check if this is a token purchase (one-time payment)
+            purchase_type = metadata.get('purchase_type')
+            if purchase_type == 'token_package':
+                logger.info("🪙 Detected token purchase - routing to token handler")
+                return self._handle_token_purchase(session)
+            
+            # Otherwise, handle as subscription
+
             if not raw_subscription:
                 logger.error("❌ No subscription in checkout session")
                 return {'error': 'Missing subscription'}
@@ -580,6 +729,121 @@ class StripeService:
             logger.error(f"Traceback: {traceback.format_exc()}")
             return {'error': str(e)}
     
+
+    def _handle_token_purchase(self, session: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Handle token purchase completion.
+        Credits tokens to user account with idempotency check.
+        """
+        logger.info("🪙 Starting token purchase processing...")
+        
+        try:
+            from services.token_service import TokenService
+            from services.transaction_service import TransactionService
+            
+            token_service = TokenService()
+            transaction_service = TransactionService()
+            
+            session_id = session.get('id')
+            metadata = session.get('metadata', {}) or {}
+            
+            firebase_uid = metadata.get('firebase_uid')
+            package_id = metadata.get('package_id')
+            tokens = metadata.get('tokens')
+            
+            logger.info(f"👤 User: {firebase_uid}")
+            logger.info(f"📦 Package: {package_id}")
+            logger.info(f"🪙 Tokens: {tokens}")
+            
+            if not all([firebase_uid, package_id, tokens]):
+                logger.error("❌ Missing required metadata for token purchase")
+                return {'error': 'Incomplete token purchase data'}
+            
+            # Convert tokens to integer
+            try:
+                tokens = int(tokens)
+            except (ValueError, TypeError):
+                logger.error(f"❌ Invalid token amount: {tokens}")
+                return {'error': 'Invalid token amount'}
+            
+            # SECURITY: Validate token amount
+            if self.security_service:
+                valid, error_msg = self.security_service.validate_token_amount(tokens)
+                if not valid:
+                    logger.error(f"❌ Token validation failed: {error_msg}")
+                    return {'error': error_msg}
+            
+            # SECURITY: Validate package and price
+            if self.security_service:
+                amount_paid_cents = session.get('amount_total', 0)
+                valid, error_msg = self.security_service.validate_package(
+                    package_id, tokens, amount_paid_cents
+                )
+                if not valid:
+                    logger.error(f"❌ Package validation failed: {error_msg}")
+                    self.security_service.log_suspicious_activity(
+                        firebase_uid,
+                        'invalid_package_price',
+                        {
+                            'package_id': package_id,
+                            'tokens_claimed': tokens,
+                            'amount_paid_cents': amount_paid_cents,
+                            'session_id': session_id
+                        }
+                    )
+                    return {'error': 'Package validation failed'}
+            
+            # SECURITY: Check rate limits
+            if self.security_service:
+                allowed, error_msg = self.security_service.validate_purchase_rate_limit(firebase_uid)
+                if not allowed:
+                    logger.warning(f"🚨 Rate limit exceeded for user {firebase_uid}")
+                    self.security_service.log_suspicious_activity(
+                        firebase_uid,
+                        'rate_limit_exceeded',
+                        {
+                            'package_id': package_id,
+                            'session_id': session_id
+                        }
+                    )
+                    return {'error': error_msg}
+            
+            # Idempotency check: Has this session already been processed?
+            existing = transaction_service.get_by_stripe_session(session_id)
+            if existing:
+                logger.warning(f"[Stripe Webhook] Duplicate event received for session {session_id}. Skipping.")
+                return {'success': True, 'message': 'Already processed'}
+            
+            # Credit tokens to user account
+            logger.info(f"[Stripe Webhook] Processing token purchase: {tokens} tokens for user {firebase_uid}")
+            success = token_service.add_tokens(
+                user_id=firebase_uid,
+                amount=tokens,
+                reason=f"Purchased {package_id} package"
+            )
+            
+            if not success:
+                logger.error(f"[Stripe Webhook] Failed to credit {tokens} tokens to user {firebase_uid}")
+                return {'error': 'Failed to credit tokens'}
+            
+            # Record transaction in ledger
+            logger.info(f"[Stripe Webhook] Recording transaction in ledger for session {session_id}")
+            transaction_service.record_purchase(
+                user_id=firebase_uid,
+                amount=tokens,
+                package_id=package_id,
+                stripe_session_id=session_id,
+                stripe_customer_id=session.get('customer'),
+                amount_paid=session.get('amount_total', 0) / 100  # Convert cents to dollars
+            )
+            
+            logger.info(f"[Stripe Webhook] Credited {tokens} tokens to user {firebase_uid} for purchase {session_id}")
+            return {'success': True}
+            
+        except Exception as e:
+            logger.error(f"❌ Token purchase processing failed: {e}", exc_info=True)
+            return {'error': str(e)}
+
     def _handle_subscription_updated(self, subscription: Dict[str, Any]) -> Dict[str, Any]:
         """Handle subscription update events."""
         try:

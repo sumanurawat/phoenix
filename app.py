@@ -56,6 +56,7 @@ from api.stats_routes import stats_bp
 from api.dataset_routes import dataset_bp
 from api.video_routes import video_bp
 from api.stripe_routes import stripe_bp, subscription_bp
+from api.token_routes import token_bp
 from api.reel_routes import reel_bp
 from api.job_routes import job_bp
 from api.socials_routes import socials_bp
@@ -167,6 +168,7 @@ def create_app():
     app.register_blueprint(video_bp)
     app.register_blueprint(stripe_bp)
     app.register_blueprint(subscription_bp)
+    app.register_blueprint(token_bp)
     app.register_blueprint(reel_bp)
     app.register_blueprint(job_bp)
     app.register_blueprint(socials_bp)
@@ -262,6 +264,26 @@ def create_app():
                            title='My Dashboards',
                            user_name=session.get('user_name'),
                            user_email=session.get('user_email'))
+    
+    @app.route('/buy-tokens')
+    @require_auth
+    def buy_tokens_page():
+        """Render the Buy Tokens page - requires authentication."""
+        return render_template('buy_tokens.html', 
+                           title='Buy Tokens')
+    
+    @app.route('/token-purchase-success')
+    @require_auth
+    def token_purchase_success():
+        """Render the token purchase success page."""
+        return render_template('token_purchase_success.html', 
+                           title='Payment Successful')
+    
+    @app.route('/token-purchase-cancel')
+    def token_purchase_cancel():
+        """Render the token purchase cancel page."""
+        return render_template('token_purchase_cancel.html', 
+                           title='Payment Canceled')
     
     @app.route('/api/dataset-image/<path:filename>')
     def serve_dataset_image(filename):

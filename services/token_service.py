@@ -168,7 +168,6 @@ class TokenService:
             logger.error(f"Failed to deduct tokens for {user_id}: {str(e)}", exc_info=True)
             raise
     
-    @admin_firestore.transactional
     def _add_tokens_transaction(
         self,
         transaction: firestore.Transaction,
@@ -185,14 +184,16 @@ class TokenService:
             amount: Number of tokens to add
             increment_earned: Whether to also increment totalTokensEarned (for tips)
         """
-        update_data = {
-            'tokenBalance': admin_firestore.Increment(amount)
-        }
-        
+        # Atomically increment balance
         if increment_earned:
-            update_data['totalTokensEarned'] = admin_firestore.Increment(amount)
-        
-        transaction.update(user_ref, update_data)
+            transaction.update(user_ref, {
+                'tokenBalance': admin_firestore.Increment(amount),
+                'totalTokensEarned': admin_firestore.Increment(amount)
+            })
+        else:
+            transaction.update(user_ref, {
+                'tokenBalance': admin_firestore.Increment(amount)
+            })
     
     def add_tokens(
         self,
@@ -220,11 +221,19 @@ class TokenService:
             raise ValueError("Add amount must be positive")
         
         try:
+
             user_ref = self.db.collection('users').document(user_id)
-            transaction = self.db.transaction()
-            
+
             logger.info(f"Adding {amount} tokens to {user_id} (reason: {reason}, earned: {increment_earned})")
-            self._add_tokens_transaction(transaction, user_ref, amount, increment_earned)
+
+            # Execute transaction with manual commit
+            @admin_firestore.transactional
+            def update_in_transaction(transaction):
+                self._add_tokens_transaction(transaction, user_ref, amount, increment_earned)
+            
+            # Run the transaction
+            transaction = self.db.transaction()
+            update_in_transaction(transaction)
             
             logger.info(f"Successfully added {amount} tokens to {user_id}")
             return True

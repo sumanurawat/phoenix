@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}Buy Tokens - Phoenix AI Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+    .buy-tokens-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+    
+    .token-balance-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 40px;
+        text-align: center;
+    }
+    
+    .current-balance {
+        font-size: 3rem;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+    
+    .packages-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 25px;
+        margin-top: 30px;
+    }
+    
+    .package-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        position: relative;
+        border: 2px solid #e0e0e0;
+    }
+    
+    .package-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+        border-color: #667eea;
+    }
+    
+    .package-badge {
+        position: absolute;
+        top: -12px;
+        right: 20px;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .package-badge.value {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    .package-name {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #333;
+    }
+    
+    .package-price {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #667eea;
+        margin: 10px 0;
+    }
+    
+    .package-tokens {
+        font-size: 1.25rem;
+        color: #666;
+        margin-bottom: 10px;
+    }
+    
+    .package-bonus {
+        background: #ffeaa7;
+        color: #d63031;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin: 15px 0;
+        display: inline-block;
+    }
+    
+    .package-description {
+        color: #888;
+        font-size: 0.95rem;
+        margin: 15px 0 20px 0;
+        min-height: 40px;
+    }
+    
+    .btn-buy-tokens {
+        width: 100%;
+        padding: 14px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border-radius: 10px;
+        border: none;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .btn-buy-tokens:hover {
+        transform: scale(1.02);
+        box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-buy-tokens:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+    
+    .btn-buy-tokens .spinner-border {
+        width: 1rem;
+        height: 1rem;
+        border-width: 2px;
+    }
+    
+    .package-unavailable {
+        background: #f5f5f5;
+        opacity: 0.6;
+        pointer-events: none;
+    }
+    
+    .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .loading-overlay.active {
+        display: flex;
+    }
+    
+    .loading-content {
+        background: white;
+        padding: 40px;
+        border-radius: 15px;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="buy-tokens-container">
+    <div class="token-balance-header">
+        <h1 class="mb-2">
+            <i class="fas fa-coins"></i> Buy Tokens
+        </h1>
+        <p class="mb-3">Power your creativity with Phoenix tokens</p>
+        <div class="current-balance" id="currentBalance">
+            <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        <p class="mb-0">Current Token Balance</p>
+    </div>
+    
+    <div class="text-center mb-4">
+        <h2 class="h4">Choose Your Token Package</h2>
+        <p class="text-muted">All packages include instant delivery and secure payment processing</p>
+    </div>
+    
+    <div class="packages-grid" id="packagesGrid">
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading packages...</span>
+            </div>
+            <p class="text-muted mt-2">Loading token packages...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Processing...</span>
+        </div>
+        <h4>Redirecting to Checkout...</h4>
+        <p class="text-muted">Please wait while we prepare your secure payment session</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // CSRF token for API requests
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    // Load user's current token balance
+    async function loadBalance() {
+        try {
+            const response = await fetch('/api/tokens/balance', {
+                headers: {
+                    'X-CSRF-Token': csrfToken
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('currentBalance').textContent = data.balance.toLocaleString();
+            } else if (response.status === 401) {
+                document.getElementById('currentBalance').innerHTML = '<a href="/auth/login" class="text-white">Login to view balance</a>';
+            } else {
+                document.getElementById('currentBalance').textContent = '--';
+            }
+        } catch (error) {
+            console.error('Failed to load balance:', error);
+            document.getElementById('currentBalance').textContent = '--';
+        }
+    }
+    
+    // Load available token packages
+    async function loadPackages() {
+        try {
+            const response = await fetch('/api/tokens/packages');
+            const data = await response.json();
+            
+            if (data.success && data.packages) {
+                renderPackages(data.packages);
+            } else {
+                showError('Failed to load token packages');
+            }
+        } catch (error) {
+            console.error('Failed to load packages:', error);
+            showError('Failed to load token packages. Please refresh the page.');
+        }
+    }
+    
+    // Render package cards
+    function renderPackages(packages) {
+        const grid = document.getElementById('packagesGrid');
+        grid.innerHTML = '';
+        
+        packages.forEach(pkg => {
+            const card = document.createElement('div');
+            card.className = `package-card ${!pkg.available ? 'package-unavailable' : ''}`;
+            
+            let badgeHtml = '';
+            if (pkg.badge) {
+                const badgeClass = pkg.badge === 'BEST VALUE' ? 'value' : '';
+                badgeHtml = `<div class="package-badge ${badgeClass}">${pkg.badge}</div>`;
+            }
+            
+            let bonusHtml = '';
+            if (pkg.bonus > 0) {
+                bonusHtml = `<div class="package-bonus">🎁 +${pkg.bonus} bonus tokens!</div>`;
+            }
+            
+            card.innerHTML = `
+                ${badgeHtml}
+                <h3 class="package-name">${pkg.name}</h3>
+                <div class="package-price">$${pkg.price.toFixed(2)}</div>
+                <div class="package-tokens">${pkg.tokens} tokens</div>
+                ${bonusHtml}
+                <p class="package-description">${pkg.description}</p>
+                <button 
+                    class="btn-buy-tokens" 
+                    onclick="buyTokens('${pkg.id}')"
+                    ${!pkg.available ? 'disabled' : ''}
+                >
+                    ${pkg.available ? 'Buy Now' : 'Unavailable'}
+                </button>
+            `;
+            
+            grid.appendChild(card);
+        });
+    }
+    
+    // Handle token purchase
+    async function buyTokens(packageId) {
+        const button = event.target;
+        const originalText = button.textContent;
+        
+        // Disable button and show loading
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+        
+        try {
+            const response = await fetch('/api/tokens/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({ package: packageId })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success && data.url) {
+                // Show loading overlay
+                document.getElementById('loadingOverlay').classList.add('active');
+                
+                // Redirect to Stripe checkout
+                window.location.href = data.url;
+            } else {
+                // Handle error
+                const errorMsg = data.error || 'Failed to create checkout session';
+                alert('Error: ' + errorMsg);
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        } catch (error) {
+            console.error('Purchase error:', error);
+            alert('An error occurred. Please try again.');
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+    }
+    
+    function showError(message) {
+        const grid = document.getElementById('packagesGrid');
+        grid.innerHTML = `
+            <div class="col-12 text-center">
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>${message}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', () => {
+        loadBalance();
+        loadPackages();
+    });
+</script>
+{% endblock %}

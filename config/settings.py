@@ -50,6 +50,20 @@ INSTAGRAM_CLIENT_ID = os.getenv("INSTAGRAM_CLIENT_ID")
 INSTAGRAM_CLIENT_SECRET = os.getenv("INSTAGRAM_CLIENT_SECRET")
 INSTAGRAM_REDIRECT_URI = os.getenv("INSTAGRAM_REDIRECT_URI")  # e.g., https://phoenix.app/api/socials/instagram/callback
 
+# Stripe Configuration
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+# Token Package Price IDs (configured in Stripe Dashboard)
+STRIPE_TOKEN_STARTER_PRICE_ID = os.getenv("STRIPE_TOKEN_STARTER_PRICE_ID")   # 50 tokens - $4.99
+STRIPE_TOKEN_POPULAR_PRICE_ID = os.getenv("STRIPE_TOKEN_POPULAR_PRICE_ID")   # 110 tokens - $9.99 (10% bonus)
+STRIPE_TOKEN_PRO_PRICE_ID = os.getenv("STRIPE_TOKEN_PRO_PRICE_ID")           # 250 tokens - $19.99 (25% bonus)
+STRIPE_TOKEN_CREATOR_PRICE_ID = os.getenv("STRIPE_TOKEN_CREATOR_PRICE_ID")   # 700 tokens - $49.99 (40% bonus)
+
+# Application Base URL (for Stripe redirects)
+APP_BASE_URL = os.getenv("APP_BASE_URL", "http://localhost:8080")
+
 # Flask configuration
 SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")
 FLASK_ENV = os.getenv("FLASK_ENV", "development")
