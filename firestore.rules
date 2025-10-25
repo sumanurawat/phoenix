@@ -1,12 +1,41 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read/write access to all documents for authenticated users
-    // for existing collections (shortened_links, website_stats, etc.)
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    // Posts collection - only owners can create/update/delete their posts
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
-    
+
+    // Likes collection - enforce deterministic IDs and ownership
+
+    match /likes/{likeId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.postId is string
+        && request.resource.id == request.auth.uid + "_" + request.resource.data.postId;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if false; // Likes are immutable after creation
+    }
+
+    // Image generations - users can only access their own records
+    match /image_generations/{imageId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.user_id;
+      allow create: if request.auth != null && request.resource.data.user_id == request.auth.uid;
+      allow update, delete: if false; // Managed by backend
+    }
+
+    // Transactions ledger - read-only per user, writes via backend only
+    match /transactions/{transactionId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow write: if false;
+    }
+
     // Specific rules for chat conversations
     match /conversations/{conversationId} {
       allow read, write: if request.auth != null 
@@ -14,7 +43,7 @@ service cloud.firestore {
       allow create: if request.auth != null 
         && request.auth.uid == request.resource.data.user_id;
     }
-    
+
     // Specific rules for chat messages
     match /messages/{messageId} {
       allow read, write: if request.auth != null
@@ -24,7 +53,7 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/conversations/$(request.resource.data.conversation_id))
         && get(/databases/$(database)/documents/conversations/$(request.resource.data.conversation_id)).data.user_id == request.auth.uid;
     }
-    
+
     // Specific rules for conversation documents
     match /conversation_documents/{documentId} {
       allow read, write: if request.auth != null 
@@ -32,9 +61,9 @@ service cloud.firestore {
       allow create: if request.auth != null 
         && request.auth.uid == request.resource.data.user_id;
     }
-    
+
     // Subscription-related collections
-    
+
     // Users collection - stores Stripe customer IDs
     match /users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
@@ -42,19 +71,24 @@ service cloud.firestore {
       // Allow webhook to write (webhook bypasses auth with signature verification)
       allow write: if request.auth == null && request.resource.data.keys().hasAll(['stripe_customer_id']);
     }
-    
+
     // User subscriptions collection - stores subscription details
     match /user_subscriptions/{subscriptionId} {
       allow read: if request.auth != null 
         && request.auth.uid == resource.data.firebase_uid;
       allow write: if false; // Only allow writes from backend/webhooks
     }
-    
+
     // User usage collection - tracks daily usage
     match /user_usage/{usageId} {
       allow read: if request.auth != null 
         && request.auth.uid == resource.data.firebase_uid;
       allow write: if false; // Only allow writes from backend
+    }
+
+    // Default read access for authenticated users; writes must be explicitly allowed above
+    match /{document=**} {
+      allow read: if request.auth != null;
     }
   }
 }

@@ -32,6 +32,19 @@ VIDEO_STORAGE_BUCKET = os.getenv("VIDEO_STORAGE_BUCKET")
 REEL_MAKER_GCS_BUCKET = os.getenv("REEL_MAKER_GCS_BUCKET")
 VIDEO_GENERATION_BUCKET = os.getenv("VIDEO_GENERATION_BUCKET")
 
+# Cloudflare R2 Configuration (for image storage - $0 egress for future video platform)
+R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID")
+R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY")
+R2_ENDPOINT_URL = os.getenv("R2_ENDPOINT_URL")
+R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME", "ai-image-posts-prod")
+R2_PUBLIC_URL = os.getenv("R2_PUBLIC_URL")
+
+# Image Generation Configuration
+IMAGE_STORAGE_BUCKET = os.getenv("IMAGE_STORAGE_BUCKET", "phoenix-images")  # Legacy GCS, now using R2
+DEFAULT_IMAGE_ASPECT_RATIO = "9:16"  # Portrait mode (vertical)
+IMAGE_SAFETY_FILTER = "block_few"  # Lowest safety level
+IMAGE_PERSON_GENERATION = "allow_all"  # No restrictions on person generation
+
 # Instagram OAuth Configuration
 INSTAGRAM_CLIENT_ID = os.getenv("INSTAGRAM_CLIENT_ID")
 INSTAGRAM_CLIENT_SECRET = os.getenv("INSTAGRAM_CLIENT_SECRET")

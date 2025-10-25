@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    /* Dark theme optimized styling */
+    .card.bg-dark, .card.bg-dark .card-header { 
+        color: #e6e6e6; 
+    }
+    
+    .bg-dark .form-label, .bg-dark label { 
+        color: #e6e6e6; 
+    }
+    
+    .bg-dark .form-control { 
+        background-color: #2a2f3a; 
+        color: #eaeaea; 
+        border-color: #444; 
+    }
+    
+    .bg-dark .form-control::placeholder { 
+        color: #b7bdc8; 
+    }
+    
+    .bg-dark .form-control:focus { 
+        background-color: #2d3340; 
+        color: #ffffff; 
+        border-color: #6c8cff; 
+        box-shadow: 0 0 0 0.1rem rgba(108, 140, 255, 0.25);
+    }
+
+    #promptInput {
+        min-height: 120px;
+        font-size: 1rem;
+    }
+
+    .image-preview {
+        position: relative;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #1d1f27;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .image-preview img {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 8px;
+    }
+
+    .loading-spinner {
+        text-align: center;
+        padding: 3rem;
+    }
+
+    .action-buttons {
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+
+    .btn-group-custom {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .placeholder-box {
+        border: 2px dashed #555;
+        padding: 3rem 2rem;
+        text-align: center;
+        border-radius: 12px;
+        background: #1d1f27;
+        color: #999;
+    }
+
+    .stats-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: rgba(108, 140, 255, 0.1);
+        border-radius: 8px;
+        font-size: 0.9rem;
+    }
+
+    .generation-info {
+        background: rgba(255,255,255,0.05);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <a href="/" class="btn btn-link mb-3"><i class="fas fa-arrow-left"></i> Back</a>
+    
+    <div class="mb-4">
+        <h1 class="mb-2">AI Image Generator</h1>
+        <p class="text-muted">Generate stunning portrait images with AI. Powered by Google Imagen 3.</p>
+        <div class="stats-badge">
+            <i class="fas fa-image text-primary"></i>
+            <span>Portrait (9:16) • 1 image per generation • Ultra-fast</span>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Prompt Input Column -->
+        <div class="col-lg-5">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header">
+                    <i class="fas fa-pencil-alt"></i> Prompt
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="promptInput" class="form-label">Describe your image</label>
+                        <textarea 
+                            id="promptInput" 
+                            class="form-control" 
+                            placeholder="A serene mountain landscape at sunset with purple clouds, digital art style..."
+                            maxlength="5000"
+                        ></textarea>
+                        <div class="form-text">
+                            <span id="charCount">0</span>/5000 characters
+                        </div>
+                    </div>
+
+                    <button id="generateBtn" class="btn btn-primary w-100">
+                        <i class="fas fa-magic"></i> Generate Image
+                    </button>
+
+                    <div class="mt-3 text-muted small">
+                        <strong>Tips:</strong>
+                        <ul class="mb-0 mt-2 ps-3">
+                            <li>Be descriptive and specific</li>
+                            <li>Include style (e.g., "digital art", "photorealistic")</li>
+                            <li>Mention lighting, mood, and details</li>
+                            <li>Generation takes 3-5 seconds</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Preview Column -->
+        <div class="col-lg-7">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header">
+                    <i class="fas fa-image"></i> Generated Image
+                </div>
+                <div class="card-body">
+                    <!-- Placeholder State -->
+                    <div id="placeholderState" class="placeholder-box">
+                        <i class="fas fa-image fa-3x mb-3 text-muted"></i>
+                        <p class="mb-0">Your generated image will appear here</p>
+                        <p class="small text-muted mb-0">Enter a prompt and click Generate</p>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="loadingState" class="loading-spinner" style="display: none;">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Generating...</span>
+                        </div>
+                        <p class="text-muted mb-0">Generating your image...</p>
+                        <p class="small text-muted">This usually takes 3-5 seconds</p>
+                    </div>
+
+                    <!-- Image Preview State -->
+                    <div id="imagePreviewState" style="display: none;">
+                        <div class="image-preview">
+                            <img id="generatedImage" src="" alt="Generated image">
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="action-buttons btn-group-custom">
+                            <button id="downloadBtn" class="btn btn-success flex-fill">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                            <button id="publishBtn" class="btn btn-primary flex-fill" disabled>
+                                <i class="fas fa-share"></i> Publish (Coming Soon)
+                            </button>
+                            <button id="discardBtn" class="btn btn-outline-danger">
+                                <i class="fas fa-trash"></i> Discard
+                            </button>
+                        </div>
+
+                        <!-- Generation Info -->
+                        <div class="generation-info">
+                            <div class="row g-2 small">
+                                <div class="col-6">
+                                    <strong>Image ID:</strong><br>
+                                    <code id="imageId" class="text-muted">-</code>
+                                </div>
+                                <div class="col-6">
+                                    <strong>Generation Time:</strong><br>
+                                    <span id="genTime" class="text-muted">-</span>
+                                </div>
+                                <div class="col-12">
+                                    <strong>Prompt:</strong><br>
+                                    <span id="usedPrompt" class="text-muted">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error State -->
+                    <div id="errorState" class="alert alert-danger" style="display: none;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <strong>Error:</strong> <span id="errorMessage"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Generations (Optional) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header">
+                    <i class="fas fa-history"></i> Recent Generations
+                    <button id="refreshHistoryBtn" class="btn btn-sm btn-outline-primary float-end">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="historyContainer">
+                        <p class="text-muted text-center py-3 mb-0">
+                            <i class="fas fa-info-circle"></i> Your recent generations will appear here
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/image_generator.js') }}"></script>
+{% endblock %}

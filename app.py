@@ -59,6 +59,7 @@ from api.stripe_routes import stripe_bp, subscription_bp
 from api.reel_routes import reel_bp
 from api.job_routes import job_bp
 from api.socials_routes import socials_bp
+from api.image_routes import image_bp
 
 # Import services (AFTER Firebase initialization)
 from services.chat_service import ChatService
@@ -169,6 +170,7 @@ def create_app():
     app.register_blueprint(reel_bp)
     app.register_blueprint(job_bp)
     app.register_blueprint(socials_bp)
+    app.register_blueprint(image_bp)
     
     # Setup subscription middleware
     @app.before_request
@@ -507,6 +509,12 @@ Keep your response concise and actionable."""
     def video_generation():
         """Render the Video Generation page (requires login)."""
         return render_template('video_generation.html', title='Video Generation - Phoenix AI')
+    
+    @app.route('/image-generator')
+    @login_required
+    def image_generator():
+        """Render the Image Generator page (requires login)."""
+        return render_template('image_generator.html', title='Image Generator - Phoenix AI')
     
     @app.route('/reel-maker')
     @login_required

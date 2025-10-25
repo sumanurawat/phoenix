@@ -1,0 +1,463 @@
+"""Image Generation API routes (Imagen 3)"""
+from __future__ import annotations
+
+import logging
+from datetime import datetime, timezone
+from flask import Blueprint, request, jsonify, session
+from firebase_admin import firestore
+
+from api.auth_routes import login_required
+from middleware.csrf_protection import csrf_protect
+from services.image_generation_service import (
+    ImageGenerationService, 
+    ImageGenerationResult,
+    SafetyFilterError,
+    PolicyViolationError,
+    ImageGenerationError
+)
+from services.website_stats_service import WebsiteStatsService
+
+logger = logging.getLogger(__name__)
+
+image_bp = Blueprint('image', __name__, url_prefix='/api/image')
+website_stats_service = WebsiteStatsService()
+db = firestore.client()
+
+
+@image_bp.route('/generate', methods=['POST'])
+@login_required
+@csrf_protect
+def generate_image():
+    """
+    Generate a single portrait image from a text prompt.
+    
+    Request JSON:
+    {
+        "prompt": "A serene mountain landscape at sunset...",
+        "save_to_firestore": true  // optional, default true
+    }
+    
+    Response JSON:
+    {
+        "success": true,
+        "image": {
+            "image_url": "https://...",
+            "gcs_uri": "gs://...",
+            "base64_data": "base64...",
+            "image_id": "uuid...",
+            "prompt": "...",
+            "aspect_ratio": "9:16",
+            "generation_time_seconds": 3.45,
+            "timestamp": "2025-10-25T12:00:00Z",
+            "model": "imagen-3.0-generate-001"
+        }
+    }
+    """
+    try:
+        # Get request data
+        data = request.get_json()
+        if not data:
+            logger.warning("Empty request body received")
+            return jsonify({
+                "success": False,
+                "error": "Request body is required"
+            }), 400
+        
+        # Extract and validate prompt
+        prompt = data.get('prompt', '').strip()
+        if not prompt:
+            logger.warning("Empty prompt received")
+            return jsonify({
+                "success": False,
+                "error": "Prompt is required"
+            }), 400
+        
+        # Get user info from session
+        user_id = session.get('user_id')
+        user_email = session.get('user_email', 'anonymous')
+        
+        logger.info(f"Image generation request from user {user_email} - prompt: '{prompt[:100]}...'")
+        
+        # Initialize service and generate image
+        generation_successful = False
+        try:
+            service = ImageGenerationService()
+            result = service.generate_image(
+                prompt=prompt,
+                user_id=user_id,
+                save_to_gcs=True
+            )
+            
+            # Mark as successful ONLY if we got a valid result
+            generation_successful = True
+            logger.info(f"Image generated successfully - ID: {result.image_id}, time: {result.generation_time_seconds:.2f}s")
+            
+        except SafetyFilterError as e:
+            # Safety filter blocked the generation - DO NOT deduct credits
+            logger.warning(f"Image generation blocked by safety filter for user {user_email}: {str(e)}")
+            return jsonify({
+                "success": False,
+                "error": str(e),
+                "error_type": "safety_filter",
+                "should_deduct_credits": False,
+                "message": "Your prompt was blocked by content safety filters. Please try a different prompt."
+            }), 400
+            
+        except PolicyViolationError as e:
+            # Policy violation - DO NOT deduct credits
+            logger.warning(f"Image generation blocked by policy violation for user {user_email}: {str(e)}")
+            return jsonify({
+                "success": False,
+                "error": str(e),
+                "error_type": "policy_violation",
+                "should_deduct_credits": False,
+                "message": "Your prompt violates content policies. Please modify your prompt and try again."
+            }), 400
+            
+        except ValueError as e:
+            # Validation error (empty prompt, etc) - DO NOT deduct credits
+            logger.warning(f"Validation error: {str(e)}")
+            return jsonify({
+                "success": False,
+                "error": str(e),
+                "error_type": "validation_error",
+                "should_deduct_credits": False
+            }), 400
+            
+        except ImageGenerationError as e:
+            # Other image generation errors - DO NOT deduct credits
+            logger.error(f"Image generation error: {str(e)}", exc_info=True)
+            return jsonify({
+                "success": False,
+                "error": str(e),
+                "error_type": "generation_error",
+                "should_deduct_credits": False
+            }), 500
+            
+        except Exception as e:
+            # Unexpected errors - DO NOT deduct credits
+            logger.error(f"Unexpected error during image generation: {str(e)}", exc_info=True)
+            return jsonify({
+                "success": False,
+                "error": f"Image generation failed: {str(e)}",
+                "error_type": "unexpected_error",
+                "should_deduct_credits": False
+            }), 500
+        
+        # At this point, generation was successful and credits SHOULD be deducted
+        # Save to Firestore if requested
+        save_to_firestore = data.get('save_to_firestore', True)
+        firestore_doc_id = None
+        
+        if save_to_firestore and user_id:
+            try:
+                doc_data = {
+                    'user_id': user_id,
+                    'image_id': result.image_id,
+                    'prompt': prompt,
+                    'image_url': result.image_url,
+                    'gcs_uri': result.gcs_uri,
+                    'aspect_ratio': result.aspect_ratio,
+                    'model': result.model,
+                    'generation_time_seconds': result.generation_time_seconds,
+                    'created_at': firestore.SERVER_TIMESTAMP,
+                    'timestamp': datetime.utcnow().isoformat() + 'Z',
+                    'status': 'generated'
+                }
+                
+                doc_ref = db.collection('image_generations').document(result.image_id)
+                doc_ref.set(doc_data)
+                firestore_doc_id = result.image_id
+                
+                logger.info(f"Saved image metadata to Firestore: {firestore_doc_id}")
+                
+            except Exception as e:
+                # Don't fail the request if Firestore save fails
+                logger.error(f"Failed to save to Firestore: {str(e)}", exc_info=True)
+        
+        # Increment stats counter ONLY for successful generations
+        try:
+            website_stats_service.increment_images_generated(1)
+            logger.info("Incremented images generated counter (generation was successful)")
+        except Exception as e:
+            # Don't fail the request if stats update fails
+            logger.error(f"Failed to increment stats: {str(e)}", exc_info=True)
+        
+        # Return success response with explicit credit deduction flag
+        response_data = {
+            "success": True,
+            "should_deduct_credits": True,  # IMPORTANT: Only returned on successful generation
+            "image": result.to_dict()
+        }
+        
+        if firestore_doc_id:
+            response_data["firestore_doc_id"] = firestore_doc_id
+        
+        return jsonify(response_data), 200
+        
+    except Exception as e:
+        logger.error(f"Unexpected error in generate_image endpoint: {str(e)}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "error": "An unexpected error occurred"
+        }), 500
+
+
+@image_bp.route('/validate-prompt', methods=['POST'])
+@login_required
+def validate_prompt():
+    """
+    Validate a prompt before generation (optional pre-check).
+    
+    Request JSON:
+    {
+        "prompt": "..."
+    }
+    
+    Response JSON:
+    {
+        "valid": true,
+        "error": null
+    }
+    """
+    try:
+        data = request.get_json()
+        prompt = data.get('prompt', '').strip()
+        
+        service = ImageGenerationService()
+        is_valid, error_message = service.validate_prompt(prompt)
+        
+        return jsonify({
+            "valid": is_valid,
+            "error": error_message
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error validating prompt: {str(e)}", exc_info=True)
+        return jsonify({
+            "valid": False,
+            "error": "Validation failed"
+        }), 500
+
+
+@image_bp.route('/history', methods=['GET'])
+@login_required
+def get_history():
+    """
+    Get user's image generation history.
+    
+    Query params:
+    - limit: Number of results (default 20, max 100)
+    - offset: Pagination offset (default 0)
+    
+    Response JSON:
+    {
+        "success": true,
+        "images": [...],
+        "total": 45,
+        "limit": 20,
+        "offset": 0
+    }
+    """
+    try:
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({
+                "success": False,
+                "error": "User not authenticated"
+            }), 401
+        
+        # Get pagination params
+        limit = min(int(request.args.get('limit', 20)), 100)
+        offset = int(request.args.get('offset', 0))
+        
+        logger.info(f"Fetching image history for user {user_id} - limit: {limit}, offset: {offset}")
+        
+        # Query Firestore
+        query = db.collection('image_generations') \
+            .where('user_id', '==', user_id) \
+            .order_by('created_at', direction=firestore.Query.DESCENDING) \
+            .limit(limit) \
+            .offset(offset)
+        
+        docs = query.stream()
+        
+        images = []
+        for doc in docs:
+            data = doc.to_dict()
+            images.append({
+                'id': doc.id,
+                'image_id': data.get('image_id'),
+                'prompt': data.get('prompt'),
+                'image_url': data.get('image_url'),
+                'gcs_uri': data.get('gcs_uri'),
+                'aspect_ratio': data.get('aspect_ratio'),
+                'model': data.get('model'),
+                'generation_time_seconds': data.get('generation_time_seconds'),
+                'timestamp': data.get('timestamp'),
+                'status': data.get('status', 'generated')
+            })
+        
+        # Get total count (expensive operation, consider caching)
+        total_query = db.collection('image_generations').where('user_id', '==', user_id)
+        total = len(list(total_query.stream()))
+        
+        logger.info(f"Retrieved {len(images)} images (total: {total})")
+        
+        return jsonify({
+            "success": True,
+            "images": images,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error fetching image history: {str(e)}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "error": "Failed to fetch history"
+        }), 500
+
+
+@image_bp.route('/<image_id>', methods=['GET'])
+@login_required
+def get_image(image_id):
+    """
+    Get a specific image by ID.
+    
+    Response JSON:
+    {
+        "success": true,
+        "image": {...}
+    }
+    """
+    try:
+        user_id = session.get('user_id')
+        
+        # Fetch from Firestore
+        doc_ref = db.collection('image_generations').document(image_id)
+        doc = doc_ref.get()
+        
+        if not doc.exists:
+            logger.warning(f"Image not found: {image_id}")
+            return jsonify({
+                "success": False,
+                "error": "Image not found"
+            }), 404
+        
+        data = doc.to_dict()
+        
+        # Check ownership
+        if data.get('user_id') != user_id:
+            logger.warning(f"Unauthorized access attempt for image {image_id} by user {user_id}")
+            return jsonify({
+                "success": False,
+                "error": "Unauthorized"
+            }), 403
+        
+        return jsonify({
+            "success": True,
+            "image": {
+                'id': doc.id,
+                'image_id': data.get('image_id'),
+                'prompt': data.get('prompt'),
+                'image_url': data.get('image_url'),
+                'gcs_uri': data.get('gcs_uri'),
+                'aspect_ratio': data.get('aspect_ratio'),
+                'model': data.get('model'),
+                'generation_time_seconds': data.get('generation_time_seconds'),
+                'timestamp': data.get('timestamp'),
+                'status': data.get('status', 'generated')
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error fetching image: {str(e)}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "error": "Failed to fetch image"
+        }), 500
+
+
+@image_bp.route('/<image_id>', methods=['DELETE'])
+@login_required
+@csrf_protect
+def delete_image(image_id):
+    """
+    Delete an image (soft delete - marks as deleted in Firestore).
+    
+    Response JSON:
+    {
+        "success": true,
+        "message": "Image deleted"
+    }
+    """
+    try:
+        user_id = session.get('user_id')
+        
+        # Fetch from Firestore
+        doc_ref = db.collection('image_generations').document(image_id)
+        doc = doc_ref.get()
+        
+        if not doc.exists:
+            logger.warning(f"Image not found for deletion: {image_id}")
+            return jsonify({
+                "success": False,
+                "error": "Image not found"
+            }), 404
+        
+        data = doc.to_dict()
+        
+        # Check ownership
+        if data.get('user_id') != user_id:
+            logger.warning(f"Unauthorized delete attempt for image {image_id} by user {user_id}")
+            return jsonify({
+                "success": False,
+                "error": "Unauthorized"
+            }), 403
+        
+        # Soft delete - update status
+        doc_ref.update({
+            'status': 'deleted',
+            'deleted_at': firestore.SERVER_TIMESTAMP
+        })
+        
+        logger.info(f"Image {image_id} marked as deleted by user {user_id}")
+        
+        return jsonify({
+            "success": True,
+            "message": "Image deleted successfully"
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error deleting image: {str(e)}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "error": "Failed to delete image"
+        }), 500
+
+
+# Health check endpoint (no auth required)
+@image_bp.route('/health', methods=['GET'])
+def health_check():
+    """
+    Health check endpoint to verify the image generation service is ready.
+    """
+    try:
+        # Quick validation that we can initialize the service
+        service = ImageGenerationService()
+        
+        return jsonify({
+            "status": "healthy",
+            "service": "image_generation",
+            "model": "imagen-3.0-generate-001",
+            "timestamp": datetime.utcnow().isoformat() + 'Z'
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}", exc_info=True)
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(e)
+        }), 503
