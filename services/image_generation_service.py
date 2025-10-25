@@ -174,7 +174,7 @@ class ImageGenerationService:
             logger.debug(f"Generating with Imagen 3 - aspect_ratio: {DEFAULT_IMAGE_ASPECT_RATIO}, "
                         f"safety: {IMAGE_SAFETY_FILTER}, person_gen: {IMAGE_PERSON_GENERATION}")
             
-            images = self.model.generate_images(
+            response = self.model.generate_images(
                 prompt=prompt,
                 number_of_images=1,  # Hardcoded: single image
                 aspect_ratio=DEFAULT_IMAGE_ASPECT_RATIO,  # "9:16" (portrait)
@@ -182,11 +182,12 @@ class ImageGenerationService:
                 person_generation=IMAGE_PERSON_GENERATION,  # "allow_all"
             )
             
-            if not images or len(images) == 0:
+            # ImageGenerationResponse has .images attribute (list)
+            if not response or not hasattr(response, 'images') or len(response.images) == 0:
                 logger.error("No images returned from Imagen API")
                 raise ImageGenerationError("Image generation returned no results")
             
-            image = images[0]
+            image = response.images[0]
             generation_time = time.time() - start_time
             logger.info(f"Image generation completed in {generation_time:.2f}s")
             

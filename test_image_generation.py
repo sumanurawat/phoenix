@@ -26,8 +26,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from services.image_generation_service import (
-    ImageGenerationService, 
-    generate_image,
+    ImageGenerationService,
     SafetyFilterError,
     PolicyViolationError,
     ImageGenerationError
@@ -45,7 +44,8 @@ def test_basic_generation():
     print("Settings: Portrait (9:16), Lowest safety, No person restrictions\n")
     
     try:
-        result = generate_image(prompt=prompt)
+        service = ImageGenerationService()
+        result = service.generate_image(prompt=prompt)
         
         print("✅ SUCCESS!")
         print(f"\n📊 Results:")
@@ -186,7 +186,8 @@ def test_multiple_generations():
         print(f"{i}. Generating: '{prompt[:50]}...'")
         
         try:
-            result = generate_image(prompt=prompt)
+            service = ImageGenerationService()
+            result = service.generate_image(prompt=prompt)
             results.append(result)
             total_time += result.generation_time_seconds
             print(f"   ✅ Done in {result.generation_time_seconds:.2f}s - ID: {result.image_id}")
