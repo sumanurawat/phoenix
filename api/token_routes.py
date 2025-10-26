@@ -288,7 +288,8 @@ def get_transactions():
                 'amount': amount,
                 'timestamp': txn.get('timestamp'),
                 'description': description,
-                'details': details
+                'details': details,
+                'balanceAfter': txn.get('balanceAfter')  # Include balance after transaction
             })
 
         return jsonify({
