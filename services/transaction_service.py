@@ -55,26 +55,28 @@ class TransactionService:
         user_id: str,
         transaction_type: str,
         amount: int,
-        details: Optional[Dict[str, Any]] = None
+        details: Optional[Dict[str, Any]] = None,
+        balance_after: Optional[int] = None
     ) -> str:
         """
         Record a new transaction in the immutable ledger.
-        
+
         Args:
             user_id: Firebase Auth UID of user involved in transaction
             transaction_type: Type of transaction (use TransactionType constants)
             amount: Number of tokens moved (positive for credits, negative for debits)
             details: Additional context-specific information (optional)
-            
+            balance_after: User's token balance after this transaction (optional but recommended)
+
         Returns:
             Transaction document ID
-            
+
         Raises:
             ValueError: If transaction data is invalid
         """
         if not user_id:
             raise ValueError("user_id is required")
-        
+
         if transaction_type not in [
             TransactionType.PURCHASE,
             TransactionType.GENERATION_SPEND,
@@ -85,27 +87,35 @@ class TransactionService:
             TransactionType.REFUND
         ]:
             logger.warning(f"Unknown transaction type: {transaction_type}")
-        
+
         try:
+            # Get current balance if not provided
+            if balance_after is None:
+                from services.token_service import TokenService
+                token_service = TokenService()
+                balance_after = token_service.get_balance(user_id)
+                logger.debug(f"Fetched current balance for transaction: {balance_after}")
+
             transaction_data = {
                 'userId': user_id,
                 'type': transaction_type,
                 'amount': amount,
+                'balanceAfter': balance_after,
                 'timestamp': admin_firestore.SERVER_TIMESTAMP,
                 'details': details or {}
             }
-            
+
             # Create document with auto-generated ID
             doc_ref = self.db.collection(self.collection).document()
             doc_ref.set(transaction_data)
-            
+
             logger.info(
                 f"Recorded transaction: {transaction_type} | "
-                f"User: {user_id} | Amount: {amount} | ID: {doc_ref.id}"
+                f"User: {user_id} | Amount: {amount} | Balance After: {balance_after} | ID: {doc_ref.id}"
             )
-            
+
             return doc_ref.id
-            
+
         except Exception as e:
             logger.error(
                 f"Failed to record transaction for {user_id}: {str(e)}",

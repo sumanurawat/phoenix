@@ -97,12 +97,13 @@
 
     .transaction-row {
         display: grid;
-        grid-template-columns: 150px 120px 1fr 120px;
-        gap: 15px;
-        padding: 20px;
+        grid-template-columns: 140px 100px 1fr 100px 100px;
+        gap: 12px;
+        padding: 14px 20px;
         border-bottom: 1px solid #f0f0f0;
         align-items: center;
         transition: background 0.2s;
+        font-size: 0.9rem;
     }
 
     .transaction-row:hover {
@@ -115,16 +116,17 @@
 
     .transaction-date {
         color: #666;
-        font-size: 0.9rem;
+        font-size: 0.8rem;
     }
 
     .transaction-type {
         display: inline-block;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 0.85rem;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
         font-weight: 600;
         text-align: center;
+        white-space: nowrap;
     }
 
     .type-purchase {
@@ -159,17 +161,18 @@
 
     .transaction-description {
         color: #333;
-        font-size: 0.95rem;
+        font-size: 0.85rem;
+        line-height: 1.3;
     }
 
     .transaction-details {
-        font-size: 0.85rem;
+        font-size: 0.75rem;
         color: #888;
-        margin-top: 5px;
+        margin-top: 3px;
     }
 
     .transaction-amount {
-        font-size: 1.25rem;
+        font-size: 1.1rem;
         font-weight: bold;
         text-align: right;
     }
@@ -180,6 +183,13 @@
 
     .amount-negative {
         color: #dc3545;
+    }
+
+    .transaction-balance {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #667eea;
+        text-align: right;
     }
 
     .loading-state,
@@ -213,10 +223,12 @@
     @media (max-width: 768px) {
         .transaction-row {
             grid-template-columns: 1fr;
-            gap: 10px;
+            gap: 8px;
+            font-size: 0.85rem;
         }
 
-        .transaction-amount {
+        .transaction-amount,
+        .transaction-balance {
             text-align: left;
         }
 
@@ -448,6 +460,8 @@
             const typeClass = `type-${tx.type.replace('_', '')}`;
             const additionalDetails = getAdditionalDetails(tx);
 
+            const balanceAfter = tx.balanceAfter !== undefined ? tx.balanceAfter.toLocaleString() : '--';
+
             row.innerHTML = `
                 <div class="transaction-date">
                     ${formatDate(tx.timestamp)}
@@ -464,7 +478,10 @@
                     ${additionalDetails ? `<div class="transaction-details">${additionalDetails}</div>` : ''}
                 </div>
                 <div class="transaction-amount ${amountClass}">
-                    ${amountSign}${Math.abs(tx.amount).toLocaleString()} tokens
+                    ${amountSign}${Math.abs(tx.amount).toLocaleString()}
+                </div>
+                <div class="transaction-balance">
+                    ${balanceAfter}
                 </div>
             `;
 
