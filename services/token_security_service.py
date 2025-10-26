@@ -17,11 +17,12 @@ class TokenSecurityService:
     MAX_TOKENS_PER_PURCHASE = 10000
     
     # Package definitions with price validation
+    # CRITICAL: Must match TOKEN_PACKAGES in api/token_routes.py exactly!
     VALID_PACKAGES = {
-        'starter': {'tokens': 50, 'price_cents': 499},
-        'basic': {'tokens': 200, 'price_cents': 1499},
-        'pro': {'tokens': 500, 'price_cents': 2999},
-        'premium': {'tokens': 1000, 'price_cents': 4999},
+        'starter': {'tokens': 50, 'price_cents': 499},      # $4.99 - Starter Pack
+        'popular': {'tokens': 110, 'price_cents': 999},     # $9.99 - Popular Pack (100 + 10 bonus)
+        'pro': {'tokens': 250, 'price_cents': 1999},        # $19.99 - Pro Pack (200 + 50 bonus)
+        'creator': {'tokens': 700, 'price_cents': 4999},    # $49.99 - Creator Pack (500 + 200 bonus)
     }
     
     def __init__(self, db: firestore.Client):

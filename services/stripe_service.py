@@ -809,39 +809,87 @@ class StripeService:
                     return {'error': error_msg}
             
             # Idempotency check: Has this session already been processed?
+            logger.info(f"🔍 Checking for duplicate processing...")
             existing = transaction_service.get_by_stripe_session(session_id)
             if existing:
-                logger.warning(f"[Stripe Webhook] Duplicate event received for session {session_id}. Skipping.")
+                logger.warning(f"⚠️ DUPLICATE EVENT: Session {session_id} already processed")
+                logger.warning(f"   Original transaction ID: {existing.get('id')}")
+                logger.warning(f"   Original timestamp: {existing.get('timestamp')}")
+                logger.warning(f"   SKIPPING to prevent double-crediting")
                 return {'success': True, 'message': 'Already processed'}
-            
+
+            logger.info(f"✅ No duplicate found - proceeding with token credit")
+
             # Credit tokens to user account
-            logger.info(f"[Stripe Webhook] Processing token purchase: {tokens} tokens for user {firebase_uid}")
-            success = token_service.add_tokens(
-                user_id=firebase_uid,
-                amount=tokens,
-                reason=f"Purchased {package_id} package"
-            )
-            
-            if not success:
-                logger.error(f"[Stripe Webhook] Failed to credit {tokens} tokens to user {firebase_uid}")
-                return {'error': 'Failed to credit tokens'}
-            
+            logger.info(f"💳 [STRIPE WEBHOOK] Processing token purchase:")
+            logger.info(f"   Session ID: {session_id}")
+            logger.info(f"   User: {firebase_uid}")
+            logger.info(f"   Package: {package_id}")
+            logger.info(f"   Tokens: {tokens}")
+            logger.info(f"   Amount Paid: ${session.get('amount_total', 0) / 100:.2f}")
+
+            try:
+                success = token_service.add_tokens(
+                    user_id=firebase_uid,
+                    amount=tokens,
+                    reason=f"Purchased {package_id} package"
+                )
+
+                if not success:
+                    logger.error(f"❌❌❌ CRITICAL: add_tokens returned False!")
+                    logger.error(f"   User: {firebase_uid}")
+                    logger.error(f"   Session: {session_id}")
+                    logger.error(f"   Tokens: {tokens}")
+                    logger.error(f"   This should NEVER happen - investigate immediately!")
+                    return {'error': 'Failed to credit tokens'}
+
+            except ValueError as ve:
+                logger.error(f"❌ VALIDATION ERROR during token credit: {ve}")
+                logger.error(f"   User: {firebase_uid}")
+                logger.error(f"   Session: {session_id}")
+                logger.error(f"   This likely means the user document doesn't exist!")
+                logger.error(f"   ACTION REQUIRED: Check if user {firebase_uid} exists in Firestore")
+                raise
+            except Exception as te:
+                logger.error(f"❌ EXCEPTION during token credit: {te}", exc_info=True)
+                logger.error(f"   User: {firebase_uid}")
+                logger.error(f"   Session: {session_id}")
+                raise
+
             # Record transaction in ledger
-            logger.info(f"[Stripe Webhook] Recording transaction in ledger for session {session_id}")
-            transaction_service.record_purchase(
-                user_id=firebase_uid,
-                amount=tokens,
-                package_id=package_id,
-                stripe_session_id=session_id,
-                stripe_customer_id=session.get('customer'),
-                amount_paid=session.get('amount_total', 0) / 100  # Convert cents to dollars
-            )
-            
-            logger.info(f"[Stripe Webhook] Credited {tokens} tokens to user {firebase_uid} for purchase {session_id}")
+            logger.info(f"📝 Recording transaction in ledger...")
+            try:
+                transaction_id = transaction_service.record_purchase(
+                    user_id=firebase_uid,
+                    amount=tokens,
+                    package_id=package_id,
+                    stripe_session_id=session_id,
+                    stripe_customer_id=session.get('customer'),
+                    amount_paid=session.get('amount_total', 0) / 100  # Convert cents to dollars
+                )
+                logger.info(f"✅ Transaction recorded with ID: {transaction_id}")
+            except Exception as ledger_error:
+                logger.error(f"❌ CRITICAL: Failed to record transaction in ledger!")
+                logger.error(f"   Error: {ledger_error}", exc_info=True)
+                logger.error(f"   TOKENS WERE CREDITED BUT NO AUDIT TRAIL!")
+                logger.error(f"   Session: {session_id}")
+                logger.error(f"   User: {firebase_uid}")
+                logger.error(f"   Tokens: {tokens}")
+                # Don't fail the webhook - tokens were already credited
+
+            logger.info(f"🎉🎉🎉 SUCCESS: Credited {tokens} tokens to user {firebase_uid}")
+            logger.info(f"   Session: {session_id}")
+            logger.info(f"   Package: {package_id}")
             return {'success': True}
-            
+
         except Exception as e:
-            logger.error(f"❌ Token purchase processing failed: {e}", exc_info=True)
+            logger.error(f"❌❌❌ CRITICAL FAILURE in token purchase processing!")
+            logger.error(f"   Session ID: {session_id}")
+            logger.error(f"   User: {firebase_uid}")
+            logger.error(f"   Package: {package_id}")
+            logger.error(f"   Tokens: {tokens}")
+            logger.error(f"   Exception: {e}", exc_info=True)
+            logger.error(f"   Stack trace above ^^^")
             return {'error': str(e)}
 
     def _handle_subscription_updated(self, subscription: Dict[str, Any]) -> Dict[str, Any]:

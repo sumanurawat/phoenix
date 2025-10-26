@@ -177,23 +177,43 @@ class TokenService:
     ) -> None:
         """
         Add tokens to user balance atomically within a transaction.
-        
+
         Args:
             transaction: Firestore transaction
             user_ref: User document reference
             amount: Number of tokens to add
             increment_earned: Whether to also increment totalTokensEarned (for tips)
         """
+        # CRITICAL: Check if user document exists before updating
+        user_doc = user_ref.get(transaction=transaction)
+
+        if not user_doc.exists:
+            logger.error(f"❌ CRITICAL: User document does not exist for {user_ref.id}")
+            logger.error(f"   Cannot add {amount} tokens to non-existent user")
+            logger.error(f"   This purchase will FAIL - user needs to be created first")
+            raise ValueError(f"User document {user_ref.id} does not exist")
+
+        # Log current balance before update
+        current_balance = user_doc.to_dict().get('tokenBalance', 0)
+        logger.info(f"💰 Token Addition Transaction:")
+        logger.info(f"   User: {user_ref.id}")
+        logger.info(f"   Current Balance: {current_balance}")
+        logger.info(f"   Adding: {amount} tokens")
+        logger.info(f"   Expected New Balance: {current_balance + amount}")
+        logger.info(f"   Increment Earned: {increment_earned}")
+
         # Atomically increment balance
         if increment_earned:
             transaction.update(user_ref, {
                 'tokenBalance': admin_firestore.Increment(amount),
                 'totalTokensEarned': admin_firestore.Increment(amount)
             })
+            logger.info(f"✅ Transaction prepared: +{amount} tokens AND +{amount} earned")
         else:
             transaction.update(user_ref, {
                 'tokenBalance': admin_firestore.Increment(amount)
             })
+            logger.info(f"✅ Transaction prepared: +{amount} tokens only")
     
     def add_tokens(
         self,
@@ -204,42 +224,69 @@ class TokenService:
     ) -> bool:
         """
         Add tokens to user's balance atomically.
-        
+
         Args:
             user_id: Firebase Auth UID
             amount: Number of tokens to add (must be positive)
             reason: Optional reason for logging
             increment_earned: If True, also increment totalTokensEarned (for tips)
-            
+
         Returns:
             True if successful
-            
+
         Raises:
             ValueError: If amount is invalid
         """
         if amount <= 0:
             raise ValueError("Add amount must be positive")
-        
-        try:
 
+        try:
             user_ref = self.db.collection('users').document(user_id)
 
-            logger.info(f"Adding {amount} tokens to {user_id} (reason: {reason}, earned: {increment_earned})")
+            logger.info(f"🔵 ========== TOKEN PURCHASE START ==========")
+            logger.info(f"👤 User ID: {user_id}")
+            logger.info(f"🪙 Amount to Add: {amount} tokens")
+            logger.info(f"📝 Reason: {reason}")
+            logger.info(f"💎 Increment Earned: {increment_earned}")
+
+            # Get balance BEFORE transaction
+            balance_before = self.get_balance(user_id)
+            logger.info(f"💰 Balance BEFORE: {balance_before} tokens")
 
             # Execute transaction with manual commit
             @admin_firestore.transactional
             def update_in_transaction(transaction):
                 self._add_tokens_transaction(transaction, user_ref, amount, increment_earned)
-            
+
             # Run the transaction
+            logger.info(f"⚡ Starting Firestore transaction...")
             transaction = self.db.transaction()
             update_in_transaction(transaction)
-            
-            logger.info(f"Successfully added {amount} tokens to {user_id}")
-            return True
-            
+            logger.info(f"✅ Firestore transaction COMMITTED successfully")
+
+            # CRITICAL: Verify the balance actually increased
+            logger.info(f"🔍 Verifying token balance after transaction...")
+            balance_after = self.get_balance(user_id)
+            expected_balance = balance_before + amount
+
+            logger.info(f"💰 Balance AFTER: {balance_after} tokens")
+            logger.info(f"📊 Expected Balance: {expected_balance} tokens")
+
+            if balance_after == expected_balance:
+                logger.info(f"✅ ✅ ✅ VERIFICATION PASSED: Balance increased correctly!")
+                logger.info(f"🔵 ========== TOKEN PURCHASE SUCCESS ==========")
+                return True
+            else:
+                logger.error(f"❌❌❌ VERIFICATION FAILED: Balance mismatch!")
+                logger.error(f"   Expected: {expected_balance}")
+                logger.error(f"   Actual: {balance_after}")
+                logger.error(f"   Difference: {balance_after - expected_balance}")
+                logger.error(f"🔴 ========== TOKEN PURCHASE FAILED ==========")
+                raise ValueError(f"Token balance verification failed: expected {expected_balance}, got {balance_after}")
+
         except Exception as e:
-            logger.error(f"Failed to add tokens for {user_id}: {str(e)}", exc_info=True)
+            logger.error(f"❌ Failed to add tokens for {user_id}: {str(e)}", exc_info=True)
+            logger.error(f"🔴 ========== TOKEN PURCHASE EXCEPTION ==========")
             raise
     
     @admin_firestore.transactional
