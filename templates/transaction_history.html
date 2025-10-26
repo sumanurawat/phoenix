@@ -1,0 +1,510 @@
+{% extends "base.html" %}
+
+{% block title %}Transaction History - Phoenix AI Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+    .transaction-history-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .history-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .balance-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .balance-card {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+    }
+
+    .balance-card h3 {
+        font-size: 2rem;
+        margin: 10px 0;
+        font-weight: bold;
+    }
+
+    .balance-card p {
+        margin: 0;
+        opacity: 0.9;
+    }
+
+    .filters-section {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .filter-controls {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .filter-controls label {
+        margin: 0;
+        font-weight: 600;
+        color: #666;
+    }
+
+    .filter-controls select,
+    .filter-controls input {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.95rem;
+    }
+
+    .btn-refresh {
+        padding: 8px 16px;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .btn-refresh:hover {
+        background: #5568d3;
+    }
+
+    .transactions-table {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .transaction-row {
+        display: grid;
+        grid-template-columns: 150px 120px 1fr 120px;
+        gap: 15px;
+        padding: 20px;
+        border-bottom: 1px solid #f0f0f0;
+        align-items: center;
+        transition: background 0.2s;
+    }
+
+    .transaction-row:hover {
+        background: #f8f9fa;
+    }
+
+    .transaction-row:last-child {
+        border-bottom: none;
+    }
+
+    .transaction-date {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .transaction-type {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    .type-purchase {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .type-generation_spend {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .type-tip_sent {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .type-tip_received {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .type-signup_bonus {
+        background: #e2e3e5;
+        color: #383d41;
+    }
+
+    .type-admin_credit {
+        background: #cce5ff;
+        color: #004085;
+    }
+
+    .transaction-description {
+        color: #333;
+        font-size: 0.95rem;
+    }
+
+    .transaction-details {
+        font-size: 0.85rem;
+        color: #888;
+        margin-top: 5px;
+    }
+
+    .transaction-amount {
+        font-size: 1.25rem;
+        font-weight: bold;
+        text-align: right;
+    }
+
+    .amount-positive {
+        color: #28a745;
+    }
+
+    .amount-negative {
+        color: #dc3545;
+    }
+
+    .loading-state,
+    .empty-state,
+    .error-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-state i,
+    .error-state i {
+        font-size: 4rem;
+        color: #ccc;
+        margin-bottom: 20px;
+    }
+
+    .btn-back {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .btn-back:hover {
+        color: #5568d3;
+        transform: translateX(-5px);
+    }
+
+    @media (max-width: 768px) {
+        .transaction-row {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .transaction-amount {
+            text-align: left;
+        }
+
+        .filter-controls {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="transaction-history-container">
+    <a href="/buy-tokens" class="btn-back">
+        <i class="fas fa-arrow-left"></i> Back to Buy Tokens
+    </a>
+
+    <div class="history-header">
+        <h1 class="mb-3">
+            <i class="fas fa-receipt"></i> Transaction History
+        </h1>
+        <div class="balance-summary">
+            <div class="balance-card">
+                <p>Current Balance</p>
+                <h3 id="currentBalance">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </h3>
+            </div>
+            <div class="balance-card">
+                <p>Total Earned</p>
+                <h3 id="totalEarned">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="filters-section">
+        <div class="filter-controls">
+            <label for="limitSelect">Show:</label>
+            <select id="limitSelect" onchange="loadTransactions()">
+                <option value="10">10 transactions</option>
+                <option value="25">25 transactions</option>
+                <option value="50" selected>50 transactions</option>
+                <option value="100">100 transactions</option>
+            </select>
+
+            <label for="typeFilter">Type:</label>
+            <select id="typeFilter" onchange="loadTransactions()">
+                <option value="">All Types</option>
+                <option value="purchase">Purchases</option>
+                <option value="generation_spend">Generation Spends</option>
+                <option value="tip_sent">Tips Sent</option>
+                <option value="tip_received">Tips Received</option>
+                <option value="signup_bonus">Signup Bonuses</option>
+                <option value="admin_credit">Admin Credits</option>
+            </select>
+
+            <button class="btn-refresh" onclick="loadTransactions()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <div class="transactions-table" id="transactionsContainer">
+        <div class="loading-state">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted">Loading your transaction history...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    // Format timestamp to readable date
+    function formatDate(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    // Get human-friendly description for transaction type
+    function getTypeLabel(type) {
+        const labels = {
+            'purchase': 'Purchase',
+            'generation_spend': 'Generated Image',
+            'tip_sent': 'Tip Sent',
+            'tip_received': 'Tip Received',
+            'signup_bonus': 'Welcome Bonus',
+            'admin_credit': 'Admin Credit',
+            'refund': 'Refund'
+        };
+        return labels[type] || type;
+    }
+
+    // Get description based on transaction type and details
+    function getDescription(transaction) {
+        const { type, details } = transaction;
+
+        switch (type) {
+            case 'purchase':
+                const pkg = details.packageId || 'unknown';
+                const amount = details.paymentAmountUSD
+                    ? `($${details.paymentAmountUSD.toFixed(2)})`
+                    : '';
+                return `Token package purchase: ${pkg} ${amount}`;
+
+            case 'generation_spend':
+                const prompt = details.prompt
+                    ? details.prompt.substring(0, 50) + '...'
+                    : 'Image generation';
+                return prompt;
+
+            case 'tip_sent':
+                return `Tipped creator for post ${details.postId || 'unknown'}`;
+
+            case 'tip_received':
+                return `Received tip for your post ${details.postId || ''}`;
+
+            case 'signup_bonus':
+                return details.reason || 'Welcome to Phoenix!';
+
+            case 'admin_credit':
+                return details.reason || 'Admin credited tokens';
+
+            default:
+                return 'Token transaction';
+        }
+    }
+
+    // Get additional details to show
+    function getAdditionalDetails(transaction) {
+        const { type, details } = transaction;
+        const parts = [];
+
+        if (details.stripeSessionId) {
+            parts.push(`Session: ${details.stripeSessionId.substring(0, 20)}...`);
+        }
+
+        if (details.postId) {
+            parts.push(`Post: ${details.postId}`);
+        }
+
+        if (type === 'tip_sent' && details.recipientId) {
+            parts.push(`To: ${details.recipientId.substring(0, 10)}...`);
+        }
+
+        if (type === 'tip_received' && details.senderId) {
+            parts.push(`From: ${details.senderId.substring(0, 10)}...`);
+        }
+
+        return parts.join(' • ');
+    }
+
+    // Load and display transactions
+    async function loadTransactions() {
+        const container = document.getElementById('transactionsContainer');
+        const limit = document.getElementById('limitSelect').value;
+        const type = document.getElementById('typeFilter').value;
+
+        // Show loading state
+        container.innerHTML = `
+            <div class="loading-state">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted">Loading your transaction history...</p>
+            </div>
+        `;
+
+        try {
+            const params = new URLSearchParams({ limit });
+            if (type) params.append('type', type);
+
+            const response = await fetch(`/api/tokens/transactions?${params}`, {
+                headers: {
+                    'X-CSRF-Token': csrfToken
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load transactions');
+            }
+
+            const data = await response.json();
+
+            // Update balance displays
+            if (data.balance !== undefined) {
+                document.getElementById('currentBalance').textContent = data.balance.toLocaleString();
+            }
+            if (data.totalEarned !== undefined) {
+                document.getElementById('totalEarned').textContent = data.totalEarned.toLocaleString();
+            }
+
+            // Render transactions
+            if (data.transactions && data.transactions.length > 0) {
+                renderTransactions(data.transactions);
+            } else {
+                showEmptyState();
+            }
+
+        } catch (error) {
+            console.error('Error loading transactions:', error);
+            showErrorState();
+        }
+    }
+
+    // Render transaction rows
+    function renderTransactions(transactions) {
+        const container = document.getElementById('transactionsContainer');
+        container.innerHTML = '';
+
+        transactions.forEach(tx => {
+            const row = document.createElement('div');
+            row.className = 'transaction-row';
+
+            const amountClass = tx.amount > 0 ? 'amount-positive' : 'amount-negative';
+            const amountSign = tx.amount > 0 ? '+' : '';
+            const typeClass = `type-${tx.type.replace('_', '')}`;
+            const additionalDetails = getAdditionalDetails(tx);
+
+            row.innerHTML = `
+                <div class="transaction-date">
+                    ${formatDate(tx.timestamp)}
+                </div>
+                <div>
+                    <span class="transaction-type ${typeClass}">
+                        ${getTypeLabel(tx.type)}
+                    </span>
+                </div>
+                <div>
+                    <div class="transaction-description">
+                        ${getDescription(tx)}
+                    </div>
+                    ${additionalDetails ? `<div class="transaction-details">${additionalDetails}</div>` : ''}
+                </div>
+                <div class="transaction-amount ${amountClass}">
+                    ${amountSign}${Math.abs(tx.amount).toLocaleString()} tokens
+                </div>
+            `;
+
+            container.appendChild(row);
+        });
+    }
+
+    // Show empty state when no transactions
+    function showEmptyState() {
+        const container = document.getElementById('transactionsContainer');
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h3>No Transactions Yet</h3>
+                <p class="text-muted">Your transaction history will appear here once you make your first purchase or use tokens.</p>
+                <a href="/buy-tokens" class="btn btn-primary mt-3">
+                    <i class="fas fa-shopping-cart"></i> Buy Tokens
+                </a>
+            </div>
+        `;
+    }
+
+    // Show error state
+    function showErrorState() {
+        const container = document.getElementById('transactionsContainer');
+        container.innerHTML = `
+            <div class="error-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Failed to Load Transactions</h3>
+                <p class="text-muted">Please try again in a moment.</p>
+                <button class="btn btn-primary mt-3" onclick="loadTransactions()">
+                    <i class="fas fa-redo"></i> Retry
+                </button>
+            </div>
+        `;
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadTransactions();
+    });
+</script>
+{% endblock %}
