@@ -146,8 +146,8 @@
         </div>
         
         <h1 class="success-title">Payment Successful!</h1>
-        <p class="success-message">
-            Your token purchase has been processed successfully. Your new tokens are now available in your account.
+        <p class="success-message" id="statusMessage">
+            Processing your token purchase... Please wait a moment while we credit your tokens.
         </p>
         
         <div class="balance-display">
@@ -199,7 +199,16 @@
         }
     }
     
-    // Load updated token balance
+    // Get session ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+
+    let initialBalance = null;
+    let pollAttempts = 0;
+    const MAX_POLL_ATTEMPTS = 30; // Poll for up to 30 seconds
+    const POLL_INTERVAL = 1000; // Check every 1 second
+
+    // Load updated token balance with polling until tokens are credited
     async function loadBalance() {
         try {
             const response = await fetch('/api/tokens/balance', {
@@ -207,20 +216,62 @@
                     'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
-                const balanceElement = document.getElementById('tokenBalance');
-                balanceElement.textContent = data.balance.toLocaleString();
-                
-                // Animate number count-up
-                animateValue(balanceElement, 0, data.balance, 1500);
+                const currentBalance = data.balance;
+
+                // Store initial balance on first load
+                if (initialBalance === null) {
+                    initialBalance = currentBalance;
+                    console.log('Initial balance:', initialBalance);
+                }
+
+                // Check if balance has increased (tokens credited)
+                if (currentBalance > initialBalance || pollAttempts >= MAX_POLL_ATTEMPTS) {
+                    const balanceElement = document.getElementById('tokenBalance');
+                    const statusMessage = document.getElementById('statusMessage');
+
+                    if (currentBalance > initialBalance) {
+                        console.log('✅ Tokens credited! New balance:', currentBalance);
+
+                        // Update status message
+                        statusMessage.innerHTML = '<i class="fas fa-check-circle text-success me-2"></i>Your tokens have been successfully added to your account!';
+
+                        balanceElement.textContent = currentBalance.toLocaleString();
+
+                        // Animate number count-up from initial to new balance
+                        animateValue(balanceElement, initialBalance, currentBalance, 1500);
+
+                        // Show confetti on successful credit
+                        createConfetti();
+                    } else {
+                        console.warn('⚠️ Polling timed out, showing current balance');
+                        statusMessage.innerHTML = '<i class="fas fa-exclamation-triangle text-warning me-2"></i>Your payment was successful. If your tokens don\'t appear shortly, please contact support.';
+                        balanceElement.textContent = currentBalance.toLocaleString();
+                    }
+
+                    return true; // Stop polling
+                } else {
+                    // Balance hasn't updated yet, keep polling
+                    pollAttempts++;
+                    console.log(`⏳ Waiting for tokens... (attempt ${pollAttempts}/${MAX_POLL_ATTEMPTS})`);
+
+                    const balanceElement = document.getElementById('tokenBalance');
+                    balanceElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                    // Continue polling
+                    setTimeout(loadBalance, POLL_INTERVAL);
+                    return false;
+                }
             } else {
                 document.getElementById('tokenBalance').textContent = '--';
+                return true; // Stop polling on error
             }
         } catch (error) {
             console.error('Failed to load balance:', error);
             document.getElementById('tokenBalance').textContent = '--';
+            return true; // Stop polling on error
         }
     }
     
@@ -243,7 +294,8 @@
     
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
-        createConfetti();
+        // Start polling for balance update
+        // Confetti will be shown when balance increases
         loadBalance();
     });
 </script>
