@@ -56,6 +56,31 @@
                             <p class="section-subtitle">Practical tools for creators and productivity</p>
                         </div>
                         <div class="compact-project-grid">
+                            <!-- Soho row - NEW! Weekend Project -->
+                            <div class="compact-app-row" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%); border-left: 3px solid #667eea;">
+                                <a href="{{ url_for('soho_page') }}" class="text-decoration-none flex-grow-1">
+                                    <div class="compact-project-item">
+                                        <div class="compact-project-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                            <i class="fas fa-image"></i>
+                                        </div>
+                                        <div class="compact-project-content">
+                                            <div class="compact-project-title">
+                                                Soho
+                                                <span class="badge bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-size: 0.6em; margin-left: 0.5rem;">NEW</span>
+                                            </div>
+                                            <div class="compact-project-desc">AI image social platform - Create & share AI art</div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <div class="inline-mini-cards">
+                                    <div class="mini-card">
+                                        <div class="mini-number" id="images-generated">-</div>
+                                        <div class="mini-label">Images Created</div>
+                                    </div>
+                                    <div class="mini-card placeholder"></div>
+                                </div>
+                            </div>
+
                             <!-- Derplexity row -->
                             <div class="compact-app-row">
                                 <a href="{{ url_for('derplexity') }}" class="text-decoration-none flex-grow-1">

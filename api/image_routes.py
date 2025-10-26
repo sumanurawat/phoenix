@@ -145,35 +145,59 @@ def generate_image():
             }), 500
         
         # At this point, generation was successful and credits SHOULD be deducted
-        # Save to Firestore if requested
+        # Save to Firestore if requested (using 'creations' collection for social platform)
         save_to_firestore = data.get('save_to_firestore', True)
         firestore_doc_id = None
-        
+
         if save_to_firestore and user_id:
             try:
-                doc_data = {
-                    'user_id': user_id,
-                    'image_id': result.image_id,
+                # Get username from user document for denormalization (feed performance)
+                user_ref = db.collection('users').document(user_id)
+                user_doc = user_ref.get()
+
+                if not user_doc.exists:
+                    logger.warning(f"User document not found for {user_id}")
+                    username = 'unknown'
+                else:
+                    user_data = user_doc.to_dict()
+                    username = user_data.get('username', 'unknown')
+
+                # Create document in 'creations' collection (social platform schema)
+                creation_data = {
+                    'creationId': result.image_id,
+                    'userId': user_id,
+                    'username': username,  # Denormalized for explore feed performance
+
+                    # Content metadata
+                    'mediaType': 'image',  # Distinguish from videos
+                    'mediaUrl': result.image_url,
                     'prompt': prompt,
-                    'image_url': result.image_url,
-                    'gcs_uri': result.gcs_uri,
-                    'aspect_ratio': result.aspect_ratio,
+                    'caption': '',  # Empty initially - user can add later
+
+                    # Image-specific fields
+                    'aspectRatio': result.aspect_ratio,
+                    'generationTimeSeconds': result.generation_time_seconds,
                     'model': result.model,
-                    'generation_time_seconds': result.generation_time_seconds,
-                    'created_at': firestore.SERVER_TIMESTAMP,
-                    'timestamp': datetime.utcnow().isoformat() + 'Z',
-                    'status': 'generated'
+
+                    # Social platform fields
+                    'status': 'published',  # Images are published immediately (unlike videos)
+                    'likeCount': 0,
+
+                    # Timestamps
+                    'createdAt': firestore.SERVER_TIMESTAMP,
+                    'publishedAt': firestore.SERVER_TIMESTAMP,  # Same as createdAt for images
+                    'updatedAt': firestore.SERVER_TIMESTAMP
                 }
-                
-                doc_ref = db.collection('image_generations').document(result.image_id)
-                doc_ref.set(doc_data)
+
+                creation_ref = db.collection('creations').document(result.image_id)
+                creation_ref.set(creation_data)
                 firestore_doc_id = result.image_id
-                
-                logger.info(f"Saved image metadata to Firestore: {firestore_doc_id}")
-                
+
+                logger.info(f"Saved image as creation to social platform: {firestore_doc_id} (username: {username})")
+
             except Exception as e:
                 # Don't fail the request if Firestore save fails
-                logger.error(f"Failed to save to Firestore: {str(e)}", exc_info=True)
+                logger.error(f"Failed to save creation to Firestore: {str(e)}", exc_info=True)
         
         # Increment stats counter ONLY for successful generations
         try:

@@ -1,0 +1,477 @@
+{% extends "base.html" %}
+
+{% block title %}Explore - Soho{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .soho-explore-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .soho-explore-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        text-align: center;
+        color: white;
+    }
+
+    .soho-explore-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .soho-explore-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+
+    .creation-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .creation-card:hover {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .creation-header {
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .creator-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .creator-info {
+        flex: 1;
+    }
+
+    .creator-username {
+        font-weight: 600;
+        color: #2c3e50;
+        text-decoration: none;
+        font-size: 1rem;
+    }
+
+    .creator-username:hover {
+        color: #667eea;
+    }
+
+    .creation-timestamp {
+        font-size: 0.85rem;
+        color: #95a5a6;
+    }
+
+    .creation-media-container {
+        position: relative;
+        background: #000;
+        width: 100%;
+        max-height: 600px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .creation-media {
+        width: 100%;
+        max-height: 600px;
+        object-fit: contain;
+    }
+
+    .creation-caption {
+        padding: 1.5rem;
+    }
+
+    .caption-text {
+        color: #2c3e50;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .prompt-text {
+        color: #7f8c8d;
+        font-size: 0.9rem;
+        font-style: italic;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-left: 3px solid #667eea;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+    }
+
+    .creation-actions {
+        display: flex;
+        gap: 2rem;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .action-button {
+        background: none;
+        border: none;
+        color: #7f8c8d;
+        font-size: 1.2rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        padding: 0.5rem;
+    }
+
+    .action-button:hover {
+        color: #667eea;
+    }
+
+    .action-button.liked {
+        color: #e74c3c;
+    }
+
+    .action-button.liked i {
+        animation: heartbeat 0.3s ease;
+    }
+
+    @keyframes heartbeat {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+    }
+
+    .action-count {
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .loading-spinner {
+        text-align: center;
+        padding: 3rem 0;
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        border-width: 4px;
+        border-color: #667eea;
+        border-right-color: transparent;
+    }
+
+    .loading-text {
+        margin-top: 1rem;
+        color: #7f8c8d;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        color: #bdc3c7;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state-text {
+        color: #7f8c8d;
+        margin-bottom: 1.5rem;
+    }
+
+    .create-button {
+        display: inline-block;
+        padding: 0.75rem 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .create-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+
+    .error-message {
+        background: #fee;
+        color: #c33;
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="soho-explore-container">
+    <!-- Header -->
+    <div class="soho-explore-header">
+        <h1 class="soho-explore-title">Explore</h1>
+        <p class="soho-explore-subtitle">Discover amazing AI-generated art from the community</p>
+    </div>
+
+    <!-- Feed Container -->
+    <div id="feedContainer"></div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+        <div class="spinner-border" role="status"></div>
+        <p class="loading-text">Loading creations...</p>
+    </div>
+
+    <!-- Error Message -->
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="empty-state" style="display: none;">
+        <div class="empty-state-icon">
+            <i class="fas fa-image"></i>
+        </div>
+        <h3 class="empty-state-title">No creations yet</h3>
+        <p class="empty-state-text">Be the first to create and share AI-generated art!</p>
+        <a href="/create" class="create-button">
+            <i class="fas fa-plus"></i> Create First Image
+        </a>
+    </div>
+</div>
+
+<script>
+    let creations = [];
+    let nextCursor = null;
+    let hasMore = true;
+    let isLoading = false;
+
+    const feedContainer = document.getElementById('feedContainer');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const errorMessage = document.getElementById('errorMessage');
+    const emptyState = document.getElementById('emptyState');
+
+    // Load creations
+    async function loadCreations() {
+        if (isLoading || !hasMore) return;
+
+        isLoading = true;
+        loadingSpinner.style.display = 'block';
+        errorMessage.style.display = 'none';
+
+        try {
+            const url = new URL('/api/feed/explore', window.location.origin);
+            url.searchParams.append('limit', '10');
+            if (nextCursor) {
+                url.searchParams.append('cursor', nextCursor);
+            }
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.success) {
+                creations = creations.concat(data.creations);
+                nextCursor = data.nextCursor;
+                hasMore = data.hasMore;
+
+                renderCreations(data.creations);
+
+                loadingSpinner.style.display = 'none';
+
+                if (creations.length === 0) {
+                    showEmptyState();
+                }
+            } else {
+                throw new Error(data.error || 'Failed to load creations');
+            }
+        } catch (error) {
+            console.error('Error loading creations:', error);
+            showError('Failed to load creations. Please try again.');
+            loadingSpinner.style.display = 'none';
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    function renderCreations(newCreations) {
+        newCreations.forEach(creation => {
+            const card = createCreationCard(creation);
+            feedContainer.appendChild(card);
+        });
+    }
+
+    function createCreationCard(creation) {
+        const card = document.createElement('div');
+        card.className = 'creation-card';
+        card.dataset.creationId = creation.creationId;
+
+        let timeAgo = 'Just now';
+        if (creation.publishedAt) {
+            const publishedDate = new Date(creation.publishedAt._seconds * 1000);
+            timeAgo = formatTimeAgo(publishedDate);
+        }
+
+        const avatarLetter = creation.username ? creation.username[0].toUpperCase() : '?';
+
+        card.innerHTML = `
+            <div class="creation-header">
+                <div class="creator-avatar">${avatarLetter}</div>
+                <div class="creator-info">
+                    <a href="/users/${creation.username}" class="creator-username">@${creation.username}</a>
+                    <div class="creation-timestamp">${timeAgo}</div>
+                </div>
+            </div>
+
+            <div class="creation-media-container">
+                ${creation.mediaType === 'image'
+                    ? `<img class="creation-media" src="${creation.mediaUrl}" alt="${escapeHtml(creation.prompt)}">`
+                    : `<video class="creation-media" controls loop playsinline>
+                        <source src="${creation.mediaUrl}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>`
+                }
+            </div>
+
+            <div class="creation-caption">
+                ${creation.caption ? `<div class="caption-text">${escapeHtml(creation.caption)}</div>` : `<div class="caption-text text-muted">${escapeHtml(creation.prompt)}</div>`}
+            </div>
+
+            <div class="creation-actions">
+                <button class="action-button like-button ${creation.isLiked ? 'liked' : ''}" data-creation-id="${creation.creationId}">
+                    <i class="fas fa-heart"></i>
+                    <span class="action-count like-count">${creation.likeCount || 0}</span>
+                </button>
+            </div>
+        `;
+
+        // Add like button handler
+        const likeButton = card.querySelector('.like-button');
+        likeButton.addEventListener('click', () => toggleLike(creation.creationId, likeButton));
+
+        return card;
+    }
+
+    async function toggleLike(creationId, button) {
+        const wasLiked = button.classList.contains('liked');
+        const likeCountSpan = button.querySelector('.like-count');
+        let currentCount = parseInt(likeCountSpan.textContent);
+
+        // Optimistic update
+        button.classList.toggle('liked');
+        likeCountSpan.textContent = wasLiked ? currentCount - 1 : currentCount + 1;
+
+        try {
+            const url = `/api/creations/${creationId}/like`;
+            const method = wasLiked ? 'DELETE' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                likeCountSpan.textContent = data.likeCount;
+            } else {
+                // Revert on error
+                button.classList.toggle('liked');
+                likeCountSpan.textContent = currentCount;
+            }
+        } catch (error) {
+            console.error('Error toggling like:', error);
+            // Revert on error
+            button.classList.toggle('liked');
+            likeCountSpan.textContent = currentCount;
+        }
+    }
+
+    function showEmptyState() {
+        emptyState.style.display = 'block';
+    }
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
+    }
+
+    function formatTimeAgo(date) {
+        const seconds = Math.floor((new Date() - date) / 1000);
+
+        const intervals = [
+            { label: 'year', seconds: 31536000 },
+            { label: 'month', seconds: 2592000 },
+            { label: 'week', seconds: 604800 },
+            { label: 'day', seconds: 86400 },
+            { label: 'hour', seconds: 3600 },
+            { label: 'minute', seconds: 60 },
+        ];
+
+        for (const interval of intervals) {
+            const count = Math.floor(seconds / interval.seconds);
+            if (count >= 1) {
+                return `${count} ${interval.label}${count !== 1 ? 's' : ''} ago`;
+            }
+        }
+
+        return 'Just now';
+    }
+
+    function escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Infinite scroll
+    window.addEventListener('scroll', () => {
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+            loadCreations();
+        }
+    });
+
+    // Initial load
+    loadCreations();
+</script>
+{% endblock %}

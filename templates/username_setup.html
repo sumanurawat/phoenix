@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}Create Your Username{% endblock %}
+
+{% block extra_css %}
+<style>
+    .username-setup-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem 1rem;
+    }
+
+    .username-card {
+        background: white;
+        border-radius: 20px;
+        padding: 3rem 2.5rem;
+        max-width: 500px;
+        width: 100%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .username-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 2rem;
+        font-size: 2rem;
+        color: white;
+    }
+
+    .username-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+
+    .username-subtitle {
+        color: #7f8c8d;
+        text-align: center;
+        margin-bottom: 2.5rem;
+        line-height: 1.6;
+    }
+
+    .username-input-wrapper {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+    .username-input {
+        width: 100%;
+        padding: 1rem 1rem 1rem 3rem;
+        font-size: 1.1rem;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .username-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+
+    .username-input.is-invalid {
+        border-color: #e74c3c;
+    }
+
+    .username-input.is-valid {
+        border-color: #27ae60;
+    }
+
+    .username-prefix {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #7f8c8d;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+
+    .username-validation {
+        min-height: 24px;
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .username-validation.text-success {
+        color: #27ae60 !important;
+    }
+
+    .username-validation.text-danger {
+        color: #e74c3c !important;
+    }
+
+    .username-validation i {
+        margin-right: 0.5rem;
+    }
+
+    .username-rules {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .username-rules h6 {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+    }
+
+    .username-rules ul {
+        margin: 0;
+        padding-left: 1.5rem;
+    }
+
+    .username-rules li {
+        font-size: 0.85rem;
+        color: #7f8c8d;
+        margin-bottom: 0.5rem;
+    }
+
+    .btn-claim-username {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-claim-username:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    }
+
+    .btn-claim-username:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+        border-width: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block header %}
+<!-- No header for this page - full screen experience -->
+{% endblock %}
+
+{% block content %}
+<div class="username-setup-container">
+    <div class="username-card">
+        <div class="username-icon">
+            <i class="fas fa-user-tag"></i>
+        </div>
+
+        <h1 class="username-title">Choose Your Username</h1>
+        <p class="username-subtitle">
+            Your username is how others will find and recognize you on Phoenix. Choose something memorable and unique!
+        </p>
+
+        <form id="usernameForm" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="username-input-wrapper">
+                <span class="username-prefix">@</span>
+                <input
+                    type="text"
+                    id="usernameInput"
+                    name="username"
+                    class="username-input"
+                    placeholder="your_username"
+                    autocomplete="off"
+                    spellcheck="false"
+                    maxlength="20"
+                    required
+                >
+            </div>
+
+            <div id="validationMessage" class="username-validation"></div>
+
+            <div class="username-rules">
+                <h6><i class="fas fa-info-circle me-2"></i>Username Rules</h6>
+                <ul>
+                    <li>3-20 characters long</li>
+                    <li>Letters, numbers, dots (.), and underscores (_) only</li>
+                    <li>Must start with a letter or number</li>
+                    <li>Cannot end with a dot</li>
+                    <li>No consecutive dots or underscores</li>
+                </ul>
+            </div>
+
+            <button type="submit" id="claimButton" class="btn btn-claim-username" disabled>
+                <span id="buttonText">Claim Username</span>
+                <span id="buttonSpinner" class="d-none">
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    Checking...
+                </span>
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('usernameInput');
+    const validationMessage = document.getElementById('validationMessage');
+    const claimButton = document.getElementById('claimButton');
+    const buttonText = document.getElementById('buttonText');
+    const buttonSpinner = document.getElementById('buttonSpinner');
+    const form = document.getElementById('usernameForm');
+
+    let checkTimeout;
+    let isChecking = false;
+    let isValid = false;
+
+    // Auto-focus input
+    input.focus();
+
+    input.addEventListener('input', function() {
+        const username = input.value.trim();
+
+        // Clear previous timeout
+        clearTimeout(checkTimeout);
+
+        // Reset state
+        input.classList.remove('is-valid', 'is-invalid');
+        validationMessage.textContent = '';
+        validationMessage.className = 'username-validation';
+        claimButton.disabled = true;
+        isValid = false;
+
+        // Basic validation before API call
+        if (username.length === 0) {
+            return;
+        }
+
+        if (username.length < 3) {
+            input.classList.add('is-invalid');
+            validationMessage.className = 'username-validation text-danger';
+            validationMessage.innerHTML = '<i class="fas fa-times-circle"></i>Username must be at least 3 characters';
+            return;
+        }
+
+        // Check format with regex
+        const usernameRegex = /^[a-zA-Z0-9][a-zA-Z0-9._]*$/;
+        if (!usernameRegex.test(username)) {
+            input.classList.add('is-invalid');
+            validationMessage.className = 'username-validation text-danger';
+            validationMessage.innerHTML = '<i class="fas fa-times-circle"></i>Invalid characters. Use only letters, numbers, dots, and underscores';
+            return;
+        }
+
+        if (username.endsWith('.')) {
+            input.classList.add('is-invalid');
+            validationMessage.className = 'username-validation text-danger';
+            validationMessage.innerHTML = '<i class="fas fa-times-circle"></i>Username cannot end with a dot';
+            return;
+        }
+
+        if (/[._]{2,}/.test(username)) {
+            input.classList.add('is-invalid');
+            validationMessage.className = 'username-validation text-danger';
+            validationMessage.innerHTML = '<i class="fas fa-times-circle"></i>No consecutive dots or underscores allowed';
+            return;
+        }
+
+        // Debounce API call
+        validationMessage.className = 'username-validation text-muted';
+        validationMessage.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>Checking availability...';
+
+        checkTimeout = setTimeout(() => {
+            checkUsernameAvailability(username);
+        }, 500);
+    });
+
+    async function checkUsernameAvailability(username) {
+        try {
+            isChecking = true;
+            const response = await fetch(`/api/users/check-username?username=${encodeURIComponent(username)}`);
+            const data = await response.json();
+
+            if (data.available) {
+                input.classList.remove('is-invalid');
+                input.classList.add('is-valid');
+                validationMessage.className = 'username-validation text-success';
+                validationMessage.innerHTML = `<i class="fas fa-check-circle"></i>${data.message}`;
+                claimButton.disabled = false;
+                isValid = true;
+            } else {
+                input.classList.remove('is-valid');
+                input.classList.add('is-invalid');
+                validationMessage.className = 'username-validation text-danger';
+                validationMessage.innerHTML = `<i class="fas fa-times-circle"></i>${data.message}`;
+                isValid = false;
+            }
+        } catch (error) {
+            console.error('Error checking username:', error);
+            validationMessage.className = 'username-validation text-danger';
+            validationMessage.innerHTML = '<i class="fas fa-exclamation-triangle"></i>Error checking availability';
+        } finally {
+            isChecking = false;
+        }
+    }
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        if (!isValid) {
+            return;
+        }
+
+        // Disable button and show spinner
+        claimButton.disabled = true;
+        buttonText.classList.add('d-none');
+        buttonSpinner.classList.remove('d-none');
+
+        try {
+            const formData = new FormData(form);
+            const response = await fetch('/api/users/set-username', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: formData.get('username')
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                // Success! Show success message and redirect
+                validationMessage.className = 'username-validation text-success';
+                validationMessage.innerHTML = `<i class="fas fa-check-circle"></i>${data.message}`;
+
+                // Redirect to Soho after brief delay
+                setTimeout(() => {
+                    window.location.href = '/soho';
+                }, 1000);
+            } else {
+                // Error
+                input.classList.add('is-invalid');
+                validationMessage.className = 'username-validation text-danger';
+                validationMessage.innerHTML = `<i class="fas fa-times-circle"></i>${data.error || 'Failed to claim username'}`;
+
+                // Re-enable button
+                claimButton.disabled = false;
+                buttonText.classList.remove('d-none');
+                buttonSpinner.classList.add('d-none');
+            }
+        } catch (error) {
+            console.error('Error claiming username:', error);
+            validationMessage.className = 'username-validation text-danger';
+            validationMessage.innerHTML = '<i class="fas fa-exclamation-triangle"></i>An error occurred. Please try again.';
+
+            // Re-enable button
+            claimButton.disabled = false;
+            buttonText.classList.remove('d-none');
+            buttonSpinner.classList.add('d-none');
+        }
+    });
+});
+</script>
+{% endblock %}

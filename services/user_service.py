@@ -131,17 +131,17 @@ class UserService:
             logger.error(f"Error checking username availability: {e}", exc_info=True)
             return False
 
-    @admin_firestore.transactional
-    def _claim_username_transaction(
+    def _claim_username_in_transaction(
         self,
         transaction: firestore.Transaction,
         user_id: str,
         username: str
     ) -> None:
         """
-        Atomic transaction to claim a username.
+        Atomic transaction logic to claim a username.
 
         This runs inside a Firestore transaction to prevent race conditions.
+        Called by the @transactional decorated wrapper.
 
         Args:
             transaction: Firestore transaction object
@@ -207,9 +207,15 @@ class UserService:
                 return user_data
 
         try:
+            # Define transactional function that captures user_id and validated_username
+            @admin_firestore.transactional
+            def claim_username_transaction(transaction):
+                """Inner transactional function."""
+                self._claim_username_in_transaction(transaction, user_id, validated_username)
+
             # Run atomic transaction
             transaction = self.db.transaction()
-            self._claim_username_transaction(transaction, user_id, validated_username)
+            claim_username_transaction(transaction)
 
             logger.info(f"User {user_id} claimed username '{validated_username}'")
 

@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+
+{% block title %}Create - Phoenix AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+    }
+
+    .create-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 3rem 1rem;
+    }
+
+    .create-card {
+        background: white;
+        border-radius: 24px;
+        padding: 3rem 2.5rem;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .create-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .create-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+    }
+
+    .create-subtitle {
+        color: #7f8c8d;
+        font-size: 1.1rem;
+    }
+
+    .prompt-section {
+        margin-bottom: 2rem;
+    }
+
+    .prompt-label {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.75rem;
+        display: block;
+        font-size: 1rem;
+    }
+
+    .prompt-textarea {
+        width: 100%;
+        min-height: 120px;
+        padding: 1rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-family: inherit;
+        resize: vertical;
+        transition: all 0.3s ease;
+    }
+
+    .prompt-textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .char-counter {
+        text-align: right;
+        font-size: 0.85rem;
+        color: #95a5a6;
+        margin-top: 0.5rem;
+    }
+
+    .char-counter.warning {
+        color: #e74c3c;
+    }
+
+    .generate-button {
+        width: 100%;
+        padding: 1.25rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .generate-button:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .generate-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .spinner {
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .result-section {
+        margin-top: 2rem;
+        display: none;
+    }
+
+    .result-section.show {
+        display: block;
+        animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .generated-image {
+        width: 100%;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .caption-input {
+        width: 100%;
+        padding: 1rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-family: inherit;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .caption-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .share-button {
+        width: 100%;
+        padding: 1rem;
+        background: #27ae60;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .share-button:hover {
+        background: #229954;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+    }
+
+    .error-message {
+        background: #fee;
+        color: #c33;
+        padding: 1rem;
+        border-radius: 12px;
+        margin-top: 1rem;
+        display: none;
+    }
+
+    .error-message.show {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .token-info {
+        text-align: center;
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 12px;
+    }
+
+    .token-cost {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+    }
+
+    .token-cost strong {
+        color: #667eea;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="create-container">
+    <div class="create-card">
+        <div class="create-header">
+            <h1 class="create-title">Create</h1>
+            <p class="create-subtitle">Bring your imagination to life with AI</p>
+        </div>
+
+        <!-- Prompt Input Section -->
+        <div class="prompt-section">
+            <label class="prompt-label" for="promptInput">
+                <i class="fas fa-magic"></i> Describe your image
+            </label>
+            <textarea
+                id="promptInput"
+                class="prompt-textarea"
+                placeholder="A serene mountain sunset with vibrant orange and pink clouds..."
+                maxlength="500"
+            ></textarea>
+            <div class="char-counter">
+                <span id="charCount">0</span> / 500 characters
+            </div>
+        </div>
+
+        <!-- Generate Button -->
+        <button id="generateButton" class="generate-button">
+            <i class="fas fa-wand-magic-sparkles"></i>
+            <span id="buttonText">Generate Image</span>
+        </button>
+
+        <!-- Token Info -->
+        <div class="token-info">
+            <p class="token-cost">
+                <strong>FREE</strong> for now • Images appear instantly on Explore
+            </p>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="error-message"></div>
+
+        <!-- Result Section (shown after generation) -->
+        <div id="resultSection" class="result-section">
+            <img id="generatedImage" class="generated-image" alt="Generated image">
+
+            <label class="prompt-label" for="captionInput">
+                <i class="fas fa-pen"></i> Add a caption (optional)
+            </label>
+            <input
+                id="captionInput"
+                type="text"
+                class="caption-input"
+                placeholder="Share your thoughts about this creation..."
+                maxlength="200"
+            >
+
+            <button id="shareButton" class="share-button">
+                <i class="fas fa-share"></i> Share to Explore
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const promptInput = document.getElementById('promptInput');
+    const charCount = document.getElementById('charCount');
+    const generateButton = document.getElementById('generateButton');
+    const buttonText = document.getElementById('buttonText');
+    const errorMessage = document.getElementById('errorMessage');
+    const resultSection = document.getElementById('resultSection');
+    const generatedImage = document.getElementById('generatedImage');
+    const captionInput = document.getElementById('captionInput');
+    const shareButton = document.getElementById('shareButton');
+
+    let currentImageId = null;
+
+    // Character counter
+    promptInput.addEventListener('input', () => {
+        const count = promptInput.value.length;
+        charCount.textContent = count;
+
+        const counterElement = charCount.parentElement;
+        if (count > 450) {
+            counterElement.classList.add('warning');
+        } else {
+            counterElement.classList.remove('warning');
+        }
+    });
+
+    // Generate Image
+    generateButton.addEventListener('click', async () => {
+        const prompt = promptInput.value.trim();
+
+        if (!prompt) {
+            showError('Please enter a prompt to generate an image');
+            return;
+        }
+
+        if (prompt.length < 10) {
+            showError('Please enter a more detailed prompt (at least 10 characters)');
+            return;
+        }
+
+        // Show loading state
+        generateButton.disabled = true;
+        buttonText.textContent = 'Generating...';
+        generateButton.innerHTML = '<div class="spinner"></div><span>Generating...</span>';
+        errorMessage.classList.remove('show');
+        resultSection.classList.remove('show');
+
+        try {
+            const response = await fetch('/api/image/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    save_to_firestore: true
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Failed to generate image');
+            }
+
+            // Success! Show the generated image
+            currentImageId = data.image.image_id;
+            generatedImage.src = data.image.image_url;
+            resultSection.classList.add('show');
+
+            // Scroll to result
+            setTimeout(() => {
+                resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+
+        } catch (error) {
+            console.error('Generation error:', error);
+            showError(error.message || 'Failed to generate image. Please try again.');
+        } finally {
+            // Reset button
+            generateButton.disabled = false;
+            generateButton.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i><span>Generate Image</span>';
+        }
+    });
+
+    // Share to Explore (image is already published, just redirect)
+    shareButton.addEventListener('click', async () => {
+        // Images are auto-published, so we can just redirect
+        // If user added a caption, we could update it here (future enhancement)
+        const caption = captionInput.value.trim();
+
+        if (caption && currentImageId) {
+            // TODO: Add API endpoint to update caption
+            // For now, just redirect to explore
+        }
+
+        window.location.href = '/soho/explore';
+    });
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.classList.add('show');
+    }
+
+    // Allow Enter key to submit (with Shift+Enter for new line)
+    promptInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            generateButton.click();
+        }
+    });
+</script>
+{% endblock %}

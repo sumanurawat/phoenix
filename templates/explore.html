@@ -1,0 +1,486 @@
+{% extends "base.html" %}
+
+{% block title %}Explore - Phoenix AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .explore-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .explore-header {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        text-align: center;
+    }
+
+    .explore-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+    }
+
+    .explore-subtitle {
+        color: #7f8c8d;
+        font-size: 1.1rem;
+    }
+
+    .creation-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .creation-card:hover {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .creation-header {
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .creator-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .creator-info {
+        flex: 1;
+    }
+
+    .creator-username {
+        font-weight: 600;
+        color: #2c3e50;
+        text-decoration: none;
+        font-size: 1rem;
+    }
+
+    .creator-username:hover {
+        color: #667eea;
+    }
+
+    .creation-timestamp {
+        font-size: 0.85rem;
+        color: #95a5a6;
+    }
+
+    .creation-video-container {
+        position: relative;
+        background: #000;
+        width: 100%;
+        max-height: 600px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .creation-video {
+        width: 100%;
+        max-height: 600px;
+        object-fit: contain;
+    }
+
+    .creation-caption {
+        padding: 1.5rem;
+    }
+
+    .caption-text {
+        color: #2c3e50;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .prompt-text {
+        color: #7f8c8d;
+        font-size: 0.9rem;
+        font-style: italic;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-left: 3px solid #667eea;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+    }
+
+    .creation-actions {
+        display: flex;
+        gap: 2rem;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .action-button {
+        background: none;
+        border: none;
+        color: #7f8c8d;
+        font-size: 1.2rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        padding: 0.5rem;
+    }
+
+    .action-button:hover {
+        color: #667eea;
+    }
+
+    .action-button.liked {
+        color: #e74c3c;
+    }
+
+    .action-button.liked i {
+        animation: heartbeat 0.3s ease;
+    }
+
+    @keyframes heartbeat {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+    }
+
+    .action-count {
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .loading-spinner {
+        text-align: center;
+        padding: 3rem 0;
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        border-width: 4px;
+        border-color: #667eea;
+        border-right-color: transparent;
+    }
+
+    .loading-text {
+        margin-top: 1rem;
+        color: #7f8c8d;
+        font-size: 1.1rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        color: #e9ecef;
+        margin-bottom: 1.5rem;
+    }
+
+    .empty-state-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state-text {
+        color: #7f8c8d;
+        font-size: 1.1rem;
+    }
+
+    .load-more-trigger {
+        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .error-message {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        color: #856404;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="explore-container">
+    <div class="explore-header">
+        <h1 class="explore-title">
+            <i class="fas fa-compass me-2"></i>Explore
+        </h1>
+        <p class="explore-subtitle">Discover amazing AI-generated videos from the community</p>
+    </div>
+
+    <div id="errorContainer"></div>
+    <div id="feedContainer"></div>
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner-border" role="status"></div>
+        <div class="loading-text">Loading creations...</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const feedContainer = document.getElementById('feedContainer');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const errorContainer = document.getElementById('errorContainer');
+
+    let isLoading = false;
+    let hasMore = true;
+    let nextCursor = null;
+    let creations = [];
+
+    // Check if user is logged in (for like functionality)
+    const isLoggedIn = {{ 'true' if session.get('user_id') else 'false' }};
+
+    async function loadCreations() {
+        if (isLoading || !hasMore) return;
+
+        isLoading = true;
+        loadingSpinner.style.display = 'block';
+
+        try {
+            const url = new URL('/api/feed/explore', window.location.origin);
+            url.searchParams.append('limit', '10');
+            if (nextCursor) {
+                url.searchParams.append('cursor', nextCursor);
+            }
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.success) {
+                creations = creations.concat(data.creations);
+                nextCursor = data.nextCursor;
+                hasMore = data.hasMore;
+
+                renderCreations(data.creations);
+
+                // Hide loading spinner
+                loadingSpinner.style.display = 'none';
+
+                // Show empty state if no creations at all
+                if (creations.length === 0) {
+                    showEmptyState();
+                }
+            } else {
+                throw new Error(data.error || 'Failed to load creations');
+            }
+        } catch (error) {
+            console.error('Error loading creations:', error);
+            showError('Failed to load creations. Please try again.');
+            loadingSpinner.style.display = 'none';
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    function renderCreations(newCreations) {
+        newCreations.forEach(creation => {
+            const card = createCreationCard(creation);
+            feedContainer.appendChild(card);
+        });
+    }
+
+    function createCreationCard(creation) {
+        const card = document.createElement('div');
+        card.className = 'creation-card';
+        card.dataset.creationId = creation.creationId;
+
+        // Format timestamp
+        let timeAgo = 'Just now';
+        if (creation.publishedAt) {
+            const publishedDate = new Date(creation.publishedAt._seconds * 1000);
+            timeAgo = formatTimeAgo(publishedDate);
+        }
+
+        // Get first letter of username for avatar
+        const avatarLetter = creation.username ? creation.username[0].toUpperCase() : '?';
+
+        card.innerHTML = `
+            <div class="creation-header">
+                <div class="creator-avatar">${avatarLetter}</div>
+                <div class="creator-info">
+                    <a href="/users/${creation.username}" class="creator-username">@${creation.username}</a>
+                    <div class="creation-timestamp">${timeAgo}</div>
+                </div>
+            </div>
+
+            <div class="creation-video-container">
+                ${creation.mediaType === 'image'
+                    ? `<img class="creation-video" src="${creation.mediaUrl}" alt="${escapeHtml(creation.prompt)}">`
+                    : `<video class="creation-video" controls loop playsinline>
+                        <source src="${creation.mediaUrl}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>`
+                }
+            </div>
+
+            <div class="creation-caption">
+                ${creation.caption ? `<div class="caption-text">${escapeHtml(creation.caption)}</div>` : ''}
+                <div class="prompt-text">
+                    <i class="fas fa-lightbulb me-2"></i>${escapeHtml(creation.prompt)}
+                </div>
+            </div>
+
+            <div class="creation-actions">
+                <button class="action-button like-button ${creation.isLiked ? 'liked' : ''}" data-creation-id="${creation.creationId}" ${!isLoggedIn ? 'disabled' : ''}>
+                    <i class="fas fa-heart"></i>
+                    <span class="action-count like-count">${creation.likeCount || 0}</span>
+                </button>
+            </div>
+        `;
+
+        // Add like button event listener
+        if (isLoggedIn) {
+            const likeButton = card.querySelector('.like-button');
+            likeButton.addEventListener('click', () => handleLike(creation.creationId, likeButton));
+        }
+
+        return card;
+    }
+
+    async function handleLike(creationId, button) {
+        const isCurrentlyLiked = button.classList.contains('liked');
+        const likeCountEl = button.querySelector('.like-count');
+        const currentCount = parseInt(likeCountEl.textContent);
+
+        // Optimistic update
+        button.classList.toggle('liked');
+        likeCountEl.textContent = isCurrentlyLiked ? currentCount - 1 : currentCount + 1;
+
+        try {
+            const url = `/api/creations/${creationId}/like`;
+            const method = isCurrentlyLiked ? 'DELETE' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update with actual count from server
+                likeCountEl.textContent = data.likeCount;
+            } else {
+                // Revert on error
+                button.classList.toggle('liked');
+                likeCountEl.textContent = currentCount;
+                console.error('Failed to toggle like:', data.error);
+            }
+        } catch (error) {
+            // Revert on error
+            button.classList.toggle('liked');
+            likeCountEl.textContent = currentCount;
+            console.error('Error toggling like:', error);
+        }
+    }
+
+    function formatTimeAgo(date) {
+        const seconds = Math.floor((new Date() - date) / 1000);
+
+        const intervals = {
+            year: 31536000,
+            month: 2592000,
+            week: 604800,
+            day: 86400,
+            hour: 3600,
+            minute: 60
+        };
+
+        for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+            const interval = Math.floor(seconds / secondsInUnit);
+            if (interval >= 1) {
+                return interval === 1 ? `1 ${unit} ago` : `${interval} ${unit}s ago`;
+            }
+        }
+
+        return 'Just now';
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function showEmptyState() {
+        feedContainer.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-video-slash"></i>
+                </div>
+                <h3 class="empty-state-title">No creations yet</h3>
+                <p class="empty-state-text">
+                    Be the first to create and share an AI-generated video!
+                </p>
+            </div>
+        `;
+    }
+
+    function showError(message) {
+        errorContainer.innerHTML = `
+            <div class="error-message">
+                <i class="fas fa-exclamation-triangle me-2"></i>${message}
+            </div>
+        `;
+    }
+
+    // Infinite scroll
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && hasMore && !isLoading) {
+                loadCreations();
+            }
+        });
+    }, {
+        rootMargin: '200px' // Start loading before reaching the bottom
+    });
+
+    // Observe the loading spinner itself as the trigger
+    observer.observe(loadingSpinner);
+
+    // Initial load
+    loadCreations();
+});
+</script>
+{% endblock %}

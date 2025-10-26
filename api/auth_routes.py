@@ -225,7 +225,8 @@ def google_callback():
         if next_url and is_safe_url(next_url):
             return redirect(next_url)
         else:
-            return redirect(url_for('auth.profile'))
+            # Redirect to username setup (will redirect to soho if username exists)
+            return redirect(url_for('username_setup'))
     except Exception as e:
         flash(f'Authentication failed: {str(e)}', 'danger')
         return redirect(url_for('auth.login'))

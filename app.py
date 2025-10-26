@@ -197,7 +197,52 @@ def create_app():
     def setup_subscription_context():
         """Initialize subscription context for each request."""
         init_subscription_context()
-    
+
+    # Username enforcement middleware (Phase 4)
+    @app.before_request
+    def enforce_username_setup():
+        """Redirect logged-in users without usernames to username setup page."""
+        # Skip for non-authenticated users
+        if 'user_id' not in session:
+            return None
+
+        # List of routes that don't require username (allow these)
+        exempt_routes = [
+            'auth.logout',
+            'username_setup',
+            'static',
+            'auth.login',
+            'auth.signup',
+            'auth.google_login',
+            'auth.google_callback',
+        ]
+
+        # Also exempt all API routes (they handle their own auth)
+        if request.path.startswith('/api/'):
+            return None
+
+        # Check if current endpoint is exempt
+        if request.endpoint in exempt_routes:
+            return None
+
+        # Check if user has a username
+        try:
+            from firebase_admin import firestore
+            db = firestore.client()
+            user_ref = db.collection('users').document(session['user_id'])
+            user_doc = user_ref.get()
+
+            if user_doc.exists:
+                user_data = user_doc.to_dict()
+                if not user_data.get('username'):
+                    # User doesn't have username - redirect to setup
+                    if request.endpoint != 'username_setup':
+                        return redirect(url_for('username_setup'))
+        except Exception as e:
+            logger.error(f"Error checking username in middleware: {e}")
+
+        return None
+
     # Add subscription context processor for templates
     app.context_processor(subscription_context_processor)
 
@@ -574,7 +619,40 @@ Keep your response concise and actionable."""
     def reel_maker():
         """Render the Reel Maker page (requires login)."""
         return render_template('reel_maker.html', title='Reel Maker - Phoenix AI')
-    
+
+    @app.route('/username-setup')
+    @login_required
+    def username_setup():
+        """Render the Username Setup page (Phase 4 - requires login)."""
+        return render_template('username_setup.html', title='Create Your Username')
+
+    @app.route('/create')
+    @login_required
+    def create_page():
+        """Render the Create page for image generation (Phase 4 - requires login)."""
+        return render_template('create.html', title='Create - Phoenix AI')
+
+    @app.route('/explore')
+    def explore_page():
+        """Render the Explore feed page (Phase 4 - public)."""
+        return render_template('explore.html', title='Explore - Phoenix AI')
+
+    @app.route('/users/<username>')
+    def public_profile(username):
+        """Render public profile page for a user (Phase 4 - public)."""
+        return render_template('profile.html', username=username)
+
+    @app.route('/soho')
+    @login_required
+    def soho_page():
+        """Render Soho social profile page - user's own creations gallery (Phase 4 - requires login)."""
+        return render_template('soho.html', title='My Soho - Phoenix AI')
+
+    @app.route('/soho/explore')
+    def soho_explore_page():
+        """Render Soho Explore page - public feed for Soho social platform (Phase 4 - public)."""
+        return render_template('soho_explore.html', title='Explore - Soho')
+
     return app
 
 # Create the application

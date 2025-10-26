@@ -97,6 +97,7 @@ def get_explore_feed():
                 'prompt': data.get('prompt'),
                 'caption': data.get('caption', ''),
                 'mediaUrl': data.get('mediaUrl'),
+                'mediaType': data.get('mediaType', 'video'),  # NEW: Include mediaType
                 'aspectRatio': data.get('aspectRatio', '9:16'),
                 'duration': data.get('duration', 8),
                 'likeCount': data.get('likeCount', 0),
@@ -204,6 +205,7 @@ def get_user_creations(username):
                 'prompt': data.get('prompt'),
                 'caption': data.get('caption', ''),
                 'mediaUrl': data.get('mediaUrl'),
+                'mediaType': data.get('mediaType', 'video'),  # NEW: Include mediaType
                 'aspectRatio': data.get('aspectRatio', '9:16'),
                 'duration': data.get('duration', 8),
                 'likeCount': data.get('likeCount', 0),

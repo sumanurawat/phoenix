@@ -146,6 +146,7 @@ def get_current_user():
 
         # Return user profile
         return jsonify({
+            'success': True,  # ADDED: Missing success flag
             'user': {
                 'firebase_uid': user_id,
                 'username': user_data.get('username'),

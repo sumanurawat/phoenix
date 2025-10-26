@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}@{{ username }} - Phoenix AI{% endblock %}
+{% block title %}My Soho - Phoenix AI{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -8,89 +8,129 @@
         background-color: #f8f9fa;
     }
 
-    .profile-container {
+    .soho-container {
         max-width: 900px;
         margin: 0 auto;
         padding: 2rem 1rem;
     }
 
-    .profile-header {
-        background: white;
+    .soho-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-radius: 16px;
-        padding: 2.5rem;
+        padding: 3rem 2.5rem;
         margin-bottom: 2rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
         text-align: center;
+        color: white;
     }
 
-    .profile-avatar-large {
-        width: 100px;
-        height: 100px;
+    .soho-avatar-large {
+        width: 120px;
+        height: 120px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: white;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
+        color: #667eea;
         font-weight: 700;
-        font-size: 2.5rem;
+        font-size: 3rem;
         margin: 0 auto 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
-    .profile-username {
-        font-size: 2rem;
+    .soho-username {
+        font-size: 2.5rem;
         font-weight: 700;
-        color: #2c3e50;
         margin-bottom: 0.5rem;
     }
 
-    .profile-handle {
-        color: #7f8c8d;
-        font-size: 1.1rem;
-        margin-bottom: 1rem;
-    }
-
-    .profile-bio {
-        color: #555;
-        line-height: 1.6;
+    .soho-handle {
+        font-size: 1.2rem;
+        opacity: 0.9;
         margin-bottom: 1.5rem;
-        max-width: 600px;
-        margin-left: auto;
-        margin-right: auto;
     }
 
-    .profile-stats {
+    .soho-stats {
         display: flex;
-        gap: 2rem;
+        gap: 3rem;
         justify-content: center;
-        padding-top: 1rem;
-        border-top: 1px solid #e0e0e0;
+        margin-top: 2rem;
     }
 
-    .stat {
+    .soho-stat {
         text-align: center;
     }
 
-    .stat-number {
-        font-size: 1.5rem;
+    .soho-stat-number {
+        font-size: 2rem;
         font-weight: 700;
-        color: #667eea;
     }
 
-    .stat-label {
-        font-size: 0.9rem;
-        color: #7f8c8d;
+    .soho-stat-label {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    .soho-actions {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .soho-button {
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .soho-button-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .soho-button-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+
+    .soho-button-secondary {
+        background: white;
+        color: #667eea;
+        border: 2px solid #667eea;
+    }
+
+    .soho-button-secondary:hover {
+        background: #667eea;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .gallery-section {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
     .gallery-header {
-        background: white;
-        border-radius: 16px;
-        padding: 1.5rem 2rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         display: flex;
         align-items: center;
         justify-content: space-between;
+        margin-bottom: 1.5rem;
     }
 
     .gallery-title {
@@ -108,14 +148,12 @@
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 1.5rem;
-        margin-bottom: 2rem;
     }
 
     .creation-item {
-        background: white;
+        background: #f8f9fa;
         border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         transition: all 0.3s ease;
         cursor: pointer;
     }
@@ -168,9 +206,6 @@
     .empty-state {
         text-align: center;
         padding: 4rem 2rem;
-        background: white;
-        border-radius: 16px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
     .empty-state-icon {
@@ -191,23 +226,6 @@
         margin-bottom: 1.5rem;
     }
 
-    .create-button {
-        display: inline-block;
-        padding: 0.75rem 2rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 8px;
-        text-decoration: none;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-
-    .create-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        color: white;
-    }
-
     .loading-spinner {
         text-align: center;
         padding: 3rem 0;
@@ -219,14 +237,6 @@
         border-width: 4px;
         border-color: #667eea;
         border-right-color: transparent;
-    }
-
-    .error-message {
-        background: #fee;
-        color: #c33;
-        padding: 1.5rem;
-        border-radius: 12px;
-        text-align: center;
     }
 
     /* Modal styles */
@@ -247,7 +257,7 @@
         display: flex;
     }
 
-    .modal-content {
+    .modal-content-custom {
         max-width: 90vw;
         max-height: 90vh;
         background: white;
@@ -285,112 +295,141 @@
 {% endblock %}
 
 {% block content %}
-<div class="profile-container">
-    <!-- Profile Header -->
-    <div class="profile-header">
-        <div class="profile-avatar-large" id="profileAvatar">?</div>
-        <h1 class="profile-username" id="profileDisplayName">Loading...</h1>
-        <div class="profile-handle" id="profileHandle">@...</div>
-        <p class="profile-bio" id="profileBio"></p>
+<div class="soho-container">
+    <!-- Soho Header -->
+    <div class="soho-header">
+        <div class="soho-avatar-large" id="sohoAvatar">?</div>
+        <h1 class="soho-username" id="sohoUsername">Loading...</h1>
+        <div class="soho-handle" id="sohoHandle">@...</div>
 
-        <div class="profile-stats">
-            <div class="stat">
-                <div class="stat-number" id="statCreations">0</div>
-                <div class="stat-label">Creations</div>
+        <div class="soho-stats">
+            <div class="soho-stat">
+                <div class="soho-stat-number" id="statCreations">0</div>
+                <div class="soho-stat-label">Creations</div>
             </div>
-            <div class="stat">
-                <div class="stat-number" id="statLikes">0</div>
-                <div class="stat-label">Likes</div>
+            <div class="soho-stat">
+                <div class="soho-stat-number" id="statLikes">0</div>
+                <div class="soho-stat-label">Total Likes</div>
+            </div>
+            <div class="soho-stat">
+                <div class="soho-stat-number" id="statTokens">0</div>
+                <div class="soho-stat-label">Tokens</div>
             </div>
         </div>
     </div>
 
-    <!-- Gallery Header -->
-    <div class="gallery-header">
-        <div>
-            <h2 class="gallery-title">Creations</h2>
-            <div class="gallery-count" id="galleryCount">0 creations</div>
-        </div>
-    </div>
-
-    <!-- Loading State -->
-    <div id="loadingSpinner" class="loading-spinner">
-        <div class="spinner-border" role="status"></div>
-        <p class="mt-3 text-muted">Loading creations...</p>
-    </div>
-
-    <!-- Error State -->
-    <div id="errorMessage" class="error-message" style="display: none;"></div>
-
-    <!-- Creations Grid -->
-    <div id="creationsGrid" class="creations-grid" style="display: none;"></div>
-
-    <!-- Empty State -->
-    <div id="emptyState" class="empty-state" style="display: none;">
-        <div class="empty-state-icon">
-            <i class="fas fa-image"></i>
-        </div>
-        <h3 class="empty-state-title">No creations yet</h3>
-        <p class="empty-state-text" id="emptyStateText">This user hasn't shared any creations.</p>
-        <a href="/create" class="create-button" id="createButtonLink" style="display: none;">
-            <i class="fas fa-plus"></i> Create Your First Image
+    <!-- Quick Actions -->
+    <div class="soho-actions">
+        <a href="/create" class="soho-button soho-button-primary">
+            <i class="fas fa-wand-magic-sparkles"></i> Create New Image
         </a>
+        <a href="/soho/explore" class="soho-button soho-button-secondary">
+            <i class="fas fa-compass"></i> Explore Feed
+        </a>
+        <a href="/buy-tokens" class="soho-button soho-button-secondary">
+            <i class="fas fa-coins"></i> Buy Tokens
+        </a>
+    </div>
+
+    <!-- Gallery Section -->
+    <div class="gallery-section">
+        <div class="gallery-header">
+            <div>
+                <h2 class="gallery-title">My Creations</h2>
+                <div class="gallery-count" id="galleryCount">0 creations</div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingSpinner" class="loading-spinner">
+            <div class="spinner-border" role="status"></div>
+            <p class="mt-3 text-muted">Loading your creations...</p>
+        </div>
+
+        <!-- Creations Grid -->
+        <div id="creationsGrid" class="creations-grid" style="display: none;"></div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="empty-state-icon">
+                <i class="fas fa-image"></i>
+            </div>
+            <h3 class="empty-state-title">No creations yet</h3>
+            <p class="empty-state-text">Start creating AI-generated images to share with the world!</p>
+            <a href="/create" class="soho-button soho-button-primary">
+                <i class="fas fa-plus"></i> Create Your First Image
+            </a>
+        </div>
     </div>
 </div>
 
 <!-- Modal for full-size view -->
 <div id="modalBackdrop" class="modal-backdrop">
     <button class="modal-close" onclick="closeModal()">×</button>
-    <div class="modal-content">
+    <div class="modal-content-custom">
         <img id="modalImage" class="modal-media" style="display: none;">
         <video id="modalVideo" class="modal-media" controls style="display: none;"></video>
     </div>
 </div>
 
 <script>
-    // Get username from URL path
-    const pathParts = window.location.pathname.split('/');
-    const username = pathParts[pathParts.length - 1];
-
     let userData = null;
     let creationsData = [];
-    let isOwnProfile = false;
 
-    // Load profile data
-    async function loadProfile() {
+    // Load user data
+    async function loadUserData() {
         try {
-            const response = await fetch(`/api/users/${username}`);
-            const data = await response.json();
+            // Get current user info
+            const userResponse = await fetch('/api/users/me');
+            const userData = await userResponse.json();
 
-            if (!response.ok || !data.success) {
-                throw new Error(data.error || 'User not found');
+            if (userResponse.ok && userData.success) {
+                const user = userData.user;
+                const username = user.username;
+
+                // Check if user has claimed a username
+                if (!username) {
+                    // Redirect to username setup
+                    window.location.href = '/username-setup';
+                    return;
+                }
+
+                // Update header
+                const avatarLetter = username[0].toUpperCase();
+                document.getElementById('sohoAvatar').textContent = avatarLetter;
+                document.getElementById('sohoUsername').textContent = user.displayName || username;
+                document.getElementById('sohoHandle').textContent = `@${username}`;
+
+                // Update token balance
+                try {
+                    const tokenResponse = await fetch('/api/tokens/balance');
+                    const tokenData = await tokenResponse.json();
+                    if (tokenResponse.ok && tokenData.success) {
+                        document.getElementById('statTokens').textContent = tokenData.balance;
+                    }
+                } catch (e) {
+                    console.error('Error loading token balance:', e);
+                    document.getElementById('statTokens').textContent = '0';
+                }
+
+                // Load creations
+                await loadCreations(username);
+            } else {
+                throw new Error('Failed to load user data');
             }
 
-            userData = data.user;
-            isOwnProfile = data.isOwnProfile || false;
-
-            // Update profile UI
-            const avatarLetter = username[0].toUpperCase();
-            document.getElementById('profileAvatar').textContent = avatarLetter;
-            document.getElementById('profileDisplayName').textContent = userData.displayName || username;
-            document.getElementById('profileHandle').textContent = `@${username}`;
-            document.getElementById('profileBio').textContent = userData.bio || '';
-
-            // Update page title
-            document.title = `@${username} - Phoenix AI`;
-
-            // Load creations
-            await loadCreations();
-
         } catch (error) {
-            console.error('Error loading profile:', error);
-            document.getElementById('loadingSpinner').style.display = 'none';
-            document.getElementById('errorMessage').textContent = error.message || 'Failed to load profile';
-            document.getElementById('errorMessage').style.display = 'block';
+            console.error('Error loading user data:', error);
+            // Even if user data fails, try to show something
+            document.getElementById('sohoAvatar').textContent = '?';
+            document.getElementById('sohoUsername').textContent = 'User';
+            document.getElementById('sohoHandle').textContent = '@user';
+            document.getElementById('loadingSpinner').innerHTML =
+                '<p class="text-danger">Failed to load profile data. Please <a href="/username-setup">claim your username</a> or refresh the page.</p>';
         }
     }
 
-    async function loadCreations() {
+    async function loadCreations(username) {
         try {
             const response = await fetch(`/api/users/${username}/creations?limit=50`);
             const data = await response.json();
@@ -419,13 +458,13 @@
                 renderCreations();
                 document.getElementById('creationsGrid').style.display = 'grid';
             } else {
-                showEmptyState();
+                document.getElementById('emptyState').style.display = 'block';
             }
 
         } catch (error) {
             console.error('Error loading creations:', error);
             document.getElementById('loadingSpinner').style.display = 'none';
-            showEmptyState();
+            document.getElementById('emptyState').style.display = 'block';
         }
     }
 
@@ -443,11 +482,11 @@
             item.innerHTML = `
                 <img
                     src="${creation.mediaUrl}"
-                    alt="${escapeHtml(creation.prompt)}"
+                    alt="${escapeHtml(creation.caption || creation.prompt)}"
                     class="creation-thumbnail"
                 >
                 <div class="creation-info">
-                    <div class="creation-prompt">${escapeHtml(creation.prompt)}</div>
+                    <div class="creation-prompt">${escapeHtml(creation.caption || creation.prompt)}</div>
                     <div class="creation-meta">
                         <span>${timeAgo}</span>
                         <span class="creation-likes">
@@ -460,22 +499,6 @@
 
             grid.appendChild(item);
         });
-    }
-
-    function showEmptyState() {
-        const emptyState = document.getElementById('emptyState');
-        const emptyStateText = document.getElementById('emptyStateText');
-        const createButton = document.getElementById('createButtonLink');
-
-        if (isOwnProfile) {
-            emptyStateText.textContent = "You haven't created anything yet. Start creating!";
-            createButton.style.display = 'inline-block';
-        } else {
-            emptyStateText.textContent = "This user hasn't shared any creations.";
-            createButton.style.display = 'none';
-        }
-
-        emptyState.style.display = 'block';
     }
 
     function openModal(creation) {
@@ -500,7 +523,6 @@
         const backdrop = document.getElementById('modalBackdrop');
         backdrop.classList.remove('show');
 
-        // Pause video if playing
         const modalVideo = document.getElementById('modalVideo');
         modalVideo.pause();
     }
@@ -553,6 +575,6 @@
     }
 
     // Load on page load
-    loadProfile();
+    loadUserData();
 </script>
 {% endblock %}
