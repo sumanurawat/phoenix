@@ -130,11 +130,12 @@ class TransactionService:
         package_id: str,
         stripe_session_id: str,
         stripe_customer_id: str,
-        amount_paid: float
+        amount_paid: float,
+        balance_after: int = None
     ) -> str:
         """
         Record a token purchase via Stripe.
-        
+
         Args:
             user_id: Firebase Auth UID
             amount: Number of tokens purchased
@@ -142,7 +143,8 @@ class TransactionService:
             stripe_session_id: Stripe checkout session ID
             stripe_customer_id: Stripe customer ID
             amount_paid: Amount paid in USD
-            
+            balance_after: User's balance after purchase (optional, will be fetched if not provided)
+
         Returns:
             Transaction document ID
         """
@@ -150,6 +152,7 @@ class TransactionService:
             user_id=user_id,
             transaction_type=TransactionType.PURCHASE,
             amount=amount,
+            balance_after=balance_after,
             details={
                 'packageId': package_id,
                 'stripeSessionId': stripe_session_id,

@@ -221,7 +221,7 @@ class TokenService:
         amount: int,
         reason: str = None,
         increment_earned: bool = False
-    ) -> bool:
+    ) -> int:
         """
         Add tokens to user's balance atomically.
 
@@ -232,7 +232,7 @@ class TokenService:
             increment_earned: If True, also increment totalTokensEarned (for tips)
 
         Returns:
-            True if successful
+            The user's balance after adding tokens
 
         Raises:
             ValueError: If amount is invalid
@@ -275,7 +275,7 @@ class TokenService:
             if balance_after == expected_balance:
                 logger.info(f"✅ ✅ ✅ VERIFICATION PASSED: Balance increased correctly!")
                 logger.info(f"🔵 ========== TOKEN PURCHASE SUCCESS ==========")
-                return True
+                return balance_after
             else:
                 logger.error(f"❌❌❌ VERIFICATION FAILED: Balance mismatch!")
                 logger.error(f"   Expected: {expected_balance}")

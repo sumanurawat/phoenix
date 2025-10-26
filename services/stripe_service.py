@@ -828,20 +828,14 @@ class StripeService:
             logger.info(f"   Tokens: {tokens}")
             logger.info(f"   Amount Paid: ${session.get('amount_total', 0) / 100:.2f}")
 
+            balance_after = None
             try:
-                success = token_service.add_tokens(
+                balance_after = token_service.add_tokens(
                     user_id=firebase_uid,
                     amount=tokens,
                     reason=f"Purchased {package_id} package"
                 )
-
-                if not success:
-                    logger.error(f"❌❌❌ CRITICAL: add_tokens returned False!")
-                    logger.error(f"   User: {firebase_uid}")
-                    logger.error(f"   Session: {session_id}")
-                    logger.error(f"   Tokens: {tokens}")
-                    logger.error(f"   This should NEVER happen - investigate immediately!")
-                    return {'error': 'Failed to credit tokens'}
+                logger.info(f"✅ Tokens credited successfully. New balance: {balance_after}")
 
             except ValueError as ve:
                 logger.error(f"❌ VALIDATION ERROR during token credit: {ve}")
@@ -856,7 +850,7 @@ class StripeService:
                 logger.error(f"   Session: {session_id}")
                 raise
 
-            # Record transaction in ledger
+            # Record transaction in ledger with balance_after to avoid extra read
             logger.info(f"📝 Recording transaction in ledger...")
             try:
                 transaction_id = transaction_service.record_purchase(
@@ -865,7 +859,8 @@ class StripeService:
                     package_id=package_id,
                     stripe_session_id=session_id,
                     stripe_customer_id=session.get('customer'),
-                    amount_paid=session.get('amount_total', 0) / 100  # Convert cents to dollars
+                    amount_paid=session.get('amount_total', 0) / 100,  # Convert cents to dollars
+                    balance_after=balance_after  # Pass balance to avoid extra Firestore read
                 )
                 logger.info(f"✅ Transaction recorded with ID: {transaction_id}")
             except Exception as ledger_error:

@@ -95,6 +95,18 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
+    .transaction-header {
+        display: grid;
+        grid-template-columns: 140px 100px 1fr 100px 100px;
+        gap: 12px;
+        padding: 12px 20px;
+        background: #f8f9fa;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #666;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
     .transaction-row {
         display: grid;
         grid-template-columns: 140px 100px 1fr 100px 100px;
@@ -450,6 +462,18 @@
     function renderTransactions(transactions) {
         const container = document.getElementById('transactionsContainer');
         container.innerHTML = '';
+
+        // Add header row
+        const header = document.createElement('div');
+        header.className = 'transaction-header';
+        header.innerHTML = `
+            <div>Date</div>
+            <div>Type</div>
+            <div>Description</div>
+            <div style="text-align: right;">Amount</div>
+            <div style="text-align: right;">Balance</div>
+        `;
+        container.appendChild(header);
 
         transactions.forEach(tx => {
             const row = document.createElement('div');
