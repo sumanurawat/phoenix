@@ -386,9 +386,7 @@
         const { type, details } = transaction;
         const parts = [];
 
-        if (details.stripeSessionId) {
-            parts.push(`Session: ${details.stripeSessionId.substring(0, 20)}...`);
-        }
+        // Don't show session ID - it's stored in DB for reference but not user-friendly
 
         if (details.postId) {
             parts.push(`Post: ${details.postId}`);
