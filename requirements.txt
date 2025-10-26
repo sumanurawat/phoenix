@@ -30,3 +30,5 @@ google-cloud-run==0.10.12  # For Cloud Run Jobs API
 psutil==5.9.5  # For system monitoring in jobs
 cryptography==41.0.7  # For social media token encryption
 instaloader==4.13  # For Instagram public profile scraping (Socials feature)
+celery==5.4.0  # For async video generation background jobs (Phase 3)
+redis==5.2.1  # For Celery broker and result backend (Phase 3)

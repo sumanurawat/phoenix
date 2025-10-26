@@ -43,57 +43,59 @@ class LikeService:
     def _get_like_id(self, user_id: str, post_id: str) -> str:
         """Generate a deterministic document ID for a like."""
         return f"{user_id}_{post_id}"
-    
+
     def like_post(self, user_id: str, post_id: str) -> bool:
         """
-        Like a post (idempotent - can be called multiple times safely).
-        
+        Like a post/creation (idempotent - can be called multiple times safely).
+
         Args:
             user_id: Firebase Auth UID of user liking the post
-            post_id: Post document ID
-            
+            post_id: Post/Creation document ID
+
         Returns:
             True if like was added, False if already liked
         """
         if not user_id or not post_id:
             raise ValueError("user_id and post_id are required")
-        
+
         try:
             like_id = self._get_like_id(user_id, post_id)
             like_ref = self.db.collection(self.collection).document(like_id)
-            
+
             # Check if already liked
             if like_ref.get().exists:
                 logger.debug(f"User {user_id} already liked post {post_id}")
                 return False
-            
+
             # Create like document
+            # Use creationId for Phase 4 compatibility
             like_data = {
                 'userId': user_id,
-                'postId': post_id,
+                'postId': post_id,  # Keep for backward compatibility
+                'creationId': post_id,  # Phase 4: works with creations collection
                 'createdAt': admin_firestore.SERVER_TIMESTAMP
             }
-            
+
             like_ref.set(like_data)
-            
+
             logger.info(f"User {user_id} liked post {post_id}")
             return True
-            
+
         except Exception as e:
             logger.error(
                 f"Failed to like post {post_id} by user {user_id}: {str(e)}",
                 exc_info=True
             )
             raise
-    
+
     def unlike_post(self, user_id: str, post_id: str) -> bool:
         """
-        Unlike a post (remove like).
-        
+        Unlike a post/creation (remove like).
+
         Args:
             user_id: Firebase Auth UID
-            post_id: Post document ID
-            
+            post_id: Post/Creation document ID
+
         Returns:
             True if like was removed, False if wasn't liked
         """

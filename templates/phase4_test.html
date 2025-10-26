@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 4 API Test Page</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+        }
+
+        .test-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .test-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .test-group {
+            margin-bottom: 20px;
+        }
+
+        .test-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .test-group input,
+        .test-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .test-group input:focus,
+        .test-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .test-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .response {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            display: none;
+        }
+
+        .response.show {
+            display: block;
+        }
+
+        .response.error {
+            border-left-color: #e74c3c;
+            background: #fee;
+        }
+
+        .response.success {
+            border-left-color: #2ecc71;
+            background: #efe;
+        }
+
+        .response pre {
+            margin-top: 10px;
+            padding: 12px;
+            background: white;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status-badge.available {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.taken {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .feed-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            background: white;
+        }
+
+        .feed-item h4 {
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .feed-item p {
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .feed-item .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            color: #999;
+        }
+
+        .like-btn {
+            background: #e74c3c;
+            padding: 6px 16px;
+            font-size: 14px;
+        }
+
+        .like-btn.liked {
+            background: #c0392b;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Phase 4 API Test Page</h1>
+            <p>Test the new social platform APIs: usernames, feed, likes, and transactions</p>
+        </div>
+
+        <div class="grid">
+            <!-- Username Testing -->
+            <div class="test-section">
+                <h2>👤 Username System</h2>
+
+                <div class="test-group">
+                    <label>Check Availability</label>
+                    <input type="text" id="usernameCheck" placeholder="Enter username to check">
+                    <button onclick="checkUsername()">Check Availability</button>
+                    <div id="checkResponse" class="response"></div>
+                </div>
+
+                <div class="test-group">
+                    <label>Claim Username</label>
+                    <input type="text" id="usernameClaim" placeholder="Enter username to claim">
+                    <button onclick="claimUsername()">Claim Username</button>
+                    <div id="claimResponse" class="response"></div>
+                </div>
+
+                <div class="test-group">
+                    <button onclick="getCurrentUser()">Get My Profile</button>
+                    <div id="profileResponse" class="response"></div>
+                </div>
+            </div>
+
+            <!-- Feed Testing -->
+            <div class="test-section">
+                <h2>📰 Explore Feed</h2>
+
+                <div class="test-group">
+                    <label>Feed Limit</label>
+                    <input type="number" id="feedLimit" value="5" min="1" max="50">
+                    <button onclick="loadFeed()">Load Feed</button>
+                    <div id="feedResponse" class="response"></div>
+                </div>
+
+                <div id="feedItems"></div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- Transaction History -->
+            <div class="test-section">
+                <h2>💰 Transaction History</h2>
+
+                <div class="test-group">
+                    <label>Number of Transactions</label>
+                    <input type="number" id="txLimit" value="10" min="1" max="100">
+                    <button onclick="loadTransactions()">Load Transactions</button>
+                    <div id="txResponse" class="response"></div>
+                </div>
+            </div>
+
+            <!-- User Gallery -->
+            <div class="test-section">
+                <h2>🖼️ User Gallery</h2>
+
+                <div class="test-group">
+                    <label>Username</label>
+                    <input type="text" id="galleryUsername" placeholder="Enter username">
+                    <button onclick="loadGallery()">Load Gallery</button>
+                    <div id="galleryResponse" class="response"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Helper function to show responses
+        function showResponse(elementId, data, isError = false) {
+            const el = document.getElementById(elementId);
+            el.className = `response show ${isError ? 'error' : 'success'}`;
+            el.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+
+        // Check username availability
+        async function checkUsername() {
+            const username = document.getElementById('usernameCheck').value.trim();
+            if (!username) {
+                alert('Please enter a username');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/users/check-username?username=${encodeURIComponent(username)}`);
+                const data = await response.json();
+                showResponse('checkResponse', data, !data.available);
+            } catch (error) {
+                showResponse('checkResponse', { error: error.message }, true);
+            }
+        }
+
+        // Claim username
+        async function claimUsername() {
+            const username = document.getElementById('usernameClaim').value.trim();
+            if (!username) {
+                alert('Please enter a username');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/users/set-username', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username })
+                });
+                const data = await response.json();
+                showResponse('claimResponse', data, !response.ok);
+            } catch (error) {
+                showResponse('claimResponse', { error: error.message }, true);
+            }
+        }
+
+        // Get current user profile
+        async function getCurrentUser() {
+            try {
+                const response = await fetch('/api/users/me');
+                const data = await response.json();
+                showResponse('profileResponse', data, !response.ok);
+            } catch (error) {
+                showResponse('profileResponse', { error: error.message }, true);
+            }
+        }
+
+        // Load explore feed
+        async function loadFeed() {
+            const limit = document.getElementById('feedLimit').value;
+
+            try {
+                const response = await fetch(`/api/feed/explore?limit=${limit}`);
+                const data = await response.json();
+
+                showResponse('feedResponse', {
+                    success: data.success,
+                    count: data.creations?.length || 0,
+                    hasMore: data.hasMore
+                }, !response.ok);
+
+                // Display feed items
+                const feedItems = document.getElementById('feedItems');
+                if (data.creations && data.creations.length > 0) {
+                    feedItems.innerHTML = data.creations.map(creation => `
+                        <div class="feed-item">
+                            <h4>@${creation.username}</h4>
+                            <p><strong>Prompt:</strong> ${creation.prompt}</p>
+                            <p><strong>Caption:</strong> ${creation.caption || '(no caption)'}</p>
+                            <div class="stats">
+                                <span>❤️ ${creation.likeCount} likes</span>
+                                <span>🎥 ${creation.duration}s</span>
+                                <span>📐 ${creation.aspectRatio}</span>
+                            </div>
+                            <button class="like-btn ${creation.isLiked ? 'liked' : ''}"
+                                    onclick="toggleLike('${creation.creationId}', ${creation.isLiked})">
+                                ${creation.isLiked ? 'Unlike' : 'Like'}
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    feedItems.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No published creations yet. Generate and publish a video first!</p>';
+                }
+            } catch (error) {
+                showResponse('feedResponse', { error: error.message }, true);
+            }
+        }
+
+        // Toggle like
+        async function toggleLike(creationId, isLiked) {
+            try {
+                const method = isLiked ? 'DELETE' : 'POST';
+                const response = await fetch(`/api/creations/${creationId}/like`, { method });
+                const data = await response.json();
+
+                if (data.success) {
+                    // Reload feed to update UI
+                    loadFeed();
+                }
+            } catch (error) {
+                alert('Failed to toggle like: ' + error.message);
+            }
+        }
+
+        // Load transactions
+        async function loadTransactions() {
+            const limit = document.getElementById('txLimit').value;
+
+            try {
+                const response = await fetch(`/api/tokens/transactions?limit=${limit}`);
+                const data = await response.json();
+
+                showResponse('txResponse', {
+                    balance: data.balance,
+                    totalEarned: data.totalEarned,
+                    transactionCount: data.transactions?.length || 0,
+                    transactions: data.transactions
+                }, !response.ok);
+            } catch (error) {
+                showResponse('txResponse', { error: error.message }, true);
+            }
+        }
+
+        // Load user gallery
+        async function loadGallery() {
+            const username = document.getElementById('galleryUsername').value.trim();
+            if (!username) {
+                alert('Please enter a username');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/users/${username}/creations?limit=10`);
+                const data = await response.json();
+
+                showResponse('galleryResponse', {
+                    user: data.user,
+                    creationCount: data.creations?.length || 0,
+                    hasMore: data.hasMore
+                }, !response.ok);
+            } catch (error) {
+                showResponse('galleryResponse', { error: error.message }, true);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -208,36 +208,99 @@ def get_balance():
 @login_required
 def get_transactions():
     """
-    Get user's token transaction history.
-    Supports pagination via 'limit' and 'offset' query params.
+    Get user's complete token transaction history.
+    Supports pagination and filtering via query params.
+
+    Query params:
+        limit: Max transactions to return (1-100, default 50)
+        type: Filter by transaction type (optional)
+              Options: purchase, generation_spend, generation_refund, tip_sent, tip_received, signup_bonus
+
+    Returns:
+        200: {
+            success: true,
+            transactions: [{
+                type: string,
+                amount: number,  // positive for credits, negative for debits
+                timestamp: string,
+                description: string,  // user-friendly description
+                details: object  // additional context
+            }],
+            balance: number,  // current balance
+            totalEarned: number  // lifetime earnings from tips
+        }
     """
     try:
         user_id = session['user_id']
-        
-        # Get pagination parameters
-        limit = request.args.get('limit', 20, type=int)
-        offset = request.args.get('offset', 0, type=int)
-        
+
+        # Get query parameters
+        limit = request.args.get('limit', 50, type=int)
+        transaction_type = request.args.get('type', None)
+
         # Clamp limit to reasonable range
         limit = max(1, min(limit, 100))
-        
-        # Get transactions from transaction service
-        transactions = transaction_service.get_user_transactions(
+
+        # Get current balance and earnings
+        balance = token_service.get_balance(user_id)
+        total_earned = token_service.get_total_earned(user_id)
+
+        # Get transactions from service
+        raw_transactions = transaction_service.get_user_transactions(
             user_id=user_id,
-            limit=limit,
-            offset=offset,
-            transaction_type='token_purchase'  # Filter for purchases only
+            limit=limit
         )
-        
+
+        # Filter by type if specified
+        if transaction_type:
+            raw_transactions = [t for t in raw_transactions if t.get('type') == transaction_type]
+
+        # Format transactions with user-friendly descriptions
+        formatted_transactions = []
+        for txn in raw_transactions:
+            txn_type = txn.get('type')
+            amount = txn.get('amount', 0)
+            details = txn.get('details', {})
+
+            # Generate user-friendly description
+            if txn_type == 'purchase':
+                description = "Token Purchase"
+            elif txn_type == 'generation_spend':
+                description = "Video Generation"
+            elif txn_type == 'generation_refund':
+                description = "Failed Generation Refund"
+            elif txn_type == 'tip_sent':
+                recipient = details.get('recipientUsername', 'Unknown')
+                description = f"Tip Sent to @{recipient}"
+            elif txn_type == 'tip_received':
+                sender = details.get('senderUsername', 'Unknown')
+                description = f"Tip Received from @{sender}"
+            elif txn_type == 'signup_bonus':
+                description = "Welcome Bonus"
+            elif txn_type == 'admin_credit':
+                description = "Admin Credit"
+            elif txn_type == 'refund':
+                description = "Refund"
+            else:
+                description = txn_type.replace('_', ' ').title()
+
+            formatted_transactions.append({
+                'type': txn_type,
+                'amount': amount,
+                'timestamp': txn.get('timestamp'),
+                'description': description,
+                'details': details
+            })
+
         return jsonify({
             'success': True,
-            'transactions': transactions,
-            'limit': limit,
-            'offset': offset
+            'transactions': formatted_transactions,
+            'balance': balance,
+            'totalEarned': total_earned,
+            'limit': limit
         }), 200
-        
+
     except Exception as e:
-        logger.error(f"Error fetching transactions: {e}")
+        logger.error(f"Error fetching transactions: {e}", exc_info=True)
         return jsonify({
             'success': False,
             'error': 'Failed to fetch transactions'

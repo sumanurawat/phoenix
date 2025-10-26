@@ -61,6 +61,9 @@ from api.reel_routes import reel_bp
 from api.job_routes import job_bp
 from api.socials_routes import socials_bp
 from api.image_routes import image_bp
+from api.video_generation_routes import video_generation_bp
+from api.user_routes import user_bp
+from api.feed_routes import feed_bp
 
 # Import services (AFTER Firebase initialization)
 from services.chat_service import ChatService
@@ -118,11 +121,23 @@ def create_app():
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     # Prefer HTTPS for external URLs
     app.config['PREFERRED_URL_SCHEME'] = 'https'
-    
+
     # Configure application - Set ENV first
     app.config["ENV"] = FLASK_ENV
     app.config["DEBUG"] = FLASK_DEBUG
     app.config["SECRET_KEY"] = SECRET_KEY
+
+    # Initialize Celery with Flask app context (Phase 3)
+    from celery_app import celery_app
+    celery_app.conf.update(flask_app=app)
+
+    class ContextTask(celery_app.Task):
+        """Make Celery tasks work with Flask app context."""
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+
+    celery_app.Task = ContextTask
     
     # Security check after ENV is set
     if app.config["ENV"] != "development" and app.config["SECRET_KEY"] == "default-secret-key":
@@ -173,6 +188,9 @@ def create_app():
     app.register_blueprint(job_bp)
     app.register_blueprint(socials_bp)
     app.register_blueprint(image_bp)
+    app.register_blueprint(video_generation_bp)  # Phase 3: Async video generation
+    app.register_blueprint(user_bp)  # Phase 4: User profiles & usernames
+    app.register_blueprint(feed_bp)  # Phase 4: Social feed & likes
     
     # Setup subscription middleware
     @app.before_request
@@ -238,6 +256,12 @@ def create_app():
                            category=category,
                            results=results)
     
+    @app.route('/phase4-test')
+    @login_required
+    def phase4_test():
+        """Phase 4 API testing page."""
+        return render_template('phase4_test.html', title='Phase 4 API Test')
+
     @app.route('/datasets')
     @login_required
     def dataset_discovery():

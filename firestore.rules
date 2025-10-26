@@ -1,6 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Usernames collection - for unique username claims (Phase 4)
+    match /usernames/{username} {
+      // Public read for username lookups
+      allow read: if true;
+      // Only backend can create/update/delete (via atomic transactions)
+      allow write: if false;
+    }
+
     // Posts collection - only owners can create/update/delete their posts
     match /posts/{postId} {
       allow read: if request.auth != null;
@@ -11,16 +19,24 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
 
-    // Likes collection - enforce deterministic IDs and ownership
-
+    // Likes collection - enforce deterministic IDs and ownership (Phase 4)
+    // Works with 'creations' collection (not posts)
     match /likes/{likeId} {
+      // Anyone can read likes for published creations
       allow read: if request.auth != null;
+
+      // Authenticated users can create likes for creations
+      // Document ID must be userId_creationId
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.postId is string
-        && request.resource.id == request.auth.uid + "_" + request.resource.data.postId;
+        && request.resource.data.creationId is string
+        && request.resource.id == request.auth.uid + "_" + request.resource.data.creationId;
+
+      // Users can delete their own likes
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow update: if false; // Likes are immutable after creation
+
+      // Likes are immutable after creation
+      allow update: if false;
     }
 
     // Image generations - users can only access their own records
@@ -34,6 +50,26 @@ service cloud.firestore {
     match /transactions/{transactionId} {
       allow read: if request.auth != null && request.auth.uid == resource.data.userId;
       allow write: if false;
+    }
+
+    // Video creations collection (Phase 3 & 4: Async video generation + social feed)
+    match /creations/{creationId} {
+      // Read permissions:
+      // - Anyone can read published creations (for Explore feed)
+      // - Owners can read their own creations in any state
+      allow read: if resource.data.status == 'published'
+        || (request.auth != null && request.auth.uid == resource.data.userId);
+
+      // Only backend can create creations (via API endpoint with token debit)
+      allow create: if false;
+
+      // Only backend can update creations (via worker state management & publish endpoint)
+      allow update: if false;
+
+      // Users can delete draft or failed creations (cleanup)
+      allow delete: if request.auth != null
+        && request.auth.uid == resource.data.userId
+        && resource.data.status in ['draft', 'failed'];
     }
 
     // Specific rules for chat conversations
@@ -64,32 +100,39 @@ service cloud.firestore {
 
     // Subscription-related collections
 
-    // Users collection - stores Stripe customer IDs and token balances
+    // Users collection - stores Stripe customer IDs, token balances, and profiles (Phase 4)
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      
-      // Allow user to update their own profile data EXCEPT token-related fields
-      allow update: if request.auth != null 
+      // Users can read their own profile
+      // Public profiles can be read by anyone (for user galleries)
+      allow read: if request.auth != null
+        && (request.auth.uid == userId || true);  // Allow public reads for profiles
+
+      // Allow user to update their own profile data EXCEPT protected fields
+      // Protected: token-related fields and username (username set via atomic transaction)
+      allow update: if request.auth != null
         && request.auth.uid == userId
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
           'tokenBalance',
           'totalTokensEarned',
           'totalTokensPurchased',
-          'totalTokensSpent'
+          'totalTokensSpent',
+          'username',
+          'usernameLower'
         ]);
-      
-      // Allow user to create their profile (excluding token fields)
-      allow create: if request.auth != null 
+
+      // Allow user to create their profile (excluding protected fields)
+      allow create: if request.auth != null
         && request.auth.uid == userId
         && !request.resource.data.keys().hasAny([
           'tokenBalance',
-          'totalTokensEarned', 
+          'totalTokensEarned',
           'totalTokensPurchased',
-          'totalTokensSpent'
+          'totalTokensSpent',
+          'username',
+          'usernameLower'
         ]);
-      
-      // Token fields can ONLY be modified by server (Admin SDK bypasses these rules)
-      // Clients cannot write to tokenBalance, totalTokensEarned, totalTokensPurchased, totalTokensSpent
+
+      // Protected fields can ONLY be modified by server (Admin SDK bypasses these rules)
     }
 
     // User subscriptions collection - stores subscription details
