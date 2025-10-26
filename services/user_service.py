@@ -131,6 +131,7 @@ class UserService:
             logger.error(f"Error checking username availability: {e}", exc_info=True)
             return False
 
+    @admin_firestore.transactional
     def _claim_username_transaction(
         self,
         transaction: firestore.Transaction,
@@ -206,9 +207,9 @@ class UserService:
                 return user_data
 
         try:
-            # Run atomic transaction using transaction.run()
+            # Run atomic transaction
             transaction = self.db.transaction()
-            transaction.run(self._claim_username_transaction, user_id, validated_username)
+            self._claim_username_transaction(transaction, user_id, validated_username)
 
             logger.info(f"User {user_id} claimed username '{validated_username}'")
 
