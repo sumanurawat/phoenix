@@ -406,3 +406,81 @@ def get_creation_likes(creation_id):
             'success': False,
             'error': 'Failed to fetch like information'
         }), 500
+
+
+@feed_bp.route('/api/creations/<creation_id>/caption', methods=['PATCH'])
+@login_required
+def update_caption(creation_id):
+    """
+    Update the caption of a creation (owner only).
+
+    Path params:
+        creation_id: Creation document ID
+
+    Request body:
+        {
+            "caption": "New caption text"
+        }
+
+    Returns:
+        200: { success: true, caption: "..." }
+        403: Not authorized (not owner)
+        404: Creation not found
+        500: Server error
+    """
+    try:
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'error': 'Authentication required'
+            }), 401
+
+        # Get request data
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'Request body is required'
+            }), 400
+
+        caption = data.get('caption', '').strip()
+
+        # Get the creation document
+        creation_ref = db.collection('creations').document(creation_id)
+        creation_doc = creation_ref.get()
+
+        if not creation_doc.exists:
+            return jsonify({
+                'success': False,
+                'error': 'Creation not found'
+            }), 404
+
+        creation_data = creation_doc.to_dict()
+
+        # Check if user is the owner
+        if creation_data.get('userId') != user_id:
+            return jsonify({
+                'success': False,
+                'error': 'You can only edit your own creations'
+            }), 403
+
+        # Update caption
+        creation_ref.update({
+            'caption': caption,
+            'updatedAt': firestore.SERVER_TIMESTAMP
+        })
+
+        logger.info(f"Updated caption for creation {creation_id} by user {user_id}")
+
+        return jsonify({
+            'success': True,
+            'caption': caption
+        })
+
+    except Exception as e:
+        logger.error(f"Error updating caption for creation {creation_id}: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'Failed to update caption'
+        }), 500

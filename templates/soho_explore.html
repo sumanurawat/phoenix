@@ -351,7 +351,7 @@
             <div class="creation-header">
                 <div class="creator-avatar">${avatarLetter}</div>
                 <div class="creator-info">
-                    <a href="/users/${creation.username}" class="creator-username">@${creation.username}</a>
+                    <a href="/soho/${creation.username}" class="creator-username">@${creation.username}</a>
                     <div class="creation-timestamp">${timeAgo}</div>
                 </div>
             </div>
@@ -367,7 +367,7 @@
             </div>
 
             <div class="creation-caption">
-                ${creation.caption ? `<div class="caption-text">${escapeHtml(creation.caption)}</div>` : `<div class="caption-text text-muted">${escapeHtml(creation.prompt)}</div>`}
+                ${creation.caption ? `<div class="caption-text">${escapeHtml(creation.caption)}</div>` : ''}
             </div>
 
             <div class="creation-actions">

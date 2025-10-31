@@ -645,13 +645,33 @@ Keep your response concise and actionable."""
     @app.route('/soho')
     @login_required
     def soho_page():
-        """Render Soho social profile page - user's own creations gallery (Phase 4 - requires login)."""
-        return render_template('soho.html', title='My Soho - Phoenix AI')
+        """Redirect to user's own Soho profile page (Phase 4 - requires login)."""
+        from firebase_admin import firestore
+        try:
+            db = firestore.client()
+            user_ref = db.collection('users').document(session['user_id'])
+            user_doc = user_ref.get()
+
+            if user_doc.exists:
+                user_data = user_doc.to_dict()
+                username = user_data.get('username')
+                if username:
+                    return redirect(url_for('soho_public_profile', username=username))
+        except Exception as e:
+            logger.error(f"Error redirecting to user profile: {e}")
+
+        # Fallback to username setup if something goes wrong
+        return redirect(url_for('username_setup'))
 
     @app.route('/soho/explore')
     def soho_explore_page():
         """Render Soho Explore page - public feed for Soho social platform (Phase 4 - public)."""
         return render_template('soho_explore.html', title='Explore - Soho')
+
+    @app.route('/soho/<username>')
+    def soho_public_profile(username):
+        """Render public Soho profile page for a specific user (Phase 4 - public)."""
+        return render_template('soho_public_profile.html', username=username, title=f'@{username} - Soho')
 
     return app
 

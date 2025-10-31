@@ -367,15 +367,30 @@
         }
     });
 
-    // Share to Explore (image is already published, just redirect)
+    // Share to Explore (image is already published, save caption if provided)
     shareButton.addEventListener('click', async () => {
-        // Images are auto-published, so we can just redirect
-        // If user added a caption, we could update it here (future enhancement)
         const caption = captionInput.value.trim();
 
+        // If user added a caption, save it before redirecting
         if (caption && currentImageId) {
-            // TODO: Add API endpoint to update caption
-            // For now, just redirect to explore
+            try {
+                const response = await fetch(`/api/creations/${currentImageId}/caption`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ caption: caption })
+                });
+
+                const data = await response.json();
+                if (!data.success) {
+                    console.error('Failed to save caption:', data.error);
+                    // Continue anyway - don't block the share
+                }
+            } catch (error) {
+                console.error('Error saving caption:', error);
+                // Continue anyway - don't block the share
+            }
         }
 
         window.location.href = '/soho/explore';
