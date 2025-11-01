@@ -428,10 +428,6 @@
                 <div class="soho-stat-number" id="statCreations">0</div>
                 <div class="soho-stat-label">Creations</div>
             </div>
-            <div class="soho-stat">
-                <div class="soho-stat-number" id="statLikes">0</div>
-                <div class="soho-stat-label">Total Likes</div>
-            </div>
         </div>
     </div>
 
@@ -557,9 +553,6 @@
             // Update stats
             document.getElementById('statCreations').textContent = creationsData.length;
 
-            const totalLikes = creationsData.reduce((sum, c) => sum + (c.likeCount || 0), 0);
-            document.getElementById('statLikes').textContent = totalLikes;
-
             // Update gallery count
             document.getElementById('galleryCount').textContent =
                 `${creationsData.length} ${creationsData.length === 1 ? 'creation' : 'creations'}`;
@@ -609,10 +602,6 @@
                     ${displayContent}
                     <div class="creation-meta">
                         <span>${timeAgo}</span>
-                        <span class="creation-likes">
-                            <i class="fas fa-heart"></i>
-                            ${creation.likeCount || 0}
-                        </span>
                     </div>
                 </div>
             `;

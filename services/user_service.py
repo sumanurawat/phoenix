@@ -153,21 +153,39 @@ class UserService:
         """
         username_lower = username.lower()
 
-        # 1. Check if username is available
+        # 1. Get user's current username (if any) to release it
+        user_ref = self.db.collection(self.users_collection).document(user_id)
+        user_doc = user_ref.get(transaction=transaction)
+
+        old_username_lower = None
+        if user_doc.exists:
+            user_data = user_doc.to_dict()
+            old_username_lower = user_data.get('usernameLower')
+
+        # 2. Check if new username is available (unless it's the same as current)
         username_ref = self.db.collection(self.usernames_collection).document(username_lower)
         username_doc = username_ref.get(transaction=transaction)
 
         if username_doc.exists:
-            raise UsernameTakenError(f"Username '{username}' is already taken")
+            # Check if it's claimed by a different user
+            claimed_user_id = username_doc.to_dict().get('userId')
+            if claimed_user_id != user_id:
+                raise UsernameTakenError(f"Username '{username}' is already taken")
+            # If it's the same user, we're just updating (no-op on username)
 
-        # 2. Create username claim
+        # 3. Delete old username claim (if user had a different username before)
+        if old_username_lower and old_username_lower != username_lower:
+            old_username_ref = self.db.collection(self.usernames_collection).document(old_username_lower)
+            transaction.delete(old_username_ref)
+            logger.info(f"Released old username claim: {old_username_lower}")
+
+        # 4. Create new username claim
         transaction.set(username_ref, {
             'userId': user_id,
             'claimedAt': admin_firestore.SERVER_TIMESTAMP
         })
 
-        # 3. Update user document
-        user_ref = self.db.collection(self.users_collection).document(user_id)
+        # 5. Update user document
         transaction.set(user_ref, {
             'username': username,  # Preserve original casing
             'usernameLower': username_lower,

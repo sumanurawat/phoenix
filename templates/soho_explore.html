@@ -151,19 +151,6 @@
         color: #667eea;
     }
 
-    .action-button.liked {
-        color: #e74c3c;
-    }
-
-    .action-button.liked i {
-        animation: heartbeat 0.3s ease;
-    }
-
-    @keyframes heartbeat {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.2); }
-    }
-
     .action-count {
         font-size: 0.9rem;
         font-weight: 600;
@@ -238,6 +225,269 @@
         text-align: center;
         margin-bottom: 2rem;
     }
+
+    /* Modal Styles */
+    .creation-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 1001;
+    }
+
+    .modal-content-wrapper {
+        position: relative;
+        z-index: 1002;
+        width: 90%;
+        max-width: 1200px;
+        height: 85vh;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+        z-index: 1003;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        transition: background 0.2s;
+    }
+
+    .modal-close:hover {
+        background: rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-two-pane {
+        display: flex;
+        height: 100%;
+    }
+
+    .modal-media-pane {
+        flex: 0 0 70%;
+        background: black;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-media-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-media-container img,
+    .modal-media-container video {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+
+    .modal-comments-pane {
+        flex: 0 0 30%;
+        display: flex;
+        flex-direction: column;
+        background: white;
+    }
+
+    .comments-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .creator-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .creation-caption-in-modal {
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .caption-username {
+        font-weight: 600;
+        margin-right: 0.5rem;
+    }
+
+    .caption-text {
+        color: #2c3e50;
+    }
+
+    .comments-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem 1.5rem;
+    }
+
+    .comment-item {
+        margin-bottom: 1.25rem;
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .comment-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.875rem;
+        flex-shrink: 0;
+    }
+
+    .comment-content {
+        flex: 1;
+    }
+
+    .comment-username {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-right: 0.5rem;
+        color: #2c3e50;
+    }
+
+    .comment-text {
+        font-size: 0.9rem;
+        color: #2c3e50;
+        line-height: 1.4;
+    }
+
+    .comment-timestamp {
+        font-size: 0.75rem;
+        color: #95a5a6;
+        margin-top: 0.25rem;
+    }
+
+    .comment-sending {
+        opacity: 0.6;
+    }
+
+    .comments-loading {
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .comments-empty {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        color: #95a5a6;
+    }
+
+    .load-more-container {
+        padding: 0.75rem 1.5rem;
+        border-top: 1px solid #e0e0e0;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .load-more-btn {
+        width: 100%;
+        padding: 0.75rem;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        color: #667eea;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .load-more-btn:hover {
+        background: #f8f9fa;
+        border-color: #667eea;
+    }
+
+    .comment-input-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e0e0e0;
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .comment-input {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .comment-input:focus {
+        border-color: #667eea;
+    }
+
+    .post-comment-btn {
+        padding: 0.75rem 1.5rem;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .post-comment-btn:hover:not(:disabled) {
+        background: #5568d3;
+    }
+
+    .post-comment-btn:disabled {
+        background: #ddd;
+        cursor: not-allowed;
+    }
+
+    .spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid #e0e0e0;
+        border-top-color: #667eea;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
 </style>
 {% endblock %}
 
@@ -271,6 +521,71 @@
         <a href="/create" class="create-button">
             <i class="fas fa-plus"></i> Create First Image
         </a>
+    </div>
+</div>
+
+<!-- Creation Modal with Comments -->
+<div id="creationModal" class="creation-modal" style="display: none;">
+    <div class="modal-backdrop" onclick="closeModal()"></div>
+    <div class="modal-content-wrapper">
+        <button class="modal-close" onclick="closeModal()">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <div class="modal-two-pane">
+            <!-- Left Pane: Image (70%) -->
+            <div class="modal-media-pane">
+                <div id="modalMediaContainer" class="modal-media-container"></div>
+            </div>
+
+            <!-- Right Pane: Comments (30%) -->
+            <div class="modal-comments-pane">
+                <!-- Header with creator info and caption -->
+                <div class="comments-header">
+                    <div class="creator-row">
+                        <div class="creator-avatar" id="modalCreatorAvatar">?</div>
+                        <div class="creator-info">
+                            <a href="#" id="modalCreatorUsername" class="creator-username">@username</a>
+                        </div>
+                    </div>
+                    <div class="creation-caption-in-modal">
+                        <span class="caption-username" id="modalCaptionUsername">@username</span>
+                        <span class="caption-text" id="modalCaptionText"></span>
+                    </div>
+                </div>
+
+                <!-- Comments List (scrollable) -->
+                <div class="comments-list" id="commentsList">
+                    <div class="comments-loading" id="commentsLoading" style="display: none;">
+                        <div class="spinner"></div>
+                    </div>
+                    <div class="comments-empty" id="commentsEmpty" style="display: none;">
+                        <p>No comments yet. Be the first to comment!</p>
+                    </div>
+                </div>
+
+                <!-- Load More Button -->
+                <div class="load-more-container" id="loadMoreContainer" style="display: none;">
+                    <button class="load-more-btn" id="loadMoreBtn" onclick="loadMoreComments()">
+                        Load more comments
+                    </button>
+                </div>
+
+                <!-- Comment Input Footer -->
+                <div class="comment-input-footer">
+                    <input
+                        type="text"
+                        id="commentInput"
+                        class="comment-input"
+                        placeholder="Add a comment..."
+                        maxlength="500"
+                    >
+                    <button id="postCommentBtn" class="post-comment-btn" onclick="postComment()" disabled>
+                        Post
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -356,7 +671,7 @@
                 </div>
             </div>
 
-            <div class="creation-media-container">
+            <div class="creation-media-container" style="cursor: pointer;">
                 ${creation.mediaType === 'image'
                     ? `<img class="creation-media" src="${creation.mediaUrl}" alt="${escapeHtml(creation.prompt)}">`
                     : `<video class="creation-media" controls loop playsinline>
@@ -368,58 +683,15 @@
 
             <div class="creation-caption">
                 ${creation.caption ? `<div class="caption-text">${escapeHtml(creation.caption)}</div>` : ''}
-            </div>
-
-            <div class="creation-actions">
-                <button class="action-button like-button ${creation.isLiked ? 'liked' : ''}" data-creation-id="${creation.creationId}">
-                    <i class="fas fa-heart"></i>
-                    <span class="action-count like-count">${creation.likeCount || 0}</span>
-                </button>
+                ${creation.commentCount > 0 ? `<div class="comment-count-hint" style="color: #95a5a6; font-size: 0.85rem; margin-top: 0.5rem;">💬 ${creation.commentCount} ${creation.commentCount === 1 ? 'comment' : 'comments'}</div>` : ''}
             </div>
         `;
 
-        // Add like button handler
-        const likeButton = card.querySelector('.like-button');
-        likeButton.addEventListener('click', () => toggleLike(creation.creationId, likeButton));
+        // Add click handler to open modal
+        const mediaContainer = card.querySelector('.creation-media-container');
+        mediaContainer.addEventListener('click', () => openCreationModal(creation));
 
         return card;
-    }
-
-    async function toggleLike(creationId, button) {
-        const wasLiked = button.classList.contains('liked');
-        const likeCountSpan = button.querySelector('.like-count');
-        let currentCount = parseInt(likeCountSpan.textContent);
-
-        // Optimistic update
-        button.classList.toggle('liked');
-        likeCountSpan.textContent = wasLiked ? currentCount - 1 : currentCount + 1;
-
-        try {
-            const url = `/api/creations/${creationId}/like`;
-            const method = wasLiked ? 'DELETE' : 'POST';
-
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                likeCountSpan.textContent = data.likeCount;
-            } else {
-                // Revert on error
-                button.classList.toggle('liked');
-                likeCountSpan.textContent = currentCount;
-            }
-        } catch (error) {
-            console.error('Error toggling like:', error);
-            // Revert on error
-            button.classList.toggle('liked');
-            likeCountSpan.textContent = currentCount;
-        }
     }
 
     function showEmptyState() {
@@ -463,6 +735,278 @@
         };
         return text.replace(/[&<>"']/g, m => map[m]);
     }
+
+    // ==== MODAL AND COMMENTS SYSTEM ====
+    let currentCreation = null;
+    let modalComments = [];
+    let hasMoreComments = false;
+    let isLoadingComments = false;
+
+    function openCreationModal(creation) {
+        currentCreation = creation;
+        modalComments = [];
+        hasMoreComments = false;
+
+        const modal = document.getElementById('creationModal');
+        const mediaContainer = document.getElementById('modalMediaContainer');
+        const creatorAvatar = document.getElementById('modalCreatorAvatar');
+        const creatorUsername = document.getElementById('modalCreatorUsername');
+        const captionUsername = document.getElementById('modalCaptionUsername');
+        const captionText = document.getElementById('modalCaptionText');
+
+        // Set up media
+        if (creation.mediaType === 'image') {
+            mediaContainer.innerHTML = `<img src="${creation.mediaUrl}" alt="${escapeHtml(creation.prompt)}">`;
+        } else {
+            mediaContainer.innerHTML = `
+                <video controls loop playsinline autoplay>
+                    <source src="${creation.mediaUrl}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            `;
+        }
+
+        // Set up creator info
+        const avatarLetter = creation.username ? creation.username[0].toUpperCase() : '?';
+        creatorAvatar.textContent = avatarLetter;
+        creatorUsername.textContent = `@${creation.username}`;
+        creatorUsername.href = `/soho/${creation.username}`;
+
+        // Set up caption
+        captionUsername.textContent = `@${creation.username}`;
+        captionText.textContent = creation.caption || creation.prompt || '';
+
+        // Clear comment input
+        document.getElementById('commentInput').value = '';
+        document.getElementById('postCommentBtn').disabled = true;
+
+        // Show modal
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+
+        // Load comments
+        loadComments();
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('creationModal');
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        currentCreation = null;
+    }
+
+    async function loadComments(startAfter = null) {
+        if (!currentCreation || isLoadingComments) return;
+
+        isLoadingComments = true;
+        const commentsList = document.getElementById('commentsList');
+        const commentsLoading = document.getElementById('commentsLoading');
+        const commentsEmpty = document.getElementById('commentsEmpty');
+        const loadMoreContainer = document.getElementById('loadMoreContainer');
+
+        // Show loading only on first load
+        if (!startAfter) {
+            commentsLoading.style.display = 'block';
+            commentsEmpty.style.display = 'none';
+        }
+
+        try {
+            const url = new URL(`/api/creations/${currentCreation.creationId}/comments`, window.location.origin);
+            url.searchParams.append('limit', '20');
+            if (startAfter) {
+                url.searchParams.append('startAfter', startAfter);
+            }
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.success) {
+                modalComments = modalComments.concat(data.comments);
+                hasMoreComments = data.hasMore;
+
+                // Render comments
+                renderComments();
+
+                // Show/hide load more button
+                loadMoreContainer.style.display = hasMoreComments ? 'block' : 'none';
+
+                // Show empty state if no comments
+                if (modalComments.length === 0) {
+                    commentsEmpty.style.display = 'block';
+                } else {
+                    commentsEmpty.style.display = 'none';
+                }
+            } else {
+                console.error('Failed to load comments:', data.error);
+            }
+        } catch (error) {
+            console.error('Error loading comments:', error);
+        } finally {
+            commentsLoading.style.display = 'none';
+            isLoadingComments = false;
+        }
+    }
+
+    function renderComments() {
+        const commentsList = document.getElementById('commentsList');
+        const commentsLoading = commentsList.querySelector('.comments-loading');
+        const commentsEmpty = commentsList.querySelector('.comments-empty');
+
+        // Remove all comment items (but keep loading/empty divs)
+        const existingComments = commentsList.querySelectorAll('.comment-item');
+        existingComments.forEach(item => item.remove());
+
+        // Render all comments
+        modalComments.forEach(comment => {
+            const commentEl = createCommentElement(comment);
+            // Insert before loading/empty divs
+            commentsList.insertBefore(commentEl, commentsLoading);
+        });
+    }
+
+    function createCommentElement(comment, isSending = false) {
+        const commentDiv = document.createElement('div');
+        commentDiv.className = 'comment-item' + (isSending ? ' comment-sending' : '');
+        commentDiv.dataset.commentId = comment.commentId;
+
+        const avatarLetter = comment.username ? comment.username[0].toUpperCase() : '?';
+
+        let timeAgo = 'Just now';
+        if (comment.createdAt && comment.createdAt._seconds) {
+            const commentDate = new Date(comment.createdAt._seconds * 1000);
+            timeAgo = formatTimeAgo(commentDate);
+        }
+
+        commentDiv.innerHTML = `
+            <div class="comment-avatar">${avatarLetter}</div>
+            <div class="comment-content">
+                <div>
+                    <span class="comment-username">${escapeHtml(comment.username)}</span>
+                    <span class="comment-text">${escapeHtml(comment.commentText)}</span>
+                </div>
+                <div class="comment-timestamp">${timeAgo}</div>
+            </div>
+        `;
+
+        return commentDiv;
+    }
+
+    function loadMoreComments() {
+        if (modalComments.length > 0) {
+            const lastComment = modalComments[modalComments.length - 1];
+            loadComments(lastComment.commentId);
+        }
+    }
+
+    async function postComment() {
+        const commentInput = document.getElementById('commentInput');
+        const postBtn = document.getElementById('postCommentBtn');
+        const commentText = commentInput.value.trim();
+
+        if (!commentText || !currentCreation) return;
+
+        // Disable input
+        postBtn.disabled = true;
+        commentInput.disabled = true;
+
+        // Optimistic update - show comment immediately
+        const optimisticComment = {
+            commentId: 'temp-' + Date.now(),
+            userId: 'current-user',
+            username: 'You', // Will be replaced by server response
+            avatarUrl: '',
+            commentText: commentText,
+            createdAt: { _seconds: Date.now() / 1000 }
+        };
+
+        const commentElement = createCommentElement(optimisticComment, true);
+        const commentsList = document.getElementById('commentsList');
+        const commentsLoading = commentsList.querySelector('.comments-loading');
+        commentsList.insertBefore(commentElement, commentsLoading);
+
+        // Hide empty state
+        document.getElementById('commentsEmpty').style.display = 'none';
+
+        // Clear input
+        commentInput.value = '';
+
+        try {
+            const response = await fetch(`/api/creations/${currentCreation.creationId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ commentText: commentText })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Remove optimistic comment
+                commentElement.remove();
+
+                // Add real comment to list
+                modalComments.push(data.comment);
+                renderComments();
+
+                // Update comment count in feed
+                currentCreation.commentCount = (currentCreation.commentCount || 0) + 1;
+                updateCreationCardCommentCount(currentCreation.creationId, currentCreation.commentCount);
+            } else {
+                // Remove optimistic comment on error
+                commentElement.remove();
+                alert('Failed to post comment: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error posting comment:', error);
+            commentElement.remove();
+            alert('Failed to post comment. Please try again.');
+        } finally {
+            commentInput.disabled = false;
+            postBtn.disabled = false;
+        }
+    }
+
+    function updateCreationCardCommentCount(creationId, count) {
+        const card = document.querySelector(`.creation-card[data-creation-id="${creationId}"]`);
+        if (card) {
+            const captionDiv = card.querySelector('.creation-caption');
+            let countHint = captionDiv.querySelector('.comment-count-hint');
+
+            if (count > 0) {
+                if (countHint) {
+                    countHint.textContent = `💬 ${count} ${count === 1 ? 'comment' : 'comments'}`;
+                } else {
+                    countHint = document.createElement('div');
+                    countHint.className = 'comment-count-hint';
+                    countHint.style.cssText = 'color: #95a5a6; font-size: 0.85rem; margin-top: 0.5rem;';
+                    countHint.textContent = `💬 ${count} ${count === 1 ? 'comment' : 'comments'}`;
+                    captionDiv.appendChild(countHint);
+                }
+            }
+        }
+    }
+
+    // Enable/disable post button based on input
+    document.getElementById('commentInput').addEventListener('input', (e) => {
+        const postBtn = document.getElementById('postCommentBtn');
+        postBtn.disabled = e.target.value.trim().length === 0;
+    });
+
+    // Allow Enter key to post comment
+    document.getElementById('commentInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey && e.target.value.trim()) {
+            e.preventDefault();
+            postComment();
+        }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
 
     // Infinite scroll
     window.addEventListener('scroll', () => {
