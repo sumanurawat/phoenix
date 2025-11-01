@@ -656,7 +656,7 @@
 
         let timeAgo = 'Just now';
         if (creation.publishedAt) {
-            const publishedDate = new Date(creation.publishedAt._seconds * 1000);
+            const publishedDate = new Date(creation.publishedAt);
             timeAgo = formatTimeAgo(publishedDate);
         }
 
@@ -872,8 +872,8 @@
         const avatarLetter = comment.username ? comment.username[0].toUpperCase() : '?';
 
         let timeAgo = 'Just now';
-        if (comment.createdAt && comment.createdAt._seconds) {
-            const commentDate = new Date(comment.createdAt._seconds * 1000);
+        if (comment.createdAt) {
+            const commentDate = new Date(comment.createdAt);
             timeAgo = formatTimeAgo(commentDate);
         }
 
@@ -916,7 +916,7 @@
             username: 'You', // Will be replaced by server response
             avatarUrl: '',
             commentText: commentText,
-            createdAt: { _seconds: Date.now() / 1000 }
+            createdAt: new Date().toISOString()
         };
 
         const commentElement = createCommentElement(optimisticComment, true);

@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Format timestamp
         let timeAgo = 'Just now';
         if (creation.publishedAt) {
-            const publishedDate = new Date(creation.publishedAt._seconds * 1000);
+            const publishedDate = new Date(creation.publishedAt);
             timeAgo = formatTimeAgo(publishedDate);
         }
 

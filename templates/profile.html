@@ -438,7 +438,7 @@
             item.className = 'creation-item';
             item.onclick = () => openModal(creation);
 
-            const timeAgo = creation.publishedAt ? formatTimeAgo(new Date(creation.publishedAt._seconds * 1000)) : '';
+            const timeAgo = creation.publishedAt ? formatTimeAgo(new Date(creation.publishedAt)) : '';
 
             item.innerHTML = `
                 <img
