@@ -401,16 +401,30 @@ def add_comment(creation_id):
 
         logger.info(f"User {user_id} added comment to creation {creation_id}")
 
-        # Return the created comment (with generated timestamp replaced by current time)
+        # Fetch the created comment to get the actual timestamp
+        comment_ref = creation_ref.collection('comments').document(comment_id)
+        created_comment = comment_ref.get()
+
+        if created_comment.exists:
+            final_comment_data = created_comment.to_dict()
+        else:
+            # Fallback if fetch fails - use current time
+            from datetime import datetime
+            final_comment_data = {
+                **comment_data,
+                'createdAt': datetime.utcnow()
+            }
+
+        # Return the created comment with actual timestamp
         return jsonify({
             'success': True,
             'comment': {
                 'commentId': comment_id,
-                'userId': comment_data['userId'],
-                'username': comment_data['username'],
-                'avatarUrl': comment_data['avatarUrl'],
-                'commentText': comment_data['commentText'],
-                'createdAt': firestore.SERVER_TIMESTAMP
+                'userId': final_comment_data['userId'],
+                'username': final_comment_data['username'],
+                'avatarUrl': final_comment_data['avatarUrl'],
+                'commentText': final_comment_data['commentText'],
+                'createdAt': final_comment_data.get('createdAt')
             }
         })
 
