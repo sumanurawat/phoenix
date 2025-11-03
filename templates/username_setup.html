@@ -237,8 +237,23 @@ document.addEventListener('DOMContentLoaded', function() {
     let isChecking = false;
     let isValid = false;
 
-    // Auto-focus input
-    input.focus();
+    // Check if user already has a username - if so, redirect to soho
+    fetch('/api/users/me')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.user && data.user.username) {
+                // User already has a username, redirect to soho
+                window.location.href = '/soho';
+            } else {
+                // No username, show the form
+                input.focus();
+            }
+        })
+        .catch(error => {
+            console.error('Error checking username:', error);
+            // On error, just show the form
+            input.focus();
+        });
 
     input.addEventListener('input', function() {
         const username = input.value.trim();
