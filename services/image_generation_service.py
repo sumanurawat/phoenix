@@ -127,11 +127,16 @@ class ImageGenerationService:
             )
 
             # Create S3 client from session with R2 endpoint
-            # Using region_name='us-east-1' (dummy region) as boto3 requires it
+            # Using region_name='auto' and path addressing style for R2 compatibility
+            from botocore.config import Config
+            
             self.s3_client = session.client(
                 's3',
                 endpoint_url=R2_ENDPOINT_URL,
-                region_name='us-east-1'  # Dummy region, R2 doesn't use regions
+                region_name='auto',  # R2 uses 'auto' region
+                config=Config(
+                    s3={'addressing_style': 'path'}  # Required for R2 endpoint compatibility
+                )
             )
 
             logger.info(f"Initialized Cloudflare R2 client for bucket: {self.bucket_name}")
