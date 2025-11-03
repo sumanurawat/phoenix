@@ -117,18 +117,42 @@ class ImageGenerationService:
         # Initialize R2/S3 client (replacing GCS)
         try:
             # Cloudflare R2 is S3-compatible but requires special session configuration
-            # Create a boto3 session first, then use it to create the client
+            logger.info("=" * 80)
+            logger.info("INITIALIZING R2 CLIENT - DETAILED DEBUG INFO")
+            logger.info("=" * 80)
+            logger.info(f"R2_ENDPOINT_URL from config: '{R2_ENDPOINT_URL}'")
+            logger.info(f"R2_ENDPOINT_URL type: {type(R2_ENDPOINT_URL)}")
+            logger.info(f"R2_ENDPOINT_URL length: {len(R2_ENDPOINT_URL) if R2_ENDPOINT_URL else 0}")
+            logger.info(f"R2_ACCESS_KEY_ID present: {bool(R2_ACCESS_KEY_ID)}")
+            logger.info(f"R2_SECRET_ACCESS_KEY present: {bool(R2_SECRET_ACCESS_KEY)}")
+            logger.info(f"R2_BUCKET_NAME: {self.bucket_name}")
+            logger.info(f"R2_PUBLIC_URL: {self.r2_public_url}")
+            
+            # Check for whitespace or encoding issues
+            if R2_ENDPOINT_URL:
+                logger.info(f"R2_ENDPOINT_URL repr: {repr(R2_ENDPOINT_URL)}")
+                logger.info(f"R2_ENDPOINT_URL bytes: {R2_ENDPOINT_URL.encode('utf-8')}")
+            
+            import boto3
             import boto3.session
+            import botocore
+            logger.info(f"boto3 version: {boto3.__version__}")
+            logger.info(f"botocore version: {botocore.__version__}")
 
             # Create session with credentials
+            logger.info("Creating boto3 session...")
             session = boto3.session.Session(
                 aws_access_key_id=R2_ACCESS_KEY_ID,
                 aws_secret_access_key=R2_SECRET_ACCESS_KEY
             )
+            logger.info("✅ boto3 session created successfully")
 
             # Create S3 client from session with R2 endpoint
             # R2 requires specific configuration to bypass boto3's endpoint validation
             from botocore.config import Config
+            
+            logger.info("Creating S3 client with R2 endpoint...")
+            logger.info(f"Attempting connection with endpoint: {R2_ENDPOINT_URL}")
             
             self.s3_client = session.client(
                 's3',
@@ -143,11 +167,20 @@ class ImageGenerationService:
                 verify=True  # Keep SSL verification enabled
             )
 
+            logger.info("✅ ✅ ✅ R2 CLIENT INITIALIZED SUCCESSFULLY ✅ ✅ ✅")
             logger.info(f"Initialized Cloudflare R2 client for bucket: {self.bucket_name}")
             logger.info(f"R2 endpoint: {R2_ENDPOINT_URL}")
             logger.info(f"R2 public URL base: {self.r2_public_url}")
+            logger.info("=" * 80)
         except Exception as e:
-            logger.error(f"Failed to initialize R2 client: {str(e)}", exc_info=True)
+            logger.error("=" * 80)
+            logger.error("❌ FAILED TO INITIALIZE R2 CLIENT ❌")
+            logger.error("=" * 80)
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Error message: {str(e)}")
+            logger.error(f"R2_ENDPOINT_URL that failed: '{R2_ENDPOINT_URL}'")
+            logger.error("Full traceback:", exc_info=True)
+            logger.error("=" * 80)
             raise
         
         # Load Imagen 3 model
