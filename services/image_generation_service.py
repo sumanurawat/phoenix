@@ -116,24 +116,24 @@ class ImageGenerationService:
         
         # Initialize R2/S3 client (replacing GCS)
         try:
-            from botocore.config import Config
+            # Cloudflare R2 is S3-compatible but requires special session configuration
+            # Create a boto3 session first, then use it to create the client
+            import boto3.session
 
-            # Configure boto3 to work with Cloudflare R2
-            r2_config = Config(
-                signature_version='s3v4',
-                s3={
-                    'addressing_style': 'path'
-                }
+            # Create session with credentials
+            session = boto3.session.Session(
+                aws_access_key_id=R2_ACCESS_KEY_ID,
+                aws_secret_access_key=R2_SECRET_ACCESS_KEY
             )
 
-            self.s3_client = boto3.client(
+            # Create S3 client from session with R2 endpoint
+            # Using region_name='us-east-1' (dummy region) as boto3 requires it
+            self.s3_client = session.client(
                 's3',
                 endpoint_url=R2_ENDPOINT_URL,
-                aws_access_key_id=R2_ACCESS_KEY_ID,
-                aws_secret_access_key=R2_SECRET_ACCESS_KEY,
-                region_name='auto',  # Cloudflare R2 uses 'auto'
-                config=r2_config
+                region_name='us-east-1'  # Dummy region, R2 doesn't use regions
             )
+
             logger.info(f"Initialized Cloudflare R2 client for bucket: {self.bucket_name}")
             logger.info(f"R2 endpoint: {R2_ENDPOINT_URL}")
             logger.info(f"R2 public URL base: {self.r2_public_url}")
