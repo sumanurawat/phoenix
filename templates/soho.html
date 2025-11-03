@@ -889,6 +889,8 @@
 
         // Set up caption
         captionUsername.textContent = `@${username}`;
+        captionUsername.href = `/soho/${username}`;
+        captionUsername.style.cursor = 'pointer';
         captionText.textContent = creation.caption || creation.prompt || '';
 
         // Clear comment input
@@ -996,7 +998,7 @@
             <div class="comment-avatar">${avatarLetter}</div>
             <div class="comment-content">
                 <div>
-                    <span class="comment-username">${escapeHtml(comment.username)}</span>
+                    <a href="/soho/${escapeHtml(comment.username)}" class="comment-username" style="text-decoration: none; color: inherit; font-weight: 600;">${escapeHtml(comment.username)}</a>
                     <span class="comment-text">${escapeHtml(comment.commentText)}</span>
                 </div>
                 <div class="comment-timestamp">${timeAgo}</div>
