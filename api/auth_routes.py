@@ -206,27 +206,45 @@ def google_callback():
         session['user_picture'] = userinfo.get('picture')
 
         # Ensure user record and free subscription exist
+        db = firestore.client()
+        user_has_username = False
+
         try:
             StripeService().ensure_free_subscription(session['user_id'], session.get('user_email'))
             try:
-                db = firestore.client()
-                db.collection('users').document(session['user_id']).set({
+                # Get or create user document
+                user_ref = db.collection('users').document(session['user_id'])
+                user_doc = user_ref.get()
+
+                # Create/update user document
+                user_ref.set({
                     'firebase_uid': session['user_id'],
                     'email': session.get('user_email'),
                     'name': session.get('user_name'),
                     'picture': session.get('user_picture')
                 }, merge=True)
+
+                # Check if user already has a username
+                if user_doc.exists:
+                    user_data = user_doc.to_dict()
+                    user_has_username = bool(user_data.get('username'))
             except Exception:
                 pass
         except Exception:
             pass
+
         # Handle redirect after OAuth
         next_url = session.pop('oauth_next_url', None)
         if next_url and is_safe_url(next_url):
             return redirect(next_url)
         else:
-            # Redirect to username setup (will redirect to soho if username exists)
-            return redirect(url_for('username_setup'))
+            # Direct redirect based on username status
+            if user_has_username:
+                # User has username, go straight to their profile
+                return redirect(url_for('soho'))
+            else:
+                # No username, redirect to username setup
+                return redirect(url_for('username_setup'))
     except Exception as e:
         flash(f'Authentication failed: {str(e)}', 'danger')
         return redirect(url_for('auth.login'))
