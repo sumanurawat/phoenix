@@ -16,12 +16,18 @@ from services.image_generation_service import (
     ImageGenerationError
 )
 from services.website_stats_service import WebsiteStatsService
+from services.token_service import TokenService, InsufficientTokensError
+from services.transaction_service import TransactionService, TransactionType
 
 logger = logging.getLogger(__name__)
 
 image_bp = Blueprint('image', __name__, url_prefix='/api/image')
 website_stats_service = WebsiteStatsService()
 db = firestore.client()
+token_service = TokenService()
+transaction_service = TransactionService()
+
+IMAGE_GENERATION_COST = 1
 
 
 @image_bp.route('/generate', methods=['POST'])
@@ -75,7 +81,34 @@ def generate_image():
         # Get user info from session
         user_id = session.get('user_id')
         user_email = session.get('user_email', 'anonymous')
-        
+
+        if not user_id:
+            return jsonify({
+                "success": False,
+                "error": "Authentication required"
+            }), 401
+
+        # Ensure user has enough tokens before attempting generation
+        try:
+            current_balance = token_service.get_balance(user_id)
+        except Exception as e:
+            logger.error(f"Failed to fetch token balance for {user_id}: {e}", exc_info=True)
+            return jsonify({
+                "success": False,
+                "error": "Unable to verify token balance"
+            }), 500
+
+        if current_balance < IMAGE_GENERATION_COST:
+            logger.warning(
+                f"Insufficient tokens for image generation - user: {user_id}, balance: {current_balance}, required: {IMAGE_GENERATION_COST}"
+            )
+            return jsonify({
+                "success": False,
+                "error": "Insufficient tokens",
+                "required": IMAGE_GENERATION_COST,
+                "balance": current_balance
+            }), 402
+
         logger.info(f"Image generation request from user {user_email} - prompt: '{prompt[:100]}...'")
         
         # Initialize service and generate image
@@ -145,6 +178,33 @@ def generate_image():
             }), 500
         
         # At this point, generation was successful and credits SHOULD be deducted
+        deduction_performed = False
+        balance_after_deduction = None
+        try:
+            token_service.deduct_tokens(
+                user_id=user_id,
+                amount=IMAGE_GENERATION_COST,
+                reason='image_generation'
+            )
+            deduction_performed = True
+            balance_after_deduction = token_service.get_balance(user_id)
+            logger.info(
+                f"Deducted {IMAGE_GENERATION_COST} token(s) from {user_id} for image generation"
+            )
+        except InsufficientTokensError as e:
+            logger.warning(f"Insufficient tokens during deduction for user {user_id}: {e}")
+            return jsonify({
+                "success": False,
+                "error": "Insufficient tokens",
+                "required": IMAGE_GENERATION_COST
+            }), 402
+        except Exception as e:
+            logger.error(f"Failed to deduct tokens for {user_id}: {e}", exc_info=True)
+            return jsonify({
+                "success": False,
+                "error": "Failed to deduct tokens"
+            }), 500
+
         # Save to Firestore if requested (using 'creations' collection for social platform)
         save_to_firestore = data.get('save_to_firestore', True)
         firestore_doc_id = None
@@ -171,6 +231,7 @@ def generate_image():
                     # Content metadata
                     'mediaType': 'image',  # Distinguish from videos
                     'mediaUrl': result.image_url,
+                    'thumbnailUrl': result.image_url,
                     'prompt': prompt,
                     'caption': '',  # Empty initially - user can add later
 
@@ -180,12 +241,11 @@ def generate_image():
                     'model': result.model,
 
                     # Social platform fields
-                    'status': 'published',  # Images are published immediately (unlike videos)
+                    'status': 'draft',  # Users must publish manually from drafts
                     'likeCount': 0,
 
                     # Timestamps
                     'createdAt': firestore.SERVER_TIMESTAMP,
-                    'publishedAt': firestore.SERVER_TIMESTAMP,  # Same as createdAt for images
                     'updatedAt': firestore.SERVER_TIMESTAMP
                 }
 
@@ -196,8 +256,51 @@ def generate_image():
                 logger.info(f"Saved image as creation to social platform: {firestore_doc_id} (username: {username})")
 
             except Exception as e:
-                # Don't fail the request if Firestore save fails
                 logger.error(f"Failed to save creation to Firestore: {str(e)}", exc_info=True)
+                if deduction_performed:
+                    try:
+                        token_service.add_tokens(
+                            user_id=user_id,
+                            amount=IMAGE_GENERATION_COST,
+                            reason='image_generation_refund'
+                        )
+                        transaction_service.record_transaction(
+                            user_id=user_id,
+                            transaction_type=TransactionType.REFUND,
+                            amount=IMAGE_GENERATION_COST,
+                            details={
+                                'mediaType': 'image',
+                                'reason': 'firestore_save_failure'
+                            }
+                        )
+                        deduction_performed = False
+                        logger.info(f"Refunded {IMAGE_GENERATION_COST} token(s) to {user_id} after Firestore failure")
+                    except Exception as refund_error:
+                        logger.error(
+                            f"Failed to refund tokens after Firestore error for {user_id}: {refund_error}",
+                            exc_info=True
+                        )
+                return jsonify({
+                    "success": False,
+                    "error": "Failed to save creation"
+                }), 500
+
+        # Record token transaction after successful deduction (and optional Firestore save)
+        if deduction_performed:
+            try:
+                transaction_service.record_transaction(
+                    user_id=user_id,
+                    transaction_type=TransactionType.GENERATION_SPEND,
+                    amount=-IMAGE_GENERATION_COST,
+                    details={
+                        'mediaType': 'image',
+                        'creationId': result.image_id,
+                        'promptPreview': prompt[:120]
+                    },
+                    balance_after=balance_after_deduction
+                )
+            except Exception as e:
+                logger.error(f"Failed to record generation transaction for {user_id}: {e}", exc_info=True)
         
         # Increment stats counter ONLY for successful generations
         try:

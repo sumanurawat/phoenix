@@ -62,6 +62,7 @@ from api.job_routes import job_bp
 from api.socials_routes import socials_bp
 from api.image_routes import image_bp
 from api.video_generation_routes import video_generation_bp
+from api.generation_routes import generation_bp  # Unified creation endpoint
 from api.user_routes import user_bp
 from api.feed_routes import feed_bp
 
@@ -188,7 +189,8 @@ def create_app():
     app.register_blueprint(job_bp)
     app.register_blueprint(socials_bp)
     app.register_blueprint(image_bp)
-    app.register_blueprint(video_generation_bp)  # Phase 3: Async video generation
+    app.register_blueprint(generation_bp)  # Phase 3.5: Unified draft-first creation (MUST be before video_generation_bp)
+    app.register_blueprint(video_generation_bp)  # Phase 3: Async video generation (legacy)
     app.register_blueprint(user_bp)  # Phase 4: User profiles & usernames
     app.register_blueprint(feed_bp)  # Phase 4: Social feed & likes
     
@@ -671,7 +673,8 @@ Keep your response concise and actionable."""
     @app.route('/soho/<username>')
     def soho_public_profile(username):
         """Render public Soho profile page for a specific user (Phase 4 - public)."""
-        return render_template('soho_public_profile.html', username=username, title=f'@{username} - Soho')
+        # Use profile.html which has drafts support
+        return render_template('profile.html', username=username, title=f'@{username} - Soho')
 
     return app
 

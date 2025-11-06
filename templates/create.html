@@ -42,6 +42,83 @@
         font-size: 1.1rem;
     }
 
+    /* Type Selector */
+    .type-selector {
+        margin-bottom: 2rem;
+    }
+
+    .type-label {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        display: block;
+        font-size: 1rem;
+    }
+
+    .type-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .type-option {
+        background: #f8f9fa;
+        border: 3px solid #e0e0e0;
+        border-radius: 16px;
+        padding: 1.5rem 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .type-option:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+        transform: translateY(-2px);
+    }
+
+    .type-option.selected {
+        border-color: #667eea;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    }
+
+    .type-option-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .type-option.image .type-option-icon {
+        color: #3498db;
+    }
+
+    .type-option.video .type-option-icon {
+        color: #e74c3c;
+    }
+
+    .type-option-title {
+        font-weight: 700;
+        font-size: 1.2rem;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+
+    .type-option-cost {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+        margin-bottom: 0.25rem;
+    }
+
+    .type-option-cost strong {
+        color: #667eea;
+        font-size: 1.1rem;
+    }
+
+    .type-option-time {
+        font-size: 0.85rem;
+        color: #95a5a6;
+    }
+
     .prompt-section {
         margin-bottom: 2rem;
     }
@@ -133,6 +210,24 @@
         animation: fadeIn 0.5s ease;
     }
 
+    .draft-info {
+        background: linear-gradient(135deg, #f0f4ff 0%, #ffffff 100%);
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.95rem;
+        color: #4a5568;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .draft-info i {
+        color: #667eea;
+        font-size: 1.25rem;
+    }
+
     @keyframes fadeIn {
         from {
             opacity: 0;
@@ -143,6 +238,103 @@
             transform: translateY(0);
         }
     }
+
+    /* Token Balance Display */
+    .balance-display {
+        background: #f0f4ff;
+        border: 2px solid #667eea;
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+        margin-bottom: 2rem;
+        font-size: 1rem;
+        color: #2c3e50;
+    }
+
+    .balance-display strong {
+        color: #667eea;
+        font-size: 1.1rem;
+    }
+
+    /* Generation Status UI */
+    .generation-status {
+        display: none;
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        border: 2px solid #4caf50;
+        border-radius: 16px;
+        padding: 2rem;
+        text-align: center;
+        margin-top: 2rem;
+    }
+
+    .generation-status.show {
+        display: block;
+        animation: fadeIn 0.5s ease;
+    }
+
+    .status-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    .status-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2e7d32;
+        margin-bottom: 0.5rem;
+    }
+
+    .status-message {
+        font-size: 1rem;
+        color: #558b2f;
+        margin-bottom: 1.5rem;
+    }
+
+    .status-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .status-button {
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        font-size: 1rem;
+    }
+
+    .view-drafts-btn {
+        background: #667eea;
+        color: white;
+    }
+
+    .view-drafts-btn:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .create-another-btn {
+        background: white;
+        color: #667eea;
+        border: 2px solid #667eea;
+    }
+
+    .create-another-btn:hover {
+        background: #f0f4ff;
+        transform: translateY(-2px);
+    }
+
 
     .generated-image {
         width: 100%;
@@ -217,6 +409,13 @@
     .token-cost strong {
         color: #667eea;
     }
+
+    .token-footnote {
+        font-size: 0.85rem;
+        color: #95a5a6;
+        margin-top: 0.35rem;
+        text-align: center;
+    }
 </style>
 {% endblock %}
 
@@ -228,10 +427,36 @@
             <p class="create-subtitle">Bring your imagination to life with AI</p>
         </div>
 
+        <!-- Token Balance Display -->
+        <div class="balance-display">
+            💰 Your Token Balance: <strong id="tokenBalance">Loading...</strong>
+        </div>
+
+        <!-- Type Selector -->
+        <div class="type-selector">
+            <label class="type-label">
+                <i class="fas fa-layer-group"></i> Choose Creation Type
+            </label>
+            <div class="type-options">
+                <div class="type-option image selected" data-type="image" onclick="selectType('image')">
+                    <div class="type-option-icon">🖼️</div>
+                    <div class="type-option-title">Image</div>
+                    <div class="type-option-cost"><strong>1 Token</strong></div>
+                    <div class="type-option-time">Instant generation</div>
+                </div>
+                <div class="type-option video" data-type="video" onclick="selectType('video')">
+                    <div class="type-option-icon">🎬</div>
+                    <div class="type-option-title">Video</div>
+                    <div class="type-option-cost"><strong>10 Tokens</strong></div>
+                    <div class="type-option-time">~2 minutes</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Prompt Input Section -->
         <div class="prompt-section">
             <label class="prompt-label" for="promptInput">
-                <i class="fas fa-magic"></i> Describe your image
+                <i class="fas fa-magic"></i> <span id="promptLabelText">Describe your image</span>
             </label>
             <textarea
                 id="promptInput"
@@ -252,17 +477,40 @@
 
         <!-- Token Info -->
         <div class="token-info">
-            <p class="token-cost">
-                <strong>FREE</strong> for now • Images appear instantly on Explore
+            <p class="token-cost" id="tokenCostText">
+                Image: <strong>1 Token</strong> • Video: <strong>10 Tokens</strong>
+            </p>
+            <p class="token-footnote" id="tokenFootnote">
+                Images are saved to your drafts. Publish when you're ready.
             </p>
         </div>
 
         <!-- Error Message -->
         <div id="errorMessage" class="error-message"></div>
 
+        <!-- Generation Status (shown for video generation) -->
+        <div id="generationStatus" class="generation-status">
+            <div class="status-icon">🎬</div>
+            <div class="status-title">Video is Generating!</div>
+            <div class="status-message">Your video is being created in the background. This usually takes 1-2 minutes.</div>
+            <div class="status-actions">
+                <button class="status-button view-drafts-btn" id="statusViewDraftsBtn">
+                    <i class="fas fa-folder-open"></i> View My Drafts
+                </button>
+                <button class="status-button create-another-btn" onclick="resetCreatePage()">
+                    <i class="fas fa-plus"></i> Create Another
+                </button>
+            </div>
+        </div>
+
         <!-- Result Section (shown after generation) -->
         <div id="resultSection" class="result-section">
             <img id="generatedImage" class="generated-image" alt="Generated image">
+
+            <div class="draft-info">
+                <i class="fas fa-check-circle" style="color: #27ae60;"></i>
+                <span><strong>Draft saved!</strong> This creation is in your <a href="#" id="viewDraftsLink" style="color: #667eea; text-decoration: underline;">Drafts</a>. Publish it now or come back later.</span>
+            </div>
 
             <label class="prompt-label" for="captionInput">
                 <i class="fas fa-pen"></i> Add a caption (optional)
@@ -276,7 +524,7 @@
             >
 
             <button id="shareButton" class="share-button">
-                <i class="fas fa-share"></i> Share to Explore
+                <i class="fas fa-share"></i> Publish to Feed
             </button>
         </div>
     </div>
@@ -292,8 +540,170 @@
     const generatedImage = document.getElementById('generatedImage');
     const captionInput = document.getElementById('captionInput');
     const shareButton = document.getElementById('shareButton');
+    const generationStatus = document.getElementById('generationStatus');
+    const promptLabelText = document.getElementById('promptLabelText');
+    const tokenBalance = document.getElementById('tokenBalance');
+    const tokenCostText = document.getElementById('tokenCostText');
+    const tokenFootnote = document.getElementById('tokenFootnote');
 
     let currentImageId = null;
+    let selectedType = 'image'; // Default to image
+
+    // Load token balance
+    async function loadTokenBalance() {
+        try {
+            const response = await fetch('/api/tokens/balance');
+            const data = await response.json();
+            if (data.success) {
+                tokenBalance.textContent = `${data.balance} tokens`;
+            } else {
+                tokenBalance.textContent = 'Error loading balance';
+            }
+        } catch (error) {
+            console.error('Error loading token balance:', error);
+            tokenBalance.textContent = 'Error loading balance';
+        }
+    }
+
+    // Type selection function
+    function selectType(type) {
+        selectedType = type;
+        
+        // Update UI
+        document.querySelectorAll('.type-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        document.querySelector(`.type-option.${type}`).classList.add('selected');
+        
+        // Update button text
+        if (type === 'image') {
+            buttonText.textContent = 'Generate Image';
+            promptLabelText.textContent = 'Describe your image';
+            tokenCostText.innerHTML = 'Cost: <strong>1 Token</strong>';
+            tokenFootnote.textContent = "Images are saved to your drafts. Publish when you're ready.";
+        } else {
+            buttonText.textContent = 'Generate Video';
+            promptLabelText.textContent = 'Describe your video';
+            tokenCostText.innerHTML = 'Cost: <strong>10 Tokens</strong>';
+            tokenFootnote.textContent = 'Videos render in the background and appear in your drafts when ready.';
+        }
+    }
+
+    // Reset create page function
+    function resetCreatePage() {
+        promptInput.value = '';
+        charCount.textContent = '0';
+        errorMessage.style.display = 'none';
+        generationStatus.classList.remove('show');
+        resultSection.classList.remove('show');
+        generateButton.disabled = false;
+        currentImageId = null;
+        loadTokenBalance();
+    }
+
+    let cachedUsername = null;
+
+    async function resolveCurrentUsername(options = {}) {
+        const { forceRefresh = false } = options;
+
+        if (!forceRefresh) {
+            if (cachedUsername) {
+                return { username: cachedUsername, status: 'ok' };
+            }
+
+            try {
+                const stored = sessionStorage.getItem('phoenixCurrentUsername');
+                if (stored) {
+                    cachedUsername = stored;
+                    return { username: cachedUsername, status: 'ok' };
+                }
+            } catch (storageError) {
+                console.warn('Unable to access cached username:', storageError);
+            }
+        }
+
+        try {
+            const response = await fetch('/api/users/me', {
+                headers: {
+                    'Accept': 'application/json'
+                },
+                cache: 'no-store'
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                console.warn('Failed to resolve current username:', data.error || response.statusText);
+                return { username: null, status: 'error' };
+            }
+
+            const username = data.user?.username;
+
+            if (!username) {
+                return { username: null, status: 'missing' };
+            }
+
+            cachedUsername = username;
+
+            try {
+                sessionStorage.setItem('phoenixCurrentUsername', username);
+            } catch (storageError) {
+                console.warn('Unable to cache username:', storageError);
+            }
+
+            return { username, status: 'ok' };
+        } catch (error) {
+            console.error('Error resolving current username:', error);
+            return { username: null, status: 'error' };
+        }
+    }
+
+    async function redirectToDrafts(options = {}) {
+        const { event = null, silentOnMissing = false, forceRefresh = false } = options;
+
+        if (event && typeof event.preventDefault === 'function') {
+            event.preventDefault();
+        }
+
+        const { username, status } = await resolveCurrentUsername({ forceRefresh });
+
+        if (username) {
+            window.location.href = `/soho/${encodeURIComponent(username)}?tab=drafts`;
+            return true;
+        }
+
+        if (status === 'missing') {
+            if (!silentOnMissing) {
+                alert('Pick a username to access your drafts.');
+            }
+            window.location.href = '/username-setup';
+        } else if (!silentOnMissing) {
+            alert('We could not open your drafts. Please try again.');
+        }
+
+        return false;
+    }
+
+    // Initialize
+    loadTokenBalance();
+    selectType('image');
+
+    // View Drafts link handler
+    document.addEventListener('DOMContentLoaded', () => {
+        const viewDraftsLink = document.getElementById('viewDraftsLink');
+        if (viewDraftsLink) {
+            viewDraftsLink.addEventListener('click', (e) => {
+                redirectToDrafts({ event: e });
+            });
+        }
+
+        const statusDraftsButton = document.getElementById('statusViewDraftsBtn');
+        if (statusDraftsButton) {
+            statusDraftsButton.addEventListener('click', (e) => {
+                redirectToDrafts({ event: e });
+            });
+        }
+    });
 
     // Character counter
     promptInput.addEventListener('input', () => {
@@ -308,12 +718,12 @@
         }
     });
 
-    // Generate Image
+    // Generate Image or Video (Unified Draft-First Workflow)
     generateButton.addEventListener('click', async () => {
         const prompt = promptInput.value.trim();
 
         if (!prompt) {
-            showError('Please enter a prompt to generate an image');
+            showError(`Please enter a prompt to generate ${selectedType === 'image' ? 'an image' : 'a video'}`);
             return;
         }
 
@@ -328,72 +738,93 @@
         generateButton.innerHTML = '<div class="spinner"></div><span>Generating...</span>';
         errorMessage.classList.remove('show');
         resultSection.classList.remove('show');
+        generationStatus.classList.remove('show');
 
         try {
-            const response = await fetch('/api/image/generate', {
+            // Call unified creation endpoint
+            const response = await fetch('/api/generate/creation', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     prompt: prompt,
-                    save_to_firestore: true
+                    type: selectedType  // 'image' or 'video'
                 })
             });
 
             const data = await response.json();
 
-            if (!response.ok || !data.success) {
-                throw new Error(data.error || 'Failed to generate image');
+            // Handle 202 Accepted (expected for successful queue)
+            if (response.status === 202 && data.success) {
+                // Remember draft for highlight on drafts page
+                if (data.creationId) {
+                    try {
+                        sessionStorage.setItem('phoenixDraftsNeedsRefresh', 'true');
+                        sessionStorage.setItem('phoenixLastDraftId', data.creationId);
+                    } catch (storageError) {
+                        console.warn('Unable to persist draft refresh flag:', storageError);
+                    }
+                }
+
+                // Immediately redirect to drafts tab
+                const { username } = await redirectToDrafts({ silentOnMissing: false, forceRefresh: false });
+                return;
             }
 
-            // Success! Show the generated image
-            currentImageId = data.image.image_id;
-            generatedImage.src = data.image.image_url;
-            resultSection.classList.add('show');
-
-            // Scroll to result
-            setTimeout(() => {
-                resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 100);
+            // Handle errors
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || `Failed to start ${selectedType} generation`);
+            }
 
         } catch (error) {
             console.error('Generation error:', error);
-            showError(error.message || 'Failed to generate image. Please try again.');
+            showError(error.message || `Failed to generate ${selectedType}. Please try again.`);
         } finally {
             // Reset button
             generateButton.disabled = false;
-            generateButton.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i><span>Generate Image</span>';
+            const icon = selectedType === 'image' ? 'wand-magic-sparkles' : 'video';
+            const text = selectedType === 'image' ? 'Generate Image' : 'Generate Video';
+            generateButton.innerHTML = `<i class="fas fa-${icon}"></i><span>${text}</span>`;
         }
     });
 
-    // Share to Explore (image is already published, save caption if provided)
+    // Publish creation from draft to explore feed
     shareButton.addEventListener('click', async () => {
-        const caption = captionInput.value.trim();
-
-        // If user added a caption, save it before redirecting
-        if (caption && currentImageId) {
-            try {
-                const response = await fetch(`/api/creations/${currentImageId}/caption`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ caption: caption })
-                });
-
-                const data = await response.json();
-                if (!data.success) {
-                    console.error('Failed to save caption:', data.error);
-                    // Continue anyway - don't block the share
-                }
-            } catch (error) {
-                console.error('Error saving caption:', error);
-                // Continue anyway - don't block the share
-            }
+        if (!currentImageId) {
+            showError('Generate an image before publishing.');
+            return;
         }
 
-        window.location.href = '/soho/explore';
+        const caption = captionInput.value.trim();
+
+        shareButton.disabled = true;
+        const originalShareText = shareButton.innerHTML;
+        shareButton.innerHTML = '<div class="spinner" style="border-top-color: #fff; width: 18px; height: 18px;"></div><span>Publishing...</span>';
+
+        try {
+            const response = await fetch(`/api/generate/creation/${currentImageId}/publish`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ caption })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Failed to publish your creation');
+            }
+
+            // Redirect to profile drafts to show updated state before explore redirect
+            window.location.href = '/soho/explore';
+        } catch (error) {
+            console.error('Error publishing creation:', error);
+            showError(error.message || 'Failed to publish. Please try again.');
+            shareButton.disabled = false;
+            shareButton.innerHTML = originalShareText;
+        }
     });
 
     function showError(message) {

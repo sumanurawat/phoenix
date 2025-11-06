@@ -548,7 +548,7 @@
                             <a href="#" id="modalCreatorUsername" class="creator-username">@username</a>
                         </div>
                     </div>
-                    <div class="creation-caption-in-modal">
+                    <div class="creation-caption-in-modal" id="modalCaptionContainer">
                         <span class="caption-username" id="modalCaptionUsername">@username</span>
                         <span class="caption-text" id="modalCaptionText"></span>
                     </div>
@@ -753,6 +753,7 @@
         const creatorUsername = document.getElementById('modalCreatorUsername');
         const captionUsername = document.getElementById('modalCaptionUsername');
         const captionText = document.getElementById('modalCaptionText');
+    const captionContainer = document.getElementById('modalCaptionContainer');
 
         // Set up media
         if (creation.mediaType === 'image') {
@@ -776,7 +777,15 @@
         captionUsername.textContent = `@${creation.username}`;
         captionUsername.href = `/soho/${creation.username}`;
         captionUsername.style.cursor = 'pointer';
-        captionText.textContent = creation.caption || creation.prompt || '';
+
+        const hasCaption = Boolean(creation.caption && creation.caption.trim().length > 0);
+        if (hasCaption) {
+            captionText.textContent = creation.caption;
+            captionContainer.style.display = 'flex';
+        } else {
+            captionText.textContent = '';
+            captionContainer.style.display = 'none';
+        }
 
         // Clear comment input
         document.getElementById('commentInput').value = '';

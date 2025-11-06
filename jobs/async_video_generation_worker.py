@@ -15,12 +15,16 @@ import logging
 import os
 import time
 import traceback
+import subprocess
+import tempfile
 from typing import Optional
 from celery import Task
 import firebase_admin
 from firebase_admin import credentials, firestore
 from google.api_core.exceptions import GoogleAPIError
 from google.cloud import storage
+from PIL import Image
+import io
 
 from celery_app import celery_app
 from services.veo_video_generation_service import (
@@ -29,6 +33,7 @@ from services.veo_video_generation_service import (
     VeoOperationResult
 )
 from services.token_service import TokenService
+from services.creation_service import CreationService
 import boto3
 from botocore.client import Config
 
@@ -45,6 +50,7 @@ R2_PUBLIC_URL = os.getenv('R2_PUBLIC_URL', '').strip()
 _db = None
 _veo_service = None
 _token_service = None
+_creation_service = None
 _s3_client = None
 
 def _get_db():
@@ -71,6 +77,14 @@ def _get_token_service():
         _get_db()  # Ensure Firebase is initialized first
         _token_service = TokenService()
     return _token_service
+
+def _get_creation_service():
+    """Get creation service (lazy initialization)."""
+    global _creation_service
+    if _creation_service is None:
+        _get_db()  # Ensure Firebase is initialized first
+        _creation_service = CreationService()
+    return _creation_service
 
 def _get_s3_client():
     """Get R2 S3 client (lazy initialization)."""
@@ -106,113 +120,130 @@ def _update_creation_state(
     """
     Update creation document state atomically.
 
-    This is the SINGLE source of truth for updating creation status.
-    Always called before worker exits to ensure no orphaned states.
+    This is a compatibility wrapper around CreationService.update_creation_status
+    for existing code that uses this function directly.
 
     Args:
         creation_id: UUID of creation
         status: New status (pending, processing, draft, failed)
         **extra_fields: Additional fields to update (mediaUrl, error, etc.)
     """
-    try:
-        db = _get_db()
-        creation_ref = db.collection('creations').document(creation_id)
+    creation_service = _get_creation_service()
+    creation_service.update_creation_status(creation_id, status, **extra_fields)
 
-        update_data = {
-            'status': status,
-            'updatedAt': firestore.SERVER_TIMESTAMP
-        }
-
-        # Add extra fields
-        update_data.update(extra_fields)
-
-        # Update atomically
-        creation_ref.update(update_data)
-
-        logger.info(f"📝 Updated creation {creation_id} status: {status}")
-
-    except Exception as e:
-        logger.error(f"Failed to update creation state for {creation_id}: {e}", exc_info=True)
-        # Don't raise - we log the error but don't want to crash the worker
 
 def _refund_tokens(creation_id: str, user_id: str, error_message: str) -> bool:
     """
-    Refund tokens for failed generation (idempotent).
+    Refund tokens to user after a failed generation.
 
-    Uses atomic transaction to ensure tokens are refunded exactly once,
-    even if called multiple times or worker crashes.
+    This is a compatibility wrapper around CreationService.handle_generation_failure
+    for existing code. New code should call handle_generation_failure directly.
 
     Args:
-        creation_id: UUID of creation
-        user_id: Firebase UID
-        error_message: Reason for refund
+        creation_id: Creation document ID
+        user_id: User ID to refund
+        error_message: Error message for logging
 
     Returns:
-        True if refunded, False if already refunded
+        bool: True if refund successful, False otherwise
+    """
+    creation_service = _get_creation_service()
+    
+    # Note: We don't have the original transaction ID here in the old code path
+    # The new CreationService.handle_generation_failure can work without it
+    return creation_service.handle_generation_failure(
+        creation_id=creation_id,
+        original_transaction_id='',  # Empty for legacy calls
+        error_message=error_message,
+        user_id=user_id
+    )
+
+
+def _extract_video_thumbnail(video_bytes: bytes, duration_seconds: int) -> bytes:
+    """
+    Extract a thumbnail image from video bytes using ffmpeg.
+
+    Extracts a frame from the middle of the video and converts to JPEG.
+
+    Args:
+        video_bytes: Video file bytes
+        duration_seconds: Duration of the video in seconds
+
+    Returns:
+        bytes: JPEG thumbnail image bytes
+
+    Raises:
+        Exception: If ffmpeg extraction fails
     """
     try:
-        @firestore.transactional
-        def refund_transaction(transaction):
-            db = _get_db()
-            creation_ref = db.collection('creations').document(creation_id)
-            user_ref = db.collection('users').document(user_id)
+        # Calculate middle timestamp
+        middle_time = duration_seconds / 2.0
 
-            # Check if already refunded (idempotency)
-            creation_doc = creation_ref.get(transaction=transaction)
-            if not creation_doc.exists:
-                logger.warning(f"Creation {creation_id} not found during refund")
-                return False
+        # Create temporary files
+        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as video_temp:
+            video_temp.write(video_bytes)
+            video_path = video_temp.name
 
-            creation_data = creation_doc.to_dict()
-            if creation_data.get('refunded'):
-                logger.info(f"Creation {creation_id} already refunded (idempotent check)")
-                return False
+        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as thumb_temp:
+            thumb_path = thumb_temp.name
 
-            cost = creation_data.get('cost', 10)
+        try:
+            # Use ffmpeg to extract frame
+            # -ss: seek to timestamp
+            # -i: input file
+            # -vframes 1: extract 1 frame
+            # -q:v 2: high quality (1-31, lower is better)
+            # -vf scale: resize to reasonable dimensions (maintain aspect ratio)
+            cmd = [
+                'ffmpeg',
+                '-ss', str(middle_time),
+                '-i', video_path,
+                '-vframes', '1',
+                '-q:v', '2',
+                '-vf', 'scale=640:-1',  # Width 640, height auto
+                '-y',  # Overwrite output
+                thumb_path
+            ]
 
-            # Refund tokens atomically
-            transaction.update(user_ref, {
-                'tokenBalance': firestore.Increment(cost),
-                'totalTokensSpent': firestore.Increment(-cost)
-            })
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
 
-            # Mark as refunded
-            transaction.update(creation_ref, {
-                'refunded': True,
-                'refundedAt': firestore.SERVER_TIMESTAMP,
-                'refundAmount': cost
-            })
+            if result.returncode != 0:
+                logger.error(f"ffmpeg failed: {result.stderr}")
+                raise Exception(f"ffmpeg extraction failed: {result.stderr}")
 
-            # Record refund transaction
-            db = _get_db()
-            tx_ref = db.collection('transactions').document()
-            transaction.set(tx_ref, {
-                'userId': user_id,
-                'type': 'refund',
-                'amount': cost,
-                'timestamp': firestore.SERVER_TIMESTAMP,
-                'details': {
-                    'creationId': creation_id,
-                    'reason': 'Video generation failed',
-                    'error': error_message[:200]
-                }
-            })
+            # Read thumbnail bytes
+            with open(thumb_path, 'rb') as f:
+                thumbnail_bytes = f.read()
 
-            return True
+            # Optimize thumbnail size using PIL
+            img = Image.open(io.BytesIO(thumbnail_bytes))
+            output = io.BytesIO()
+            img.save(output, format='JPEG', quality=85, optimize=True)
+            optimized_bytes = output.getvalue()
 
-        # Execute refund transaction
-        db = _get_db()
-        transaction = db.transaction()
-        refunded = refund_transaction(transaction)
+            logger.info(f"📸 Extracted thumbnail: {len(optimized_bytes)} bytes")
+            return optimized_bytes
 
-        if refunded:
-            logger.info(f"💰 Refunded tokens for creation {creation_id}")
+        finally:
+            # Cleanup temp files
+            try:
+                os.unlink(video_path)
+                os.unlink(thumb_path)
+            except Exception as e:
+                logger.warning(f"Failed to cleanup temp files: {e}")
 
-        return refunded
-
+    except subprocess.TimeoutExpired:
+        logger.error("ffmpeg thumbnail extraction timed out")
+        raise Exception("Thumbnail extraction timed out")
     except Exception as e:
-        logger.error(f"Failed to refund tokens for creation {creation_id}: {e}", exc_info=True)
-        return False
+        logger.error(f"Failed to extract thumbnail: {e}", exc_info=True)
+        raise
+
 
 @celery_app.task(
     bind=True,
@@ -397,9 +428,22 @@ def generate_video_task(self: Task, creation_id: str) -> dict:
         logger.info(f"📦 Downloaded {len(video_bytes)} bytes from GCS")
 
         # Update progress
+        _update_creation_state(creation_id, status='processing', progress=0.75)
+
+        # Extract thumbnail from video
+        logger.info(f"📸 Extracting thumbnail from video...")
+        try:
+            thumbnail_bytes = _extract_video_thumbnail(video_bytes, duration)
+            logger.info(f"✅ Thumbnail extracted successfully")
+        except Exception as e:
+            logger.error(f"Failed to extract thumbnail: {e}")
+            # Continue without thumbnail (non-critical)
+            thumbnail_bytes = None
+
+        # Update progress
         _update_creation_state(creation_id, status='processing', progress=0.8)
 
-        # Upload to R2
+        # Upload video to R2
         logger.info(f"📤 Uploading video to R2...")
         r2_key = f"videos/{user_id}/{creation_id}.mp4"
 
@@ -422,6 +466,33 @@ def generate_video_task(self: Task, creation_id: str) -> dict:
         media_url = f"{R2_PUBLIC_URL}/{r2_key}"
         logger.info(f"✅ Video uploaded to R2: {media_url}")
 
+        # Upload thumbnail to R2 if extraction succeeded
+        thumbnail_url = None
+        if thumbnail_bytes:
+            try:
+                thumbnail_key = f"videos/{user_id}/{creation_id}_thumb.jpg"
+                s3_client.put_object(
+                    Bucket=R2_BUCKET_NAME,
+                    Key=thumbnail_key,
+                    Body=thumbnail_bytes,
+                    ContentType='image/jpeg',
+                    Metadata={
+                        'user_id': user_id,
+                        'creation_id': creation_id,
+                        'app': 'phoenix',
+                        'service': 'video-generation',
+                        'type': 'thumbnail'
+                    }
+                )
+                thumbnail_url = f"{R2_PUBLIC_URL}/{thumbnail_key}"
+                logger.info(f"✅ Thumbnail uploaded to R2: {thumbnail_url}")
+            except Exception as e:
+                logger.error(f"Failed to upload thumbnail to R2: {e}")
+                # Continue without thumbnail (non-critical)
+
+        # Update progress
+        _update_creation_state(creation_id, status='processing', progress=0.9)
+
         # Clean up GCS temporary file
         try:
             blob.delete()
@@ -430,18 +501,26 @@ def generate_video_task(self: Task, creation_id: str) -> dict:
             logger.warning(f"⚠️  Failed to delete GCS temp file: {e}")
 
         # 7. Mark as draft (success!)
-        _update_creation_state(
-            creation_id,
-            status='draft',
-            mediaUrl=media_url,
-            generationTime=generation_time,
-            modelUsed=params.model,
-            progress=1.0,
-            completedAt=firestore.SERVER_TIMESTAMP
-        )
+        update_fields = {
+            'status': 'draft',
+            'mediaUrl': media_url,
+            'duration': duration,
+            'generationTime': generation_time,
+            'modelUsed': params.model,
+            'progress': 1.0,
+            'completedAt': firestore.SERVER_TIMESTAMP
+        }
+
+        # Add thumbnail URL if available
+        if thumbnail_url:
+            update_fields['thumbnailUrl'] = thumbnail_url
+
+        _update_creation_state(creation_id, **update_fields)
 
         logger.info(f"🎉 Video generation complete for creation {creation_id}")
         logger.info(f"   Media URL: {media_url}")
+        logger.info(f"   Thumbnail URL: {thumbnail_url or 'N/A'}")
+        logger.info(f"   Duration: {duration}s")
         logger.info(f"   Generation time: {generation_time:.1f}s")
 
         return {

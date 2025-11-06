@@ -28,7 +28,10 @@ celery_app = Celery(
     'phoenix',
     broker=REDIS_URL,
     backend=REDIS_URL,
-    include=['jobs.async_video_generation_worker']  # Auto-discover tasks
+    include=[
+        'jobs.async_video_generation_worker',
+        'jobs.async_image_generation_worker'  # NEW: Image generation worker
+    ]
 )
 
 # Celery configuration

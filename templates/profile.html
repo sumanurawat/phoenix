@@ -82,6 +82,63 @@
         color: #7f8c8d;
     }
 
+    /* Instagram-style Tab Navigation */
+    .profile-tabs {
+        display: flex;
+        justify-content: center;
+        gap: 0;
+        background: white;
+        border-radius: 0;
+        margin: 2rem 0 0 0;
+        border-top: 1px solid #dbdbdb;
+    }
+
+    .profile-tab {
+        flex: 1;
+        max-width: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        background: none;
+        border: none;
+        border-top: 1px solid transparent;
+        margin-top: -1px;
+        color: #8e8e8e;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .profile-tab i {
+        font-size: 0.85rem;
+    }
+
+    .profile-tab:hover {
+        color: #262626;
+    }
+
+    .profile-tab.active {
+        color: #262626;
+        border-top-color: #262626;
+    }
+
+    .tab-content-wrapper {
+        margin-top: 1rem;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
     .gallery-header {
         background: white;
         border-radius: 16px;
@@ -280,6 +337,201 @@
         max-width: 90vw;
         max-height: 90vh;
         display: block;
+        margin: 0 auto;
+    }
+
+    /* Draft Details Container (separate from modal-media) */
+    #draftDetails {
+        max-width: 600px;
+        width: 100%;
+    }
+
+    #draftDetails img.modal-media,
+    #draftDetails video.modal-media {
+        max-width: 100%;
+        max-height: 60vh;
+        object-fit: contain;
+        margin-bottom: 1rem;
+    }
+
+    /* Drafts Cards (inside tab content) */
+    .drafts-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+    }
+
+    .draft-card {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #667eea;
+        transition: all 0.3s ease;
+    }
+
+    .draft-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateX(4px);
+    }
+
+    .draft-card.status-pending {
+        border-left-color: #f39c12;
+    }
+
+    .draft-card.status-processing {
+        border-left-color: #3498db;
+    }
+
+    .draft-card.status-draft {
+        border-left-color: #27ae60;
+    }
+
+    .draft-card.status-failed {
+        border-left-color: #e74c3c;
+    }
+
+    .draft-card.new-draft {
+        position: relative;
+        background: #fff8e7;
+        border-left-color: #f39c12;
+        box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.35);
+        animation: pulse-highlight 2.2s ease-out 2;
+    }
+
+    .draft-card.new-draft::after {
+        content: 'New';
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        background: rgba(243, 156, 18, 0.15);
+        color: #d35400;
+    }
+
+    @keyframes pulse-highlight {
+        0% {
+            box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.45);
+        }
+        60% {
+            box-shadow: 0 0 0 16px rgba(243, 156, 18, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(243, 156, 18, 0);
+        }
+    }
+
+    .draft-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .draft-status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+
+    .draft-status-badge.pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .draft-status-badge.processing {
+        background: #cce5ff;
+        color: #004085;
+    }
+
+    .draft-status-badge.draft {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .draft-status-badge.failed {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .draft-prompt {
+        color: #2c3e50;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+        line-height: 1.5;
+    }
+
+    .draft-meta {
+        color: #7f8c8d;
+        font-size: 0.85rem;
+    }
+
+    .draft-actions {
+        margin-top: 1rem;
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .draft-action-btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .draft-action-btn.publish {
+        background: #27ae60;
+        color: white;
+    }
+
+    .draft-action-btn.publish:hover {
+        background: #229954;
+    }
+
+    .draft-action-btn.delete {
+        background: #e74c3c;
+        color: white;
+    }
+
+    .draft-action-btn.delete:hover {
+        background: #c0392b;
+    }
+
+    .draft-action-btn.view {
+        background: #667eea;
+        color: white;
+    }
+
+    .draft-action-btn.view:hover {
+        background: #5568d3;
+    }
+
+    /* Shimmer loading animation for pending/processing drafts */
+    @keyframes shimmer {
+        0% {
+            background-position: -468px 0;
+        }
+        100% {
+            background-position: 468px 0;
+        }
+    }
+
+    .shimmer {
+        animation: shimmer 2s infinite linear;
+        background: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+        background-size: 800px 104px;
     }
 </style>
 {% endblock %}
@@ -305,25 +557,59 @@
         </div>
     </div>
 
-    <!-- Gallery Header -->
-    <div class="gallery-header">
-        <div>
-            <h2 class="gallery-title">Creations</h2>
-            <div class="gallery-count" id="galleryCount">0 creations</div>
+    <!-- Tab Navigation (Instagram-style) -->
+    <div class="profile-tabs">
+        <button class="profile-tab active" data-tab="posts" id="postsTab">
+            <i class="bi bi-grid-3x3"></i>
+            <span>Posts</span>
+        </button>
+        <button class="profile-tab" data-tab="drafts" id="draftsTab" style="display: none;">
+            <i class="bi bi-folder2-open"></i>
+            <span>Drafts</span>
+        </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content-wrapper">
+        <!-- Posts Tab -->
+        <div id="postsContent" class="tab-content active">
+            <!-- Loading State -->
+            <div id="loadingSpinner" class="loading-spinner">
+                <div class="spinner-border" role="status"></div>
+                <p class="mt-3 text-muted">Loading creations...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+            <!-- Creations Grid -->
+            <div id="creationsGrid" class="creations-grid" style="display: none;"></div>
+        </div>
+
+        <!-- Drafts Tab -->
+        <div id="draftsContent" class="tab-content">
+            <!-- Drafts Loading -->
+            <div id="draftsLoadingSpinner" class="loading-spinner" style="display: none;">
+                <div class="spinner-border" role="status"></div>
+                <p class="mt-3 text-muted">Loading drafts...</p>
+            </div>
+
+            <!-- Drafts Grid (same style as posts) -->
+            <div id="draftsGrid" class="creations-grid" style="display: none;"></div>
+
+            <!-- Drafts Empty State -->
+            <div id="draftsEmptyState" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">
+                    <i class="bi bi-folder2-open"></i>
+                </div>
+                <h3 class="empty-state-title">No drafts yet</h3>
+                <p class="empty-state-text">Generated images and videos will appear here before publishing</p>
+                <a href="/create" class="create-button">
+                    <i class="fas fa-plus"></i> Create Your First Image
+                </a>
+            </div>
         </div>
     </div>
-
-    <!-- Loading State -->
-    <div id="loadingSpinner" class="loading-spinner">
-        <div class="spinner-border" role="status"></div>
-        <p class="mt-3 text-muted">Loading creations...</p>
-    </div>
-
-    <!-- Error State -->
-    <div id="errorMessage" class="error-message" style="display: none;"></div>
-
-    <!-- Creations Grid -->
-    <div id="creationsGrid" class="creations-grid" style="display: none;"></div>
 
     <!-- Empty State -->
     <div id="emptyState" class="empty-state" style="display: none;">
@@ -338,12 +624,46 @@
     </div>
 </div>
 
-<!-- Modal for full-size view -->
+<!-- Modal for full-size view & draft editing -->
 <div id="modalBackdrop" class="modal-backdrop">
     <button class="modal-close" onclick="closeModal()">×</button>
-    <div class="modal-content">
+    <div class="modal-content" style="display: flex; flex-direction: column; align-items: center; max-width: 95vw; max-height: 95vh; overflow-y: auto;">
+        <!-- Media Preview (for published posts) -->
         <img id="modalImage" class="modal-media" style="display: none;">
         <video id="modalVideo" class="modal-media" controls style="display: none;"></video>
+        
+        <!-- Draft Details (shown for drafts only) -->
+        <div id="draftDetails" style="display: none; background: white; padding: 2rem; border-radius: 12px; width: 100%; max-width: 600px;">
+            <!-- Media Preview (inside draft details) -->
+            <div id="draftMediaPreview" style="margin-bottom: 1.5rem; text-align: center;"></div>
+            
+            <!-- Status Badge -->
+            <div id="draftStatusContainer" style="margin-bottom: 1rem;"></div>
+            
+            <!-- Prompt -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #2c3e50;">Prompt</label>
+                <div id="draftPrompt" style="padding: 0.75rem; background: #f8f9fa; border-radius: 8px; color: #555;"></div>
+            </div>
+            
+            <!-- Caption Editor (draft status only) -->
+            <div id="captionEditor" style="display: none; margin-bottom: 1.5rem;">
+                <label for="draftCaption" style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #2c3e50;">Caption (Optional)</label>
+                <textarea id="draftCaption" 
+                          rows="3" 
+                          style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; resize: vertical; box-sizing: border-box;"
+                          placeholder="Add a caption for your creation..."></textarea>
+            </div>
+            
+            <!-- Metadata -->
+            <div id="draftMeta" style="display: flex; gap: 1rem; font-size: 0.9rem; color: #666; margin-bottom: 1.5rem; flex-wrap: wrap;"></div>
+            
+            <!-- Error Message (failed status only) -->
+            <div id="draftError" style="display: none; background: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 1rem; color: #c33; margin-bottom: 1.5rem;"></div>
+            
+            <!-- Actions -->
+            <div id="draftActions" style="display: flex; gap: 0.75rem; flex-wrap: wrap;"></div>
+        </div>
     </div>
 </div>
 
@@ -352,9 +672,81 @@
     const pathParts = window.location.pathname.split('/');
     const username = pathParts[pathParts.length - 1];
 
+    function buildProfileUrl(targetUsername) {
+        const currentUrl = new URL(window.location.href);
+        const tabParam = currentUrl.searchParams.get('tab');
+        let destination = `/soho/${encodeURIComponent(targetUsername)}`;
+        if (tabParam) {
+            destination += `?tab=${encodeURIComponent(tabParam)}`;
+        }
+        return destination;
+    }
+
+    async function ensureCorrectProfileRoute() {
+        if (username !== 'profile') {
+            return false;
+        }
+
+        try {
+            const cachedUsername = sessionStorage.getItem('phoenixCurrentUsername');
+            if (cachedUsername && cachedUsername !== 'profile') {
+                const destination = buildProfileUrl(cachedUsername);
+                if (destination !== window.location.pathname + window.location.search) {
+                    window.location.replace(destination);
+                    return true;
+                }
+            }
+        } catch (storageError) {
+            console.warn('Unable to read cached username for profile redirect:', storageError);
+        }
+
+        try {
+            const response = await fetch('/api/users/me', { cache: 'no-store' });
+            const data = await response.json();
+
+            if (response.ok && data.success && data.user?.username && data.user.username !== 'profile') {
+                const destination = buildProfileUrl(data.user.username);
+                if (destination !== window.location.pathname + window.location.search) {
+                    window.location.replace(destination);
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.warn('Auto-correcting profile route failed:', error);
+        }
+
+        return false;
+    }
+
+    console.log('🚀 Profile page JavaScript loaded! URL:', window.location.href);
+
     let userData = null;
     let creationsData = [];
+    let draftsData = [];
     let isOwnProfile = false;
+    let draftsListener = null;
+
+    const MAX_DRAFT_REFRESH_ATTEMPTS = 4;
+    const DRAFT_REFRESH_RETRY_DELAY_MS = 1200;
+    let draftsLoadedAt = 0;
+    let isLoadingDrafts = false;
+    let highlightDraftId = null;
+    let draftsRefreshRequested = false;
+    let activeTab = 'posts';
+
+    try {
+        const storedRefreshFlag = sessionStorage.getItem('phoenixDraftsNeedsRefresh');
+        const storedDraftId = sessionStorage.getItem('phoenixLastDraftId');
+        if (storedRefreshFlag === 'true' && storedDraftId) {
+            draftsRefreshRequested = true;
+            highlightDraftId = storedDraftId;
+            console.log('🆕 Draft refresh requested. Target draft:', highlightDraftId);
+        } else if (storedDraftId) {
+            highlightDraftId = storedDraftId;
+        }
+    } catch (storageError) {
+        console.warn('Unable to access draft refresh flags:', storageError);
+    }
 
     // Load profile data
     async function loadProfile() {
@@ -369,6 +761,11 @@
             userData = data.user;
             isOwnProfile = data.isOwnProfile || false;
 
+            console.log('🔍 Profile Debug Info:');
+            console.log('  - Username:', username);
+            console.log('  - isOwnProfile:', isOwnProfile);
+            console.log('  - User Data:', userData);
+
             // Update profile UI
             const avatarLetter = username[0].toUpperCase();
             document.getElementById('profileAvatar').textContent = avatarLetter;
@@ -379,8 +776,42 @@
             // Update page title
             document.title = `@${username} - Phoenix AI`;
 
+            // Show/hide drafts tab based on ownership
+            const draftsTab = document.getElementById('draftsTab');
+            console.log('  - Drafts tab element:', draftsTab);
+            
+            if (isOwnProfile) {
+                console.log('  ✅ This is YOUR profile - showing drafts tab');
+                draftsTab.style.display = 'flex';
+            } else {
+                console.log('  ❌ Not your profile - hiding drafts tab');
+                draftsTab.style.display = 'none';
+            }
+
             // Load creations
             await loadCreations();
+
+            // Load drafts if own profile
+            if (isOwnProfile) {
+                await loadDrafts();
+                
+                // Check if we should show drafts tab (e.g., from navigation link)
+                const urlParams = new URLSearchParams(window.location.search);
+                const requestedTab = urlParams.get('tab');
+                console.log('  - URL tab parameter:', requestedTab);
+                
+                if (requestedTab === 'drafts') {
+                    console.log('  📂 Switching to DRAFTS tab');
+                    switchTab('drafts');
+                } else {
+                    console.log('  📄 Switching to POSTS tab (default)');
+                    switchTab('posts'); // Default to posts tab
+                }
+            } else {
+                // Always show posts tab for other users
+                console.log('  📄 Not own profile - showing POSTS tab only');
+                switchTab('posts');
+            }
 
         } catch (error) {
             console.error('Error loading profile:', error);
@@ -407,9 +838,12 @@
             const totalLikes = creationsData.reduce((sum, c) => sum + (c.likeCount || 0), 0);
             document.getElementById('statLikes').textContent = totalLikes;
 
-            // Update gallery count
-            document.getElementById('galleryCount').textContent =
-                `${creationsData.length} ${creationsData.length === 1 ? 'creation' : 'creations'}`;
+            // Update gallery count (optional element)
+            const galleryCountEl = document.getElementById('galleryCount');
+            if (galleryCountEl) {
+                galleryCountEl.textContent =
+                    `${creationsData.length} ${creationsData.length === 1 ? 'creation' : 'creations'}`;
+            }
 
             // Hide loading
             document.getElementById('loadingSpinner').style.display = 'none';
@@ -482,7 +916,12 @@
         const backdrop = document.getElementById('modalBackdrop');
         const modalImage = document.getElementById('modalImage');
         const modalVideo = document.getElementById('modalVideo');
+        const draftDetails = document.getElementById('draftDetails');
 
+        // Hide draft details for regular posts
+        draftDetails.style.display = 'none';
+
+        // Show media
         if (creation.mediaType === 'image') {
             modalImage.src = creation.mediaUrl;
             modalImage.style.display = 'block';
@@ -493,16 +932,28 @@
             modalImage.style.display = 'none';
         }
 
-        backdrop.classList.add('show');
+        // Show modal
+        backdrop.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
     }
 
     function closeModal() {
         const backdrop = document.getElementById('modalBackdrop');
-        backdrop.classList.remove('show');
+        backdrop.style.display = 'none';
+        document.body.style.overflow = '';
+
+        // Hide all modal content
+        document.getElementById('modalImage').style.display = 'none';
+        document.getElementById('modalVideo').style.display = 'none';
+        document.getElementById('draftDetails').style.display = 'none';
 
         // Pause video if playing
         const modalVideo = document.getElementById('modalVideo');
         modalVideo.pause();
+        modalVideo.src = '';
+
+        // Clear draft data
+        currentDraftData = null;
     }
 
     // Close modal on backdrop click
@@ -552,7 +1003,476 @@
         return text.replace(/[&<>"']/g, m => map[m]);
     }
 
-    // Load on page load
-    loadProfile();
+    async function loadDrafts(options = {}) {
+        const {
+            force = false,
+            attempt = 1,
+            reason = 'initial'
+        } = options;
+
+        console.log('📋 loadDrafts() called with options:', { force, attempt, reason, isOwnProfile, isLoadingDrafts });
+
+        if (isLoadingDrafts && !force) {
+            console.log('⏳ Draft load already in progress; skipping duplicate request.');
+            return;
+        }
+
+        if (force) {
+            console.log(`🔁 Forcing drafts reload (attempt ${attempt}, reason: ${reason})`);
+        }
+
+        isLoadingDrafts = true;
+
+        try {
+            console.log('🌐 Fetching drafts from /api/generate/drafts...');
+            const response = await fetch('/api/generate/drafts?limit=50', {
+                cache: 'no-store'
+            });
+            const data = await response.json();
+            console.log('✅ Drafts response:', { ok: response.ok, status: response.status, count: data.creations?.length || 0, data });
+
+            if (!response.ok || !data.success) {
+                console.error('Failed to load drafts:', data.error);
+                return;
+            }
+
+            draftsData = data.creations || [];
+            draftsLoadedAt = Date.now();
+
+            const highlightId = highlightDraftId && draftsData.some(draft => draft.id === highlightDraftId)
+                ? highlightDraftId
+                : null;
+
+            if (draftsData.length > 0) {
+                renderDrafts({ highlightDraftId: highlightId });
+            } else {
+                document.getElementById('draftsContainer').innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: #6c757d;">
+                        <i class="bi bi-folder2-open" style="font-size: 3rem; opacity: 0.3;"></i>
+                        <p style="margin-top: 1rem; font-size: 1.1rem;">No drafts yet</p>
+                        <p style="font-size: 0.9rem;">Generated images and videos will appear here before publishing</p>
+                    </div>
+                `;
+            }
+
+            if (highlightId) {
+                console.log('✅ Newly generated draft located. Highlighting card:', highlightId);
+                draftsRefreshRequested = false;
+                highlightDraftId = null;
+                try {
+                    sessionStorage.removeItem('phoenixDraftsNeedsRefresh');
+                    sessionStorage.removeItem('phoenixLastDraftId');
+                } catch (storageError) {
+                    console.warn('Unable to clear draft refresh flags:', storageError);
+                }
+            } else if (draftsRefreshRequested && attempt < MAX_DRAFT_REFRESH_ATTEMPTS) {
+                const nextAttempt = attempt + 1;
+                const retryDelay = DRAFT_REFRESH_RETRY_DELAY_MS * attempt;
+                console.log(`⏱️ Draft not found yet (attempt ${attempt}). Retrying in ${retryDelay}ms...`);
+                setTimeout(() => {
+                    loadDrafts({
+                        force: true,
+                        attempt: nextAttempt,
+                        reason: 'pending-new-draft'
+                    });
+                }, retryDelay);
+            } else if (draftsRefreshRequested) {
+                console.warn('⚠️ Draft refresh requested but not located after retries.');
+                draftsRefreshRequested = false;
+                try {
+                    sessionStorage.removeItem('phoenixDraftsNeedsRefresh');
+                } catch (storageError) {
+                    console.warn('Unable to clear draft refresh flag:', storageError);
+                }
+            }
+
+        } catch (error) {
+            console.error('Error loading drafts:', error);
+        } finally {
+            isLoadingDrafts = false;
+        }
+    }
+
+    function renderDrafts(options = {}) {
+        const { highlightDraftId = null } = options;
+        const grid = document.getElementById('draftsGrid');
+        const emptyState = document.getElementById('draftsEmptyState');
+        
+        grid.innerHTML = '';
+
+        if (draftsData.length === 0) {
+            grid.style.display = 'none';
+            emptyState.style.display = 'flex';
+            return;
+        }
+
+        emptyState.style.display = 'none';
+        grid.style.display = 'grid';
+
+        let highlightedCard = null;
+
+        draftsData.forEach(draft => {
+            const item = document.createElement('div');
+            item.className = 'creation-item';
+            item.style.position = 'relative';
+            item.style.cursor = 'pointer';
+            
+            if (highlightDraftId && draft.id === highlightDraftId) {
+                item.style.animation = 'pulse 2s ease-in-out 3';
+                highlightedCard = item;
+            }
+
+            // Determine media type and thumbnail
+            const mediaType = draft.mediaType || 'unknown';
+            const mediaIcon = mediaType === 'image' ? '🖼️' : mediaType === 'video' ? '🎬' : '📄';
+            
+            let thumbnailContent = '';
+            
+            if (draft.status === 'pending' || draft.status === 'processing') {
+                // Loading state with shimmer
+                thumbnailContent = `
+                    <div style="width: 100%; aspect-ratio: 9/16; background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; display: flex; align-items: center; justify-content: center; color: #999;">
+                        <div style="text-align: center;">
+                            <div class="spinner-border" style="width: 2.5rem; height: 2.5rem;"></div>
+                            <div style="margin-top: 0.75rem; font-size: 0.85rem;">${draft.status === 'processing' ? 'Processing...' : 'Pending...'}</div>
+                        </div>
+                    </div>
+                `;
+            } else if (draft.status === 'draft' && draft.mediaUrl) {
+                // Show media thumbnail
+                if (mediaType === 'image') {
+                    thumbnailContent = `<img src="${draft.mediaUrl}" alt="${escapeHtml(draft.prompt)}" class="creation-thumbnail">`;
+                } else if (mediaType === 'video') {
+                    const posterUrl = draft.thumbnailUrl || draft.mediaUrl;
+                    thumbnailContent = `
+                        <div style="position: relative; width: 100%; aspect-ratio: 9/16;">
+                            <video src="${draft.mediaUrl}" poster="${posterUrl}" class="creation-thumbnail" style="object-fit: cover;"></video>
+                            <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.8); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                                <i class="bi bi-play-fill"></i> ${draft.duration || 8}s
+                            </div>
+                        </div>
+                    `;
+                }
+            } else if (draft.status === 'failed') {
+                // Error state
+                thumbnailContent = `
+                    <div style="width: 100%; aspect-ratio: 9/16; background: linear-gradient(135deg, #fee 0%, #fdd 100%); display: flex; align-items: center; justify-content: center; color: #c33;">
+                        <div style="text-align: center; padding: 1rem;">
+                            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">❌</div>
+                            <div style="font-weight: 600; font-size: 0.9rem;">Generation Failed</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Status overlay badge
+            let statusBadge = '';
+            if (draft.status === 'pending') {
+                statusBadge = `<div style="position: absolute; top: 8px; left: 8px; background: rgba(255,193,7,0.95); color: #000; padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 0.35rem;"><span>⏳</span> Pending</div>`;
+            } else if (draft.status === 'processing') {
+                statusBadge = `<div style="position: absolute; top: 8px; left: 8px; background: rgba(33,150,243,0.95); color: white; padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 0.35rem;"><span>⚙️</span> Processing</div>`;
+            } else if (draft.status === 'draft') {
+                statusBadge = `<div style="position: absolute; top: 8px; left: 8px; background: rgba(76,175,80,0.95); color: white; padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 0.35rem;"><span>✅</span> Ready</div>`;
+            } else if (draft.status === 'failed') {
+                statusBadge = `<div style="position: absolute; top: 8px; left: 8px; background: rgba(244,67,54,0.95); color: white; padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 0.35rem;"><span>❌</span> Failed</div>`;
+            }
+
+            item.innerHTML = `
+                ${thumbnailContent}
+                ${statusBadge}
+            `;
+
+            item.addEventListener('click', () => openDraftModal(draft));
+            grid.appendChild(item);
+        });
+
+        if (highlightedCard) {
+            requestAnimationFrame(() => {
+                highlightedCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        }
+    }
+
+    // Open draft in modal with editing capabilities
+    let currentDraftData = null;
+
+    window.openDraftModal = function(draft) {
+        currentDraftData = draft;
+        const modal = document.getElementById('modalBackdrop');
+        const modalImage = document.getElementById('modalImage');
+        const modalVideo = document.getElementById('modalVideo');
+        const draftDetails = document.getElementById('draftDetails');
+        const draftMediaPreview = document.getElementById('draftMediaPreview');
+
+        // Hide regular media, show draft details
+        modalImage.style.display = 'none';
+        modalVideo.style.display = 'none';
+        draftDetails.style.display = 'block';
+
+        // Clear media preview container
+        draftMediaPreview.innerHTML = '';
+
+        // Populate status
+        const statusContainer = document.getElementById('draftStatusContainer');
+        const mediaType = draft.mediaType || 'unknown';
+        const mediaIcon = mediaType === 'image' ? '🖼️' : mediaType === 'video' ? '🎬' : '📄';
+        
+        let statusHTML = '';
+        if (draft.status === 'pending') {
+            statusHTML = `<div style="background: #fff3cd; border: 1px solid #ffc107; color: #856404; padding: 1rem; border-radius: 8px; display: flex; align-items: center; gap: 0.75rem; font-weight: 600;"><span style="font-size: 1.5rem;">⏳</span> Pending - Waiting to generate</div>`;
+        } else if (draft.status === 'processing') {
+            statusHTML = `<div style="background: #d1ecf1; border: 1px solid #17a2b8; color: #0c5460; padding: 1rem; border-radius: 8px; display: flex; align-items: center; gap: 0.75rem; font-weight: 600;"><div class="spinner-border spinner-border-sm"></div> Processing - Generating ${mediaType}...</div>`;
+        } else if (draft.status === 'draft') {
+            statusHTML = `<div style="background: #d4edda; border: 1px solid #28a745; color: #155724; padding: 1rem; border-radius: 8px; display: flex; align-items: center; gap: 0.75rem; font-weight: 600;"><span style="font-size: 1.5rem;">✅</span> Ready to publish!</div>`;
+        } else if (draft.status === 'failed') {
+            statusHTML = `<div style="background: #f8d7da; border: 1px solid #dc3545; color: #721c24; padding: 1rem; border-radius: 8px; display: flex; align-items: center; gap: 0.75rem; font-weight: 600;"><span style="font-size: 1.5rem;">❌</span> Generation failed</div>`;
+        }
+        statusContainer.innerHTML = statusHTML;
+
+        // Media preview (render inside draft details)
+        if (draft.status === 'draft' && draft.mediaUrl) {
+            if (mediaType === 'image') {
+                draftMediaPreview.innerHTML = `<img src="${draft.mediaUrl}" alt="${escapeHtml(draft.prompt)}" style="max-width: 100%; max-height: 60vh; border-radius: 8px; object-fit: contain;">`;
+            } else if (mediaType === 'video') {
+                const posterAttr = draft.thumbnailUrl ? `poster="${draft.thumbnailUrl}"` : '';
+                draftMediaPreview.innerHTML = `<video src="${draft.mediaUrl}" ${posterAttr} controls style="max-width: 100%; max-height: 60vh; border-radius: 8px;"></video>`;
+            }
+        }
+
+        // Populate prompt
+        document.getElementById('draftPrompt').textContent = draft.prompt;
+
+        // Show/hide caption editor
+        const captionEditor = document.getElementById('captionEditor');
+        const draftCaption = document.getElementById('draftCaption');
+        if (draft.status === 'draft') {
+            captionEditor.style.display = 'block';
+            draftCaption.value = draft.caption || '';
+        } else {
+            captionEditor.style.display = 'none';
+        }
+
+        // Metadata
+        const timeAgo = draft.createdAt ? formatTimeAgo(new Date(draft.createdAt)) : 'Just now';
+        const metaParts = [
+            `${mediaIcon} ${mediaType}`,
+            timeAgo,
+            draft.aspectRatio || null,
+            draft.duration ? `${draft.duration}s` : null
+        ].filter(Boolean);
+        document.getElementById('draftMeta').innerHTML = metaParts.map(part => `<span>${part}</span>`).join('<span> • </span>');
+
+        // Error message
+        const errorEl = document.getElementById('draftError');
+        if (draft.status === 'failed' && draft.error) {
+            errorEl.style.display = 'block';
+            errorEl.innerHTML = `<strong>Error:</strong> ${escapeHtml(draft.error)}`;
+        } else {
+            errorEl.style.display = 'none';
+        }
+
+        // Actions
+        const actionsContainer = document.getElementById('draftActions');
+        actionsContainer.innerHTML = '';
+
+        if (draft.status === 'draft') {
+            const publishBtn = document.createElement('button');
+            publishBtn.className = 'btn btn-primary';
+            publishBtn.innerHTML = '<i class="bi bi-upload"></i> Publish';
+            publishBtn.style.cssText = 'flex: 1; padding: 0.75rem; font-weight: 600;';
+            publishBtn.onclick = () => publishDraftFromModal(draft.id);
+            actionsContainer.appendChild(publishBtn);
+        }
+
+        if (draft.status === 'pending' || draft.status === 'processing') {
+            const refreshBtn = document.createElement('button');
+            refreshBtn.className = 'btn btn-secondary';
+            refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+            refreshBtn.style.cssText = 'flex: 1; padding: 0.75rem; font-weight: 600;';
+            refreshBtn.onclick = () => window.location.reload();
+            actionsContainer.appendChild(refreshBtn);
+        }
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-outline-danger';
+        deleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete';
+        deleteBtn.style.cssText = 'padding: 0.75rem 1.5rem; font-weight: 600;';
+        deleteBtn.onclick = () => deleteDraftFromModal(draft.id);
+        actionsContainer.appendChild(deleteBtn);
+
+        // Show modal
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.publishDraftFromModal = async function(draftId) {
+        const caption = document.getElementById('draftCaption').value.trim();
+
+        try {
+            const response = await fetch(`/api/generate/creation/${draftId}/publish`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ caption: caption || '' })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                alert('Failed to publish: ' + (data.error || 'Unknown error'));
+                return;
+            }
+
+            alert('✅ Published successfully!');
+            closeModal();
+            window.location.reload();
+
+        } catch (error) {
+            console.error('Error publishing draft:', error);
+            alert('Failed to publish. Please try again.');
+        }
+    };
+
+    window.deleteDraftFromModal = async function(draftId) {
+        if (!confirm('Are you sure you want to delete this draft? This cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/generate/creation/${draftId}`, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                alert('Failed to delete: ' + (data.error || 'Unknown error'));
+                return;
+            }
+
+            alert('✅ Draft deleted successfully!');
+            closeModal();
+            window.location.reload();
+
+        } catch (error) {
+            console.error('Error deleting draft:', error);
+            alert('Failed to delete. Please try again.');
+        }
+    };
+
+    window.publishDraft = async function(draftId) {
+        const caption = prompt('Add a caption for your creation (optional):');
+        if (caption === null) return; // User cancelled
+
+        try {
+            const response = await fetch(`/api/generate/creation/${draftId}/publish`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ caption: caption || '' })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                alert('Failed to publish: ' + (data.error || 'Unknown error'));
+                return;
+            }
+
+            alert('✅ Published successfully! Refreshing...');
+            window.location.reload();
+
+        } catch (error) {
+            console.error('Error publishing draft:', error);
+            alert('Failed to publish. Please try again.');
+        }
+    };
+
+    window.deleteDraft = async function(draftId) {
+        if (!confirm('Are you sure you want to delete this draft? This cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/generate/creation/${draftId}`, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                alert('Failed to delete: ' + (data.error || 'Unknown error'));
+                return;
+            }
+
+            alert('✅ Draft deleted successfully!');
+            window.location.reload();
+
+        } catch (error) {
+            console.error('Error deleting draft:', error);
+            alert('Failed to delete. Please try again.');
+        }
+    };
+
+    // Tab switching functionality
+    function switchTab(tabName) {
+        console.log('🔄 Switching to tab:', tabName);
+        
+        // Update tab buttons
+        document.querySelectorAll('.profile-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        const targetTab = document.querySelector(`[data-tab="${tabName}"]`);
+        console.log('  - Target tab button:', targetTab);
+        targetTab?.classList.add('active');
+
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        const targetContent = document.getElementById(`${tabName}Content`);
+        console.log('  - Target content:', targetContent);
+        targetContent?.classList.add('active');
+
+        // Update URL without reload
+        const url = new URL(window.location);
+        url.searchParams.set('tab', tabName);
+        window.history.pushState({}, '', url);
+        console.log('  - New URL:', url.href);
+
+        activeTab = tabName;
+
+        if (tabName === 'drafts' && isOwnProfile) {
+            const now = Date.now();
+            const isStale = !draftsLoadedAt || (now - draftsLoadedAt > 10000);
+            const reason = draftsRefreshRequested ? 'session-refresh' : 'tab-switch';
+            const awaitingHighlight = highlightDraftId && !draftsData.some(draft => draft.id === highlightDraftId);
+
+            if (draftsRefreshRequested || isStale || awaitingHighlight) {
+                loadDrafts({
+                    force: true,
+                    attempt: 1,
+                    reason: awaitingHighlight ? 'awaiting-highlight' : reason
+                });
+            }
+        }
+    }
+
+    // Add click listeners to tabs
+    document.querySelectorAll('.profile-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            switchTab(tab.dataset.tab);
+        });
+    });
+
+    // Load on page load (auto-correct legacy /soho/profile redirects)
+    (async () => {
+        const corrected = await ensureCorrectProfileRoute();
+        if (!corrected) {
+            loadProfile();
+        }
+    })();
 </script>
 {% endblock %}

@@ -14,6 +14,8 @@ import uuid
 from datetime import datetime
 from flask import Blueprint, request, jsonify, session
 from firebase_admin import firestore
+from kombu.exceptions import OperationalError as KombuOperationalError
+from redis.exceptions import ConnectionError as RedisConnectionError
 
 from api.auth_routes import login_required
 from services.token_service import TokenService, InsufficientTokensError
@@ -21,6 +23,10 @@ from services.transaction_service import TransactionService
 from jobs.async_video_generation_worker import generate_video_task
 
 logger = logging.getLogger(__name__)
+
+QUEUE_UNAVAILABLE_ERROR = (
+    "Video generation queue is unavailable. Start the Redis service and retry."
+)
 
 video_generation_bp = Blueprint('video_generation', __name__, url_prefix='/api/generate')
 
@@ -31,6 +37,68 @@ VIDEO_GENERATION_COST = 10  # tokens
 token_service = TokenService()
 transaction_service = TransactionService()
 db = firestore.client()
+
+
+def _handle_enqueue_failure(user_id: str, creation_id: str, queue_error: Exception) -> None:
+    """Rollback token debit and mark creation as failed when queue is down."""
+
+    logger.error(
+        "🚨 Video generation queue unavailable for creation %s: %s",
+        creation_id,
+        queue_error,
+        exc_info=True
+    )
+
+    try:
+        @firestore.transactional
+        def rollback(transaction):
+            user_ref = db.collection('users').document(user_id)
+            creation_ref = db.collection('creations').document(creation_id)
+
+            # Refund tokens and revert spend counter
+            transaction.update(user_ref, {
+                'tokenBalance': firestore.Increment(VIDEO_GENERATION_COST),
+                'totalTokensSpent': firestore.Increment(-VIDEO_GENERATION_COST)
+            })
+
+            creation_snapshot = creation_ref.get(transaction=transaction)
+            if creation_snapshot.exists:
+                transaction.update(creation_ref, {
+                    'status': 'failed',
+                    'error': 'queue_unavailable',
+                    'queueErrorCode': 'redis_connection_refused',
+                    'queueErrorMessage': str(queue_error)[:200],
+                    'refunded': True,
+                    'updatedAt': firestore.SERVER_TIMESTAMP
+                })
+
+                # Record refund transaction to keep ledger balanced
+                refund_ref = db.collection('transactions').document()
+                transaction.set(refund_ref, {
+                    'userId': user_id,
+                    'type': 'video_generation_refund',
+                    'amount': VIDEO_GENERATION_COST,
+                    'timestamp': firestore.SERVER_TIMESTAMP,
+                    'details': {
+                        'creationId': creation_id,
+                        'reason': 'queue_unavailable'
+                    }
+                })
+
+        transaction = db.transaction()
+        rollback(transaction)
+        logger.info(
+            "💰 Refunded tokens and marked creation %s as failed due to queue outage",
+            creation_id
+        )
+
+    except Exception as rollback_error:
+        logger.error(
+            "Failed to rollback after queue outage for creation %s: %s",
+            creation_id,
+            rollback_error,
+            exc_info=True
+        )
 
 @video_generation_bp.route('/video', methods=['POST'])
 @login_required
@@ -161,14 +229,27 @@ def generate_video():
                 'required': VIDEO_GENERATION_COST
             }), 402
 
-        # Enqueue background job
-        task = generate_video_task.apply_async(
-            args=[creation_id],
-            task_id=creation_id,  # Use creation_id as task_id for idempotency
-            countdown=2  # 2 second delay to ensure Firestore write completes
-        )
+        # Enqueue background job (with queue failure handling)
+        try:
+            task = generate_video_task.apply_async(
+                args=[creation_id],
+                task_id=creation_id,  # Use creation_id as task_id for idempotency
+                countdown=2  # 2 second delay to ensure Firestore write completes
+            )
+            logger.info(f"🚀 Enqueued video generation job: {task.id}")
+        except (RedisConnectionError, KombuOperationalError) as queue_error:
+            # Queue is down (Redis not running locally or network issues in prod)
+            _handle_enqueue_failure(user_id, creation_id, queue_error)
 
-        logger.info(f"🚀 Enqueued video generation job: {task.id}")
+            return jsonify({
+                'success': False,
+                'error': QUEUE_UNAVAILABLE_ERROR,
+                'refunded': True,
+                'details': (
+                    'The video generation service is temporarily unavailable. '
+                    'Your tokens have been refunded automatically.'
+                )
+            }), 503  # Service Unavailable
 
         return jsonify({
             'success': True,
@@ -269,6 +350,7 @@ def get_drafts():
             'error': 'Internal server error'
         }), 500
 
+@video_generation_bp.route('/creation/<creation_id>', methods=['GET'])
 @video_generation_bp.route('/video/<creation_id>', methods=['GET'])
 @login_required
 def get_creation_status(creation_id):
@@ -320,6 +402,8 @@ def get_creation_status(creation_id):
         logger.error(f"Failed to get creation status: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
+@video_generation_bp.route('/creation/<creation_id>', methods=['DELETE'])
+@video_generation_bp.route('/creation/<creation_id>', methods=['DELETE'])
 @video_generation_bp.route('/video/<creation_id>', methods=['DELETE'])
 @login_required
 def delete_creation(creation_id):
@@ -376,6 +460,7 @@ def delete_creation(creation_id):
         logger.error(f"Failed to delete creation: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
+@video_generation_bp.route('/creation/<creation_id>/publish', methods=['POST'])
 @video_generation_bp.route('/video/<creation_id>/publish', methods=['POST'])
 @login_required
 def publish_creation(creation_id):

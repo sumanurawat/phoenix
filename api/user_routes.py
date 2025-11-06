@@ -177,7 +177,7 @@ def get_user_by_username(username):
         username: Username to look up
 
     Returns:
-        200: { user: {...} }
+        200: { success: true, user: {...}, isOwnProfile: boolean }
         404: User not found
         500: Server error
     """
@@ -185,10 +185,23 @@ def get_user_by_username(username):
         user_data = user_service.get_user_by_username(username)
 
         if not user_data:
-            return jsonify({'error': 'User not found'}), 404
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+
+        # Check if viewing own profile
+        current_user_id = session.get('user_id')
+        is_own_profile = False
+        
+        if current_user_id:
+            # Compare Firebase UID
+            is_own_profile = (user_data.get('firebase_uid') == current_user_id)
 
         # Return public profile (hide sensitive data)
         return jsonify({
+            'success': True,
+            'isOwnProfile': is_own_profile,
             'user': {
                 'username': user_data.get('username'),
                 'displayName': user_data.get('displayName'),
@@ -202,6 +215,7 @@ def get_user_by_username(username):
     except Exception as e:
         logger.error(f"Error fetching user by username '{username}': {e}", exc_info=True)
         return jsonify({
+            'success': False,
             'error': 'Failed to fetch user profile'
         }), 500
 

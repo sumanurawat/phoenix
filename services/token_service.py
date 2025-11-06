@@ -92,46 +92,6 @@ class TokenService:
             logger.error(f"Failed to get total earned for {user_id}: {str(e)}", exc_info=True)
             return 0
     
-    @admin_firestore.transactional
-    def _deduct_tokens_transaction(
-        self,
-        transaction: firestore.Transaction,
-        user_ref: firestore.DocumentReference,
-        amount: int
-    ) -> bool:
-        """
-        Deduct tokens from user balance atomically within a transaction.
-        
-        Args:
-            transaction: Firestore transaction
-            user_ref: User document reference
-            amount: Number of tokens to deduct
-            
-        Returns:
-            True if successful
-            
-        Raises:
-            InsufficientTokensError: If user doesn't have enough tokens
-        """
-        user_doc = user_ref.get(transaction=transaction)
-        
-        if not user_doc.exists:
-            raise ValueError(f"User does not exist")
-        
-        current_balance = user_doc.to_dict().get('tokenBalance', 0)
-        
-        if current_balance < amount:
-            raise InsufficientTokensError(
-                f"Insufficient tokens: have {current_balance}, need {amount}"
-            )
-        
-        # Atomically decrement balance
-        transaction.update(user_ref, {
-            'tokenBalance': admin_firestore.Increment(-amount)
-        })
-        
-        return True
-    
     def deduct_tokens(self, user_id: str, amount: int, reason: str = None) -> bool:
         """
         Deduct tokens from user's balance atomically.
@@ -153,10 +113,34 @@ class TokenService:
         
         try:
             user_ref = self.db.collection('users').document(user_id)
-            transaction = self.db.transaction()
             
             logger.info(f"Deducting {amount} tokens from {user_id} (reason: {reason})")
-            self._deduct_tokens_transaction(transaction, user_ref, amount)
+            
+            # Use transactional decorator inline
+            @admin_firestore.transactional
+            def deduct_in_transaction(transaction):
+                user_doc = user_ref.get(transaction=transaction)
+                
+                if not user_doc.exists:
+                    raise ValueError(f"User does not exist")
+                
+                current_balance = user_doc.to_dict().get('tokenBalance', 0)
+                
+                if current_balance < amount:
+                    raise InsufficientTokensError(
+                        f"Insufficient tokens: have {current_balance}, need {amount}"
+                    )
+                
+                # Atomically decrement balance
+                transaction.update(user_ref, {
+                    'tokenBalance': admin_firestore.Increment(-amount)
+                })
+                
+                return True
+            
+            # Execute the transaction
+            transaction = self.db.transaction()
+            deduct_in_transaction(transaction)
             
             logger.info(f"Successfully deducted {amount} tokens from {user_id}")
             return True
@@ -289,53 +273,6 @@ class TokenService:
             logger.error(f"🔴 ========== TOKEN PURCHASE EXCEPTION ==========")
             raise
     
-    @admin_firestore.transactional
-    def _transfer_tokens_transaction(
-        self,
-        transaction: firestore.Transaction,
-        sender_ref: firestore.DocumentReference,
-        recipient_ref: firestore.DocumentReference,
-        amount: int
-    ) -> None:
-        """
-        Transfer tokens between users atomically within a transaction.
-        
-        Args:
-            transaction: Firestore transaction
-            sender_ref: Sender's user document reference
-            recipient_ref: Recipient's user document reference
-            amount: Number of tokens to transfer
-            
-        Raises:
-            InsufficientTokensError: If sender doesn't have enough tokens
-        """
-        # Check sender's balance
-        sender_doc = sender_ref.get(transaction=transaction)
-        if not sender_doc.exists:
-            raise ValueError("Sender does not exist")
-        
-        sender_balance = sender_doc.to_dict().get('tokenBalance', 0)
-        if sender_balance < amount:
-            raise InsufficientTokensError(
-                f"Insufficient tokens: sender has {sender_balance}, needs {amount}"
-            )
-        
-        # Check recipient exists
-        recipient_doc = recipient_ref.get(transaction=transaction)
-        if not recipient_doc.exists:
-            raise ValueError("Recipient does not exist")
-        
-        # Deduct from sender
-        transaction.update(sender_ref, {
-            'tokenBalance': admin_firestore.Increment(-amount)
-        })
-        
-        # Add to recipient (and increment their totalTokensEarned)
-        transaction.update(recipient_ref, {
-            'tokenBalance': admin_firestore.Increment(amount),
-            'totalTokensEarned': admin_firestore.Increment(amount)
-        })
-    
     def transfer_tokens(
         self,
         sender_id: str,
@@ -369,15 +306,42 @@ class TokenService:
         try:
             sender_ref = self.db.collection('users').document(sender_id)
             recipient_ref = self.db.collection('users').document(recipient_id)
-            transaction = self.db.transaction()
             
             logger.info(f"Transferring {amount} tokens from {sender_id} to {recipient_id}")
-            self._transfer_tokens_transaction(
-                transaction,
-                sender_ref,
-                recipient_ref,
-                amount
-            )
+            
+            # Use transactional decorator inline
+            @admin_firestore.transactional
+            def transfer_in_transaction(transaction):
+                # Check sender's balance
+                sender_doc = sender_ref.get(transaction=transaction)
+                if not sender_doc.exists:
+                    raise ValueError("Sender does not exist")
+                
+                sender_balance = sender_doc.to_dict().get('tokenBalance', 0)
+                if sender_balance < amount:
+                    raise InsufficientTokensError(
+                        f"Insufficient tokens: sender has {sender_balance}, needs {amount}"
+                    )
+                
+                # Check recipient exists
+                recipient_doc = recipient_ref.get(transaction=transaction)
+                if not recipient_doc.exists:
+                    raise ValueError("Recipient does not exist")
+                
+                # Deduct from sender
+                transaction.update(sender_ref, {
+                    'tokenBalance': admin_firestore.Increment(-amount)
+                })
+                
+                # Add to recipient (and increment their totalTokensEarned)
+                transaction.update(recipient_ref, {
+                    'tokenBalance': admin_firestore.Increment(amount),
+                    'totalTokensEarned': admin_firestore.Increment(amount)
+                })
+            
+            # Execute the transaction
+            transaction = self.db.transaction()
+            transfer_in_transaction(transaction)
             
             logger.info(f"Successfully transferred {amount} tokens from {sender_id} to {recipient_id}")
             return True
