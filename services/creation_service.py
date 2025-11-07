@@ -136,6 +136,7 @@ class CreationService:
                 'caption': '',
                 # Social platform fields
                 'likeCount': 0,
+                'originalTransactionId': transaction_id,
             }
 
             # Add type-specific params
@@ -366,16 +367,21 @@ class CreationService:
                     if created_time < cutoff_time:
                         age_hours = (datetime.now(timezone.utc) - created_time).total_seconds() / 3600
                         
-                        # Mark as failed
-                        success = self.mark_failed(
-                            creation_id=doc.id,
-                            user_id=data.get('userId'),
-                            error_message=f"Generation timeout: Task stuck in {status} status for {age_hours:.1f} hours"
-                        )
-                        
-                        if success:
-                            marked_count += 1
-                            logger.info(f"⏰ Marked stale creation {doc.id} as failed (age: {age_hours:.1f}h)")
+                        # Mark as failed and refund tokens
+                        original_txn_id = data.get('originalTransactionId')
+                        if original_txn_id:
+                            success = self.handle_generation_failure(
+                                creation_id=doc.id,
+                                original_transaction_id=original_txn_id,
+                                error_message=f"Generation timeout: Task stuck in {status} status for {age_hours:.1f} hours",
+                                user_id=data.get('userId')
+                            )
+                            
+                            if success:
+                                marked_count += 1
+                                logger.info(f"⏰ Marked stale creation {doc.id} as failed (age: {age_hours:.1f}h)")
+                        else:
+                            logger.warning(f"⚠️ Cannot refund stale creation {doc.id} - missing originalTransactionId")
             
             if marked_count > 0:
                 logger.info(f"✅ Marked {marked_count} stale creations as failed")

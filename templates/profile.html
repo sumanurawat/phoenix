@@ -175,6 +175,9 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         transition: all 0.3s ease;
         cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
     }
 
     .creation-item:hover {
@@ -184,22 +187,65 @@
 
     .creation-thumbnail {
         width: 100%;
-        aspect-ratio: 9/16;
+        height: 100%;
         object-fit: cover;
         display: block;
+    }
+
+    .creation-media-wrapper {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 9/16;
+        background: black;
+        overflow: hidden;
+    }
+
+    .creation-media-wrapper video {
+        background: black;
+    }
+
+    .creation-media-badge {
+        position: absolute;
+        bottom: 0.75rem;
+        right: 0.75rem;
+        background: rgba(0, 0, 0, 0.75);
+        color: #fff;
+        padding: 0.35rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        pointer-events: none;
+        letter-spacing: 0.02em;
     }
 
     .creation-info {
         padding: 1rem;
     }
 
-    .creation-prompt {
-        font-size: 0.85rem;
-        color: #555;
+    .creation-caption {
+        font-size: 0.95rem;
+        color: #2c3e50;
+        font-weight: 500;
         line-height: 1.4;
         margin-bottom: 0.5rem;
         display: -webkit-box;
+        line-clamp: 2;
         -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .creation-prompt {
+        font-size: 0.80rem;
+        color: #7f8c8d;
+        line-height: 1.3;
+        margin-bottom: 0.5rem;
+        display: -webkit-box;
+        line-clamp: 1;
+        -webkit-line-clamp: 1;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
@@ -287,30 +333,44 @@
     }
 
     /* Modal styles */
-    .modal-backdrop {
-        display: none;
+    .creation-modal {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.8);
         z-index: 1000;
+        display: none;
         align-items: center;
         justify-content: center;
     }
 
-    .modal-backdrop.show {
+    .creation-modal.show {
         display: flex;
     }
 
-    .modal-content {
-        max-width: 90vw;
-        max-height: 90vh;
-        background: white;
-        border-radius: 16px;
-        overflow: hidden;
+    .modal-backdrop {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 1000;
+    }
+
+    .modal-content-wrapper {
         position: relative;
+        z-index: 1002;
+        width: 90%;
+        max-width: 1200px;
+        height: 85vh;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
     }
 
     .modal-close {
@@ -325,19 +385,292 @@
         border-radius: 50%;
         font-size: 1.5rem;
         cursor: pointer;
-        z-index: 1001;
-        transition: all 0.2s ease;
+        z-index: 1003;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s ease;
     }
 
     .modal-close:hover {
         background: rgba(0, 0, 0, 0.8);
     }
 
-    .modal-media {
-        max-width: 90vw;
-        max-height: 90vh;
-        display: block;
+    .modal-nav-button {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0, 0, 0, 0.35);
+        color: white;
+        border: none;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        font-size: 1.5rem;
+        cursor: pointer;
+        z-index: 1003;
+        transition: background 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-nav-button:hover:not(:disabled) {
+        background: rgba(0, 0, 0, 0.55);
+    }
+
+    .modal-nav-button:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
+
+    .modal-nav-prev {
+        left: 1.5rem;
+    }
+
+    .modal-nav-next {
+        right: 1.5rem;
+    }
+
+    .modal-two-pane {
+        display: flex;
+        height: 100%;
+    }
+
+    .modal-media-pane {
+        flex: 0 0 65%;
+        background: black;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-media-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-media-container img,
+    .modal-media-container video {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+
+    .modal-comments-pane {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: white;
+    }
+
+    .comments-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .creator-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .creator-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .creator-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .creator-username-link {
+        font-weight: 600;
+        color: #2c3e50;
+        text-decoration: none;
+        font-size: 1rem;
+    }
+
+    .creator-username-link:hover {
+        color: #5568d3;
+    }
+
+    .comments-meta {
+        font-size: 0.85rem;
+        color: #95a5a6;
+    }
+
+    .creation-caption-in-modal {
+        font-size: 0.95rem;
+        line-height: 1.5;
+        color: #2c3e50;
+    }
+
+    .caption-username {
+        font-weight: 600;
+        margin-right: 0.5rem;
+    }
+
+    .caption-text {
+        color: #2c3e50;
+    }
+
+    .modal-prompt {
+        margin-top: 0.75rem;
+        display: flex;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: #7f8c8d;
+    }
+
+    .modal-actions {
+        padding: 1rem 1.5rem 0;
+        border-top: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .modal-actions button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.2rem;
+        color: #2c3e50;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        padding: 0;
+    }
+
+    .modal-actions button.liked {
+        color: #e74c3c;
+    }
+
+    .comments-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem 1.5rem;
+    }
+
+    .comment-item {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .comment-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .comment-content {
+        flex: 1;
+    }
+
+    .comment-username {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-right: 0.5rem;
+        color: #2c3e50;
+    }
+
+    .comment-text {
+        font-size: 0.9rem;
+        color: #2c3e50;
+        line-height: 1.4;
+    }
+
+    .comment-timestamp {
+        font-size: 0.75rem;
+        color: #95a5a6;
+        margin-top: 0.25rem;
+    }
+
+    .comments-empty {
+        text-align: center;
+        color: #95a5a6;
+        padding: 2rem;
+    }
+
+    .comment-input-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e0e0e0;
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .comment-input {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .comment-input:focus {
+        border-color: #667eea;
+    }
+
+    .post-comment-btn {
+        padding: 0.75rem 1.5rem;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .post-comment-btn:hover {
+        background: #5568d3;
+    }
+
+    .post-comment-btn:disabled {
+        background: #b9c2ff;
+        cursor: not-allowed;
+    }
+
+    .spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid #e0e0e0;
+        border-top-color: #667eea;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
         margin: 0 auto;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
     }
 
     /* Draft Details Container (separate from modal-media) */
@@ -625,46 +958,9 @@
 </div>
 
 <!-- Modal for full-size view & draft editing -->
-<div id="modalBackdrop" class="modal-backdrop">
-    <button class="modal-close" onclick="closeModal()">×</button>
-    <div class="modal-content" style="display: flex; flex-direction: column; align-items: center; max-width: 95vw; max-height: 95vh; overflow-y: auto;">
-        <!-- Media Preview (for published posts) -->
-        <img id="modalImage" class="modal-media" style="display: none;">
-        <video id="modalVideo" class="modal-media" controls style="display: none;"></video>
-        
-        <!-- Draft Details (shown for drafts only) -->
-        <div id="draftDetails" style="display: none; background: white; padding: 2rem; border-radius: 12px; width: 100%; max-width: 600px;">
-            <!-- Media Preview (inside draft details) -->
-            <div id="draftMediaPreview" style="margin-bottom: 1.5rem; text-align: center;"></div>
-            
-            <!-- Status Badge -->
-            <div id="draftStatusContainer" style="margin-bottom: 1rem;"></div>
-            
-            <!-- Prompt -->
-            <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #2c3e50;">Prompt</label>
-                <div id="draftPrompt" style="padding: 0.75rem; background: #f8f9fa; border-radius: 8px; color: #555;"></div>
-            </div>
-            
-            <!-- Caption Editor (draft status only) -->
-            <div id="captionEditor" style="display: none; margin-bottom: 1.5rem;">
-                <label for="draftCaption" style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #2c3e50;">Caption (Optional)</label>
-                <textarea id="draftCaption" 
-                          rows="3" 
-                          style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; resize: vertical; box-sizing: border-box;"
-                          placeholder="Add a caption for your creation..."></textarea>
-            </div>
-            
-            <!-- Metadata -->
-            <div id="draftMeta" style="display: flex; gap: 1rem; font-size: 0.9rem; color: #666; margin-bottom: 1.5rem; flex-wrap: wrap;"></div>
-            
-            <!-- Error Message (failed status only) -->
-            <div id="draftError" style="display: none; background: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 1rem; color: #c33; margin-bottom: 1.5rem;"></div>
-            
-            <!-- Actions -->
-            <div id="draftActions" style="display: flex; gap: 0.75rem; flex-wrap: wrap;"></div>
-        </div>
-    </div>
+<div id="modalBackdrop" class="creation-modal" style="display: none;">
+    <div class="modal-backdrop" onclick="closeModal()"></div>
+    <div class="modal-content-wrapper"></div>
 </div>
 
 <script>
@@ -722,6 +1018,7 @@
 
     let userData = null;
     let creationsData = [];
+    let currentModalIndex = -1;
     let draftsData = [];
     let isOwnProfile = false;
     let draftsListener = null;
@@ -867,21 +1164,55 @@
         const grid = document.getElementById('creationsGrid');
         grid.innerHTML = '';
 
-        creationsData.forEach(creation => {
+        creationsData.forEach((creation, index) => {
             const item = document.createElement('div');
             item.className = 'creation-item';
-            item.onclick = () => openModal(creation);
+            item.onclick = () => openModal(index);
 
             const timeAgo = creation.publishedAt ? formatTimeAgo(new Date(creation.publishedAt)) : '';
+            
+            // Determine what text to display: caption if available, otherwise prompt
+            const displayText = creation.caption && creation.caption.trim() !== '' 
+                ? creation.caption 
+                : creation.prompt;
+
+            const isVideo = creation.mediaType === 'video';
+            const posterUrl = creation.thumbnailUrl || '';
+            const mediaContent = isVideo
+                ? `
+                    <video
+                        src="${creation.mediaUrl}"
+                        ${posterUrl ? `poster="${posterUrl}"` : ''}
+                        class="creation-thumbnail"
+                        muted
+                        preload="metadata"
+                        playsinline
+                    ></video>`
+                : `
+                    <img
+                        src="${creation.mediaUrl}"
+                        alt="${escapeHtml(displayText)}"
+                        class="creation-thumbnail"
+                    >`;
+
+            const badgeHTML = isVideo
+                ? `<div class="creation-media-badge"><i class="fas fa-play"></i><span>Video</span></div>`
+                : '';
 
             item.innerHTML = `
-                <img
-                    src="${creation.mediaUrl}"
-                    alt="${escapeHtml(creation.prompt)}"
-                    class="creation-thumbnail"
-                >
+                <div class="creation-media-wrapper${isVideo ? ' is-video' : ''}">
+                    ${mediaContent}
+                    ${badgeHTML}
+                </div>
                 <div class="creation-info">
-                    <div class="creation-prompt">${escapeHtml(creation.prompt)}</div>
+                    ${creation.caption && creation.caption.trim() !== '' 
+                        ? `<div class="creation-caption">${escapeHtml(creation.caption)}</div>`
+                        : `<div class="creation-caption" style="color: #7f8c8d; font-style: italic;">No caption</div>`
+                    }
+                    <div class="creation-prompt" style="display: flex; align-items: center; gap: 0.25rem;">
+                        <i class="fas fa-lightbulb" style="font-size: 0.7rem;"></i>
+                        <span>${escapeHtml(creation.prompt)}</span>
+                    </div>
                     <div class="creation-meta">
                         <span>${timeAgo}</span>
                         <span class="creation-likes">
@@ -912,61 +1243,377 @@
         emptyState.style.display = 'block';
     }
 
-    function openModal(creation) {
-        const backdrop = document.getElementById('modalBackdrop');
-        const modalImage = document.getElementById('modalImage');
-        const modalVideo = document.getElementById('modalVideo');
-        const draftDetails = document.getElementById('draftDetails');
-
-        // Hide draft details for regular posts
-        draftDetails.style.display = 'none';
-
-        // Show media
-        if (creation.mediaType === 'image') {
-            modalImage.src = creation.mediaUrl;
-            modalImage.style.display = 'block';
-            modalVideo.style.display = 'none';
-        } else {
-            modalVideo.src = creation.mediaUrl;
-            modalVideo.style.display = 'block';
-            modalImage.style.display = 'none';
+    function openModal(creationIndex) {
+        if (!Array.isArray(creationsData) || creationsData.length === 0) {
+            return;
         }
 
-        // Show modal
+        if (typeof creationIndex !== 'number' || creationIndex < 0 || creationIndex >= creationsData.length) {
+            return;
+        }
+
+        currentModalIndex = creationIndex;
+
+        const backdrop = document.getElementById('modalBackdrop');
+        if (!backdrop) {
+            return;
+        }
+
         backdrop.style.display = 'flex';
+        backdrop.classList.add('show');
         document.body.style.overflow = 'hidden';
+
+        renderModalForCurrentCreation();
     }
+
+    function renderModalForCurrentCreation() {
+        if (currentModalIndex < 0 || currentModalIndex >= creationsData.length) {
+            return;
+        }
+
+        const creation = creationsData[currentModalIndex];
+        if (!creation) {
+            return;
+        }
+
+        const backdrop = document.getElementById('modalBackdrop');
+        const modalContent = backdrop.querySelector('.modal-content-wrapper');
+
+        if (!modalContent) {
+            return;
+        }
+
+        // Pause any currently playing videos before swapping content
+        modalContent.querySelectorAll('video').forEach(video => {
+            try {
+                video.pause();
+            } catch (err) {
+                console.debug('Unable to pause video before render:', err);
+            }
+        });
+
+        const creationUsername = creation.username || username || '';
+        const avatarLetter = creationUsername ? creationUsername.charAt(0).toUpperCase() : '?';
+        const displayText = creation.caption && creation.caption.trim() !== ''
+            ? creation.caption
+            : creation.prompt;
+        const timeAgo = creation.publishedAt ? formatTimeAgo(new Date(creation.publishedAt)) : '';
+
+        let mediaHTML = '';
+        if (creation.mediaType === 'image') {
+            mediaHTML = `<img src="${creation.mediaUrl}" alt="${escapeHtml(displayText)}">`;
+        } else if (creation.mediaType === 'video') {
+            mediaHTML = `<video src="${creation.mediaUrl}" controls loop playsinline>
+                <source src="${creation.mediaUrl}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>`;
+        }
+
+        const captionHTML = creation.caption && creation.caption.trim() !== ''
+            ? `<div class="creation-caption-in-modal"><span class="caption-username">@${creationUsername}</span><span class="caption-text">${escapeHtml(creation.caption)}</span></div>`
+            : '';
+
+        const hasPrevious = currentModalIndex > 0;
+        const hasNext = currentModalIndex < creationsData.length - 1;
+
+        modalContent.innerHTML = `
+            <button class="modal-close" onclick="closeModal()" aria-label="Close">×</button>
+            <button class="modal-nav-button modal-nav-prev" onclick="showPreviousCreation()" ${hasPrevious ? '' : 'disabled'} aria-label="Previous creation">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="modal-nav-button modal-nav-next" onclick="showNextCreation()" ${hasNext ? '' : 'disabled'} aria-label="Next creation">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+
+            <div class="modal-two-pane">
+                <div class="modal-media-pane">
+                    <div class="modal-media-container">
+                        ${mediaHTML}
+                    </div>
+                </div>
+
+                <div class="modal-comments-pane">
+                    <div class="comments-header">
+                        <div class="creator-row">
+                            <div class="creator-avatar">${avatarLetter}</div>
+                            <div class="creator-info">
+                                <a href="/users/${creationUsername}" class="creator-username-link">@${creationUsername}</a>
+                                <span class="comments-meta">${timeAgo}</span>
+                            </div>
+                        </div>
+                        ${captionHTML}
+                        <div class="modal-prompt">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>${escapeHtml(creation.prompt)}</span>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button class="modal-like-button ${creation.isLiked ? 'liked' : ''}" onclick="toggleLike('${creation.creationId}', this)" data-like-button="${creation.creationId}">
+                            <i class="fas fa-heart"></i>
+                            <span>${creation.likeCount || 0}</span>
+                        </button>
+                        <button class="modal-comment-button" onclick="focusCommentInput('${creation.creationId}')" data-comment-button="${creation.creationId}">
+                            <i class="far fa-comment"></i>
+                            <span>${creation.commentCount || 0}</span>
+                        </button>
+                    </div>
+
+                    <div class="comments-list" id="commentsContainer-${creation.creationId}">
+                        <div class="comments-empty">
+                            <i class="far fa-comments" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem;"></i>
+                            No comments yet. Be the first to comment!
+                        </div>
+                    </div>
+
+                    <div class="comment-input-footer">
+                        <input
+                            type="text"
+                            id="commentInput-${creation.creationId}"
+                            class="comment-input"
+                            placeholder="Add a comment..."
+                            onkeypress="if(event.key==='Enter') postComment('${creation.creationId}')"
+                        >
+                        <button class="post-comment-btn" data-comment-submit="${creation.creationId}" onclick="postComment('${creation.creationId}')">
+                            Post
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        loadComments(creation.creationId);
+    }
+
+    function showPreviousCreation() {
+        if (currentModalIndex <= 0) {
+            return;
+        }
+        currentModalIndex -= 1;
+        renderModalForCurrentCreation();
+    }
+
+    function showNextCreation() {
+        if (currentModalIndex < 0 || currentModalIndex >= creationsData.length - 1) {
+            return;
+        }
+        currentModalIndex += 1;
+        renderModalForCurrentCreation();
+    }
+
+    // Load comments for a creation
+    async function loadComments(creationId) {
+        const container = document.getElementById(`commentsContainer-${creationId}`);
+        if (!container) return;
+
+        try {
+            const response = await fetch(`/api/creations/${creationId}/comments`);
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to load comments');
+            }
+
+            if (!data.comments || data.comments.length === 0) {
+                container.innerHTML = `
+                    <div class="comments-empty">
+                        <i class="far fa-comments" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem;"></i>
+                        No comments yet. Be the first to comment!
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = data.comments.map(comment => {
+                const commentTime = formatTimeAgo(new Date(comment.createdAt));
+                const avatarLetter = comment.username ? comment.username[0].toUpperCase() : '?';
+
+                return `
+                    <div class="comment-item">
+                        <div class="comment-avatar">${avatarLetter}</div>
+                        <div class="comment-content">
+                            <div>
+                                <span class="comment-username">@${comment.username}</span>
+                                <span class="comment-text">${escapeHtml(comment.commentText)}</span>
+                            </div>
+                            <div class="comment-timestamp">${commentTime}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } catch (error) {
+            console.error('Error loading comments:', error);
+            container.innerHTML = `
+                <div class="comments-empty">
+                    Unable to load comments right now.
+                </div>
+            `;
+        }
+    }
+
+    function focusCommentInput(creationId) {
+        const input = document.getElementById(`commentInput-${creationId}`);
+        if (input) {
+            input.focus();
+        }
+    }
+
+    // Post a comment
+    window.postComment = async function(creationId) {
+        const modal = document.getElementById('modalBackdrop');
+        const input = modal.querySelector(`#commentInput-${creationId}`);
+        const submitButton = modal.querySelector(`button[data-comment-submit="${creationId}"]`);
+        const commentButton = modal.querySelector(`button[data-comment-button="${creationId}"]`);
+
+        if (!input) return;
+
+        const commentText = input.value.trim();
+        if (!commentText) return;
+
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+
+        try {
+            const response = await fetch(`/api/creations/${creationId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ commentText })
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                alert(data.error || 'Failed to post comment');
+                return;
+            }
+
+            input.value = '';
+            await loadComments(creationId);
+
+            if (commentButton) {
+                const countSpan = commentButton.querySelector('span');
+                if (countSpan) {
+                    const currentCount = parseInt(countSpan.textContent) || 0;
+                    countSpan.textContent = currentCount + 1;
+                }
+            }
+
+            const creation = creationsData.find(c => c.creationId === creationId);
+            if (creation) {
+                creation.commentCount = (creation.commentCount || 0) + 1;
+            }
+        } catch (error) {
+            console.error('Error posting comment:', error);
+            alert('Failed to post comment. Please try again.');
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+        }
+    };
+
+    // Toggle like function for modal
+    window.toggleLike = async function(creationId, button) {
+        const isCurrentlyLiked = button.classList.contains('liked');
+        const likeCountEl = button.querySelector('span');
+        const currentCount = parseInt(likeCountEl.textContent);
+
+        // Optimistic update
+    button.classList.toggle('liked');
+        likeCountEl.textContent = isCurrentlyLiked ? currentCount - 1 : currentCount + 1;
+
+        try {
+            const url = `/api/creations/${creationId}/like`;
+            const method = isCurrentlyLiked ? 'DELETE' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update with actual count from server
+                likeCountEl.textContent = data.likeCount;
+                
+                // Update the creation in our data array
+                const creation = creationsData.find(c => c.creationId === creationId);
+                if (creation) {
+                    creation.likeCount = data.likeCount;
+                    creation.isLiked = !isCurrentlyLiked;
+                }
+            } else {
+                // Revert on error
+                button.classList.toggle('liked');
+                likeCountEl.textContent = currentCount;
+                console.error('Failed to toggle like:', data.error);
+            }
+        } catch (error) {
+            // Revert on error
+            button.classList.toggle('liked');
+            likeCountEl.textContent = currentCount;
+            console.error('Error toggling like:', error);
+        }
+    };
 
     function closeModal() {
         const backdrop = document.getElementById('modalBackdrop');
+        backdrop.classList.remove('show');
         backdrop.style.display = 'none';
         document.body.style.overflow = '';
 
-        // Hide all modal content
-        document.getElementById('modalImage').style.display = 'none';
-        document.getElementById('modalVideo').style.display = 'none';
-        document.getElementById('draftDetails').style.display = 'none';
+        // Pause any playing videos
+        const videos = backdrop.querySelectorAll('video');
+        videos.forEach(video => {
+            video.pause();
+            video.src = '';
+        });
 
-        // Pause video if playing
-        const modalVideo = document.getElementById('modalVideo');
-        modalVideo.pause();
-        modalVideo.src = '';
+        const modalContent = backdrop.querySelector('.modal-content-wrapper');
+        if (modalContent) {
+            modalContent.innerHTML = '';
+        }
 
         // Clear draft data
         currentDraftData = null;
+        currentModalIndex = -1;
     }
 
     // Close modal on backdrop click
     document.getElementById('modalBackdrop').addEventListener('click', (e) => {
-        if (e.target.id === 'modalBackdrop') {
+        if (e.target.classList.contains('modal-backdrop')) {
             closeModal();
         }
     });
 
     // Escape key to close modal
     document.addEventListener('keydown', (e) => {
+        const backdrop = document.getElementById('modalBackdrop');
+        const isModalOpen = backdrop && backdrop.classList.contains('show');
+
         if (e.key === 'Escape') {
-            closeModal();
+            if (isModalOpen) {
+                closeModal();
+            }
+            return;
+        }
+
+        if (!isModalOpen || currentModalIndex < 0) {
+            return;
+        }
+
+        if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            showNextCreation();
+        } else if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            showPreviousCreation();
         }
     });
 
@@ -1199,18 +1846,33 @@
     window.openDraftModal = function(draft) {
         currentDraftData = draft;
         const modal = document.getElementById('modalBackdrop');
-        const modalImage = document.getElementById('modalImage');
-        const modalVideo = document.getElementById('modalVideo');
-        const draftDetails = document.getElementById('draftDetails');
+        const modalContent = modal.querySelector('.modal-content-wrapper');
+
+        modalContent.innerHTML = `
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div class="modal-draft-wrapper" style="width: min(640px, 90vw); max-height: 85vh; overflow-y: auto; background: white; border-radius: 12px; padding: 2rem;">
+                <div id="draftDetails" style="display: block; width: 100%;">
+                    <div id="draftMediaPreview" style="margin-bottom: 1.5rem; text-align: center;"></div>
+                    <div id="draftStatusContainer" style="margin-bottom: 1rem;"></div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #2c3e50;">Prompt</label>
+                        <div id="draftPrompt" style="padding: 0.75rem; background: #f8f9fa; border-radius: 8px; color: #555;"></div>
+                    </div>
+                    <div id="captionEditor" style="display: none; margin-bottom: 1.5rem;">
+                        <label for="draftCaption" style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #2c3e50;">Caption (Optional)</label>
+                        <textarea id="draftCaption" 
+                                  rows="3" 
+                                  style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; resize: vertical; box-sizing: border-box;"
+                                  placeholder="Add a caption for your creation..."></textarea>
+                    </div>
+                    <div id="draftMeta" style="display: flex; gap: 1rem; font-size: 0.9rem; color: #666; margin-bottom: 1.5rem; flex-wrap: wrap;"></div>
+                    <div id="draftError" style="display: none; background: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 1rem; color: #c33; margin-bottom: 1.5rem;"></div>
+                    <div id="draftActions" style="display: flex; gap: 0.75rem; flex-wrap: wrap;"></div>
+                </div>
+            </div>
+        `;
+
         const draftMediaPreview = document.getElementById('draftMediaPreview');
-
-        // Hide regular media, show draft details
-        modalImage.style.display = 'none';
-        modalVideo.style.display = 'none';
-        draftDetails.style.display = 'block';
-
-        // Clear media preview container
-        draftMediaPreview.innerHTML = '';
 
         // Populate status
         const statusContainer = document.getElementById('draftStatusContainer');
@@ -1302,6 +1964,7 @@
 
         // Show modal
         modal.style.display = 'flex';
+        modal.classList.add('show');
         document.body.style.overflow = 'hidden';
     };
 
