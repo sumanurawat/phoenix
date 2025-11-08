@@ -73,15 +73,17 @@ def get_explore_feed():
         if has_more:
             docs = docs[:limit]  # Remove extra doc
 
+        # Get current user ID for privacy checks
+        current_user_id = session.get('user_id')
+
         # Format response
         creations = []
         for doc in docs:
             data = doc.to_dict()
-            creations.append({
+            creation_data = {
                 'creationId': doc.id,
                 'userId': data.get('userId'),
                 'username': data.get('username', 'Unknown'),  # Denormalized
-                'prompt': data.get('prompt'),
                 'caption': data.get('caption', ''),
                 'mediaUrl': data.get('mediaUrl'),
                 'mediaType': data.get('mediaType', 'video'),
@@ -89,7 +91,13 @@ def get_explore_feed():
                 'duration': data.get('duration', 8),
                 'commentCount': data.get('commentCount', 0),  # NEW: Comment count
                 'publishedAt': data.get('publishedAt')
-            })
+            }
+            
+            # PRIVACY: Only include prompt if viewing own creation
+            if current_user_id and current_user_id == data.get('userId'):
+                creation_data['prompt'] = data.get('prompt')
+            
+            creations.append(creation_data)
 
         # Determine next cursor
         next_cursor = docs[-1].id if has_more and docs else None
@@ -173,13 +181,16 @@ def get_user_creations(username):
         if has_more:
             docs = docs[:limit]
 
+        # Check if current user is viewing their own profile
+        current_user_id = session.get('user_id')
+        is_own_profile = (current_user_id == user_id)
+
         # Format creations
         creations = []
         for doc in docs:
             data = doc.to_dict()
-            creations.append({
+            creation_data = {
                 'creationId': doc.id,
-                'prompt': data.get('prompt'),
                 'caption': data.get('caption', ''),
                 'mediaUrl': data.get('mediaUrl'),
                 'mediaType': data.get('mediaType', 'video'),
@@ -187,7 +198,13 @@ def get_user_creations(username):
                 'duration': data.get('duration', 8),
                 'commentCount': data.get('commentCount', 0),  # NEW: Comment count
                 'publishedAt': data.get('publishedAt')
-            })
+            }
+            
+            # PRIVACY: Only include prompt if viewing own profile
+            if is_own_profile:
+                creation_data['prompt'] = data.get('prompt')
+            
+            creations.append(creation_data)
 
         next_cursor = docs[-1].id if has_more and docs else None
 
