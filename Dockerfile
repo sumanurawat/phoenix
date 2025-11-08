@@ -13,6 +13,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Create session directory for Flask-Session
+RUN mkdir -p /app/flask_session && chmod 777 /app/flask_session
+
 # Default environment variables (can be overridden at runtime)
 ENV PORT=8080
 ENV FLASK_ENV=production
