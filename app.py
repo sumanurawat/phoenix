@@ -127,18 +127,6 @@ def create_app():
     app.config["ENV"] = FLASK_ENV
     app.config["DEBUG"] = FLASK_DEBUG
     app.config["SECRET_KEY"] = SECRET_KEY
-
-    # Initialize Celery with Flask app context (Phase 3)
-    from celery_app import celery_app
-    celery_app.conf.update(flask_app=app)
-
-    class ContextTask(celery_app.Task):
-        """Make Celery tasks work with Flask app context."""
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return self.run(*args, **kwargs)
-
-    celery_app.Task = ContextTask
     
     # Security check after ENV is set
     if app.config["ENV"] != "development" and app.config["SECRET_KEY"] == "default-secret-key":

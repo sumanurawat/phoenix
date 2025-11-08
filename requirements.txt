@@ -29,7 +29,6 @@ google-cloud-tasks==2.16.4  # For Cloud Run Jobs orchestration
 google-cloud-run==0.10.12  # For Cloud Run Jobs API
 psutil==5.9.5  # For system monitoring in jobs
 Pillow==10.0.1  # For thumbnail image optimization
-celery==5.4.0  # For async video generation background jobs
-redis==5.2.1  # For Celery broker and result backend
 cryptography==41.0.7  # For social media token encryption
 instaloader==4.13  # For Instagram public profile scraping (Socials feature)
+
