@@ -489,7 +489,9 @@
             const typeClass = `type-${tx.type.replace('_', '')}`;
             const additionalDetails = getAdditionalDetails(tx);
 
-            const balanceAfter = tx.balanceAfter !== undefined ? tx.balanceAfter.toLocaleString() : '--';
+            const balanceAfter = (tx.balanceAfter !== undefined && tx.balanceAfter !== null) 
+                ? tx.balanceAfter.toLocaleString() 
+                : '--';
 
             row.innerHTML = `
                 <div class="transaction-date">
