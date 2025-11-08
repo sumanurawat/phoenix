@@ -318,7 +318,7 @@
 
 {% block extra_js %}
 <script>
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
     // Format timestamp to readable date
     function formatDate(timestamp) {
@@ -423,17 +423,24 @@
             const params = new URLSearchParams({ limit });
             if (type) params.append('type', type);
 
+            console.log('Fetching transactions:', `/api/tokens/transactions?${params}`);
             const response = await fetch(`/api/tokens/transactions?${params}`, {
                 headers: {
                     'X-CSRF-Token': csrfToken
                 }
             });
 
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+
             if (!response.ok) {
-                throw new Error('Failed to load transactions');
+                const errorText = await response.text();
+                console.error('Response error:', errorText);
+                throw new Error(`Failed to load transactions: ${response.status}`);
             }
 
             const data = await response.json();
+            console.log('Response data:', data);
 
             // Update balance displays
             if (data.balance !== undefined) {
@@ -452,7 +459,7 @@
 
         } catch (error) {
             console.error('Error loading transactions:', error);
-            showErrorState();
+            showErrorState(error.message);
         }
     }
 
@@ -527,13 +534,13 @@
     }
 
     // Show error state
-    function showErrorState() {
+    function showErrorState(message = '') {
         const container = document.getElementById('transactionsContainer');
         container.innerHTML = `
             <div class="error-state">
                 <i class="fas fa-exclamation-triangle"></i>
                 <h3>Failed to Load Transactions</h3>
-                <p class="text-muted">Please try again in a moment.</p>
+                <p class="text-muted">${message || 'Please try again in a moment.'}</p>
                 <button class="btn btn-primary mt-3" onclick="loadTransactions()">
                     <i class="fas fa-redo"></i> Retry
                 </button>
