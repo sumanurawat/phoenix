@@ -22,7 +22,7 @@ COPY jobs/image_generation_job/ /app/jobs/image_generation_job/
 
 # Set environment variables
 ENV JOB_TYPE=image_generation
-ENV MAX_MEMORY_GB=1
+ENV MAX_MEMORY_GB=0.5
 ENV TIMEOUT_MINUTES=5
 ENV PYTHONPATH="/app"
 
@@ -33,8 +33,8 @@ RUN mkdir -p /tmp/jobs
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import sys; sys.exit(0)"
 
-# Resource limits awareness (small machine)
-ENV MEMORY_LIMIT_GB=1
+# Resource limits awareness (minimal machine for cost optimization)
+ENV MEMORY_LIMIT_GB=0.5
 ENV CPU_LIMIT=1
 
 # Run the job
