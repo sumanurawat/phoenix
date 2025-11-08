@@ -86,34 +86,17 @@
         z-index: 2;
     }
 
-    /* Instagram-style hover overlay */
+    /* Hover overlay - simple darkening effect */
     .creation-overlay {
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 2rem;
+        background: rgba(0, 0, 0, 0.3);
         opacity: 0;
         transition: opacity 0.2s ease;
         z-index: 1;
-    }
-
-    .overlay-stat {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: white;
-        font-weight: 600;
-        font-size: 1rem;
-    }
-
-    .overlay-stat i {
-        font-size: 1.2rem;
     }
 
     /* Mobile responsiveness */
@@ -121,10 +104,6 @@
         .explore-grid {
             grid-template-columns: repeat(3, 1fr);
             gap: 2px;
-        }
-
-        .overlay-stat {
-            font-size: 0.9rem;
         }
 
         .creation-media-badge {
@@ -299,16 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
         card.innerHTML = `
             ${mediaHTML}
             ${badgeHTML}
-            <div class="creation-overlay">
-                <div class="overlay-stat">
-                    <i class="fas fa-heart"></i>
-                    <span>${creation.likeCount || 0}</span>
-                </div>
-                <div class="overlay-stat">
-                    <i class="fas fa-comment"></i>
-                    <span>${creation.commentCount || 0}</span>
-                </div>
-            </div>
+            <div class="creation-overlay"></div>
         `;
 
         // TODO: Add click handler to open modal with full details
