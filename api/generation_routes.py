@@ -3,6 +3,10 @@
 Single endpoint for all content generation (images and videos).
 Implements the draft-first workflow where all content starts as pending drafts.
 
+**MIGRATION STATUS**:
+- Images: Using Cloud Tasks (serverless) ✅
+- Videos: Using Celery/Redis (legacy) 🚧
+
 Endpoints:
 - POST /api/generate/creation - Create new generation (unified for image/video)
 - GET /api/generate/drafts - List all user's non-published creations
@@ -10,18 +14,26 @@ Endpoints:
 - DELETE /api/generate/creation/<id> - Delete draft/failed creation
 - POST /api/generate/creation/<id>/publish - Publish draft to feed
 """
+import json
 import logging
+import os
 from flask import Blueprint, request, jsonify, session
 from firebase_admin import firestore
 from kombu.exceptions import OperationalError as KombuOperationalError
 from redis.exceptions import ConnectionError as RedisConnectionError
 
+try:
+    from google.cloud import tasks_v2
+    CLOUD_TASKS_AVAILABLE = True
+except ImportError:
+    CLOUD_TASKS_AVAILABLE = False
+    tasks_v2 = None
+
 from api.auth_routes import login_required
 from middleware.csrf_protection import csrf_protect
 from services.creation_service import CreationService
 from services.token_service import InsufficientTokensError
-from jobs.async_image_generation_worker import generate_image_task
-from jobs.async_video_generation_worker import generate_video_task
+from jobs.async_video_generation_worker import generate_video_task  # Still using Celery for video
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +42,55 @@ generation_bp = Blueprint('generation', __name__, url_prefix='/api/generate')
 # Initialize services
 creation_service = CreationService()
 
+# Cloud Tasks configuration (for images)
+PROJECT_ID = os.getenv('GCP_PROJECT_ID', 'phoenix-project-386')
+REGION = 'us-central1'
+IMAGE_QUEUE = 'image-generation-queue'
+IMAGE_JOB_URL = f"https://image-generation-job-234619602247.{REGION}.run.app"  # Cloud Run Job URL
+
 QUEUE_UNAVAILABLE_ERROR = (
-    "Generation queue is unavailable. Start the Redis service and retry."
+    "Generation queue is unavailable. Please try again."
 )
+
+
+def enqueue_cloud_task(queue_name: str, job_url: str, payload: dict) -> str:
+    """
+    Enqueue a Cloud Task to trigger a Cloud Run Job.
+
+    Args:
+        queue_name: Name of the Cloud Tasks queue
+        job_url: URL of the Cloud Run Job to invoke
+        payload: JSON payload to send to the job
+
+    Returns:
+        Task name/ID
+
+    Raises:
+        Exception: If task creation fails
+    """
+    if not CLOUD_TASKS_AVAILABLE:
+        raise Exception("Cloud Tasks not available in this environment")
+
+    client = tasks_v2.CloudTasksClient()
+
+    # Construct the fully qualified queue name
+    parent = client.queue_path(PROJECT_ID, REGION, queue_name)
+
+    # Construct the task
+    task = {
+        "http_request": {
+            "http_method": tasks_v2.HttpMethod.POST,
+            "url": job_url,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps(payload).encode(),
+        }
+    }
+
+    # Create the task
+    response = client.create_task(request={"parent": parent, "task": task})
+
+    logger.info(f"Created Cloud Task: {response.name}")
+    return response.name
 
 
 @generation_bp.route('/creation', methods=['POST'])
@@ -142,24 +200,51 @@ def create_generation():
         # Enqueue background job
         try:
             if creation_type == 'image':
-                task = generate_image_task.apply_async(
-                    args=[creation_id, prompt, transaction_id, user_id],
-                    task_id=creation_id,
-                    countdown=1
+                # NEW: Use Cloud Tasks for images (serverless)
+                task_name = enqueue_cloud_task(
+                    queue_name=IMAGE_QUEUE,
+                    job_url=IMAGE_JOB_URL,
+                    payload={"creationId": creation_id}
                 )
+                logger.info(f"🚀 Enqueued image generation via Cloud Tasks: {task_name}")
+
             else:  # video
+                # LEGACY: Still using Celery for video (will migrate later)
                 task = generate_video_task.apply_async(
                     args=[creation_id],
                     task_id=creation_id,
                     countdown=2
                 )
-
-            logger.info(f"🚀 Enqueued {creation_type} generation job: {task.id}")
+                logger.info(f"🚀 Enqueued video generation via Celery: {task.id}")
 
         except (RedisConnectionError, KombuOperationalError) as queue_error:
-            # Queue is down - rollback via creation service
+            # Celery/Redis queue is down (video only)
             logger.error(
-                f"🚨 Queue unavailable for creation {creation_id}: {queue_error}",
+                f"🚨 Celery queue unavailable for creation {creation_id}: {queue_error}",
+                exc_info=True
+            )
+
+            creation_service.handle_generation_failure(
+                creation_id=creation_id,
+                original_transaction_id=transaction_id,
+                error_message='queue_unavailable',
+                user_id=user_id
+            )
+
+            return jsonify({
+                'success': False,
+                'error': QUEUE_UNAVAILABLE_ERROR,
+                'refunded': True,
+                'details': (
+                    f'The {creation_type} generation service is temporarily unavailable. '
+                    'Your tokens have been refunded automatically.'
+                )
+            }), 503
+
+        except Exception as task_error:
+            # Cloud Tasks queue error (image only)
+            logger.error(
+                f"🚨 Cloud Tasks unavailable for creation {creation_id}: {task_error}",
                 exc_info=True
             )
 

@@ -1,0 +1,14 @@
+# Core dependencies for image generation job
+# (Most are inherited from main requirements.txt, this is for documentation)
+
+# Firebase
+firebase-admin==6.2.0
+
+# Google Cloud
+google-cloud-aiplatform==1.87.0
+
+# R2/S3
+boto3==1.28.85
+
+# Image processing
+Pillow==10.0.1
