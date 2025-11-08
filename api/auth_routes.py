@@ -1,5 +1,6 @@
 """Routes for user authentication, including Google and Instagram OAuth."""
 import os
+import logging
 from functools import wraps
 from urllib.parse import urlparse, urljoin
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
@@ -12,6 +13,7 @@ from middleware.csrf_protection import csrf_protect
 
 auth_bp = Blueprint('auth', __name__)
 auth_service = AuthService()
+logger = logging.getLogger(__name__)
 
 
 @auth_bp.route('/api/csrf-token', methods=['GET'])
@@ -204,6 +206,8 @@ def google_callback():
         session['user_email'] = firebase_user.get('email', userinfo.get('email'))
         session['user_name'] = userinfo.get('name')
         session['user_picture'] = userinfo.get('picture')
+        session.permanent = True  # Make session permanent
+        session.modified = True   # Force session to save
 
         # Ensure user record and free subscription exist
         db = firestore.client()
@@ -228,10 +232,10 @@ def google_callback():
                 if user_doc.exists:
                     user_data = user_doc.to_dict()
                     user_has_username = bool(user_data.get('username'))
-            except Exception:
-                pass
-        except Exception:
-            pass
+            except Exception as e:
+                logger.error(f"Error creating user document: {e}")
+        except Exception as e:
+            logger.error(f"Error ensuring free subscription: {e}")
 
         # Handle redirect after OAuth
         next_url = session.pop('oauth_next_url', None)
