@@ -13,9 +13,22 @@ logger = logging.getLogger(__name__)
 
 class StripeService:
     """Service for managing Stripe subscriptions and payments."""
-    
+
+    _instance = None
+    _initialized = False
+
+    def __new__(cls):
+        """Singleton pattern to avoid reinitializing on every request."""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
-        """Initialize Stripe service with API keys."""
+        """Initialize Stripe service with API keys (only once)."""
+        # Skip if already initialized
+        if StripeService._initialized:
+            return
+
         self.stripe_secret_key = os.getenv('STRIPE_SECRET_KEY')
         self.stripe_publishable_key = os.getenv('STRIPE_PUBLISHABLE_KEY')
         self.webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
@@ -26,25 +39,24 @@ class StripeService:
             os.getenv('STRIPE_PRO_PRICE_ID') or
             os.getenv('STRIPE_BASIC_PRICE_ID')
         )
-        
+
         # Initialize Stripe if configured
         if self.stripe_secret_key:
             stripe.api_key = self.stripe_secret_key
             self.is_configured = True
-            
-            # Enhanced diagnostic logging
+
+            # Log only once at startup
             key_prefix = self.stripe_secret_key[:15] if self.stripe_secret_key else "None"
             mode = "TEST" if self.stripe_secret_key.startswith('sk_test_') else "LIVE"
-            logger.info(f"🔑 Stripe service initialized successfully")
-            logger.info(f"🔑 API Key: {key_prefix}... (Mode: {mode})")
-            
-            if self.premium_price_id:
-                logger.info("✅ Price ID configured")
-            else:
+            logger.info(f"🔑 Stripe service initialized (Mode: {mode})")
+
+            if not self.premium_price_id:
                 logger.warning("❌ No price ID configured - checkout will fail")
         else:
             self.is_configured = False
             logger.warning("Stripe not configured - subscription features disabled")
+
+        StripeService._initialized = True
             
         # Initialize Firestore
         try:

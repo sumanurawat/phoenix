@@ -314,11 +314,11 @@ def get_drafts():
 
         # Query Firestore (without ordering to avoid index requirement)
         db = creation_service.db
-        query = db.collection('creations').where('userId', '==', user_id)
+        query = db.collection('creations').where(filter=firestore.FieldFilter('userId', '==', user_id))
 
         # Filter by status if requested
         if status_filter:
-            query = query.where('status', '==', status_filter)
+            query = query.where(filter=firestore.FieldFilter('status', '==', status_filter))
         
         # Note: No order_by to avoid composite index requirement
         # We'll sort in Python after fetching
