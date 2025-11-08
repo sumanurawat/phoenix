@@ -61,7 +61,6 @@ from api.reel_routes import reel_bp
 from api.job_routes import job_bp
 from api.socials_routes import socials_bp
 from api.image_routes import image_bp
-from api.video_generation_routes import video_generation_bp
 from api.generation_routes import generation_bp  # Unified creation endpoint
 from api.user_routes import user_bp
 from api.feed_routes import feed_bp
@@ -177,8 +176,7 @@ def create_app():
     app.register_blueprint(job_bp)
     app.register_blueprint(socials_bp)
     app.register_blueprint(image_bp)
-    app.register_blueprint(generation_bp)  # Phase 3.5: Unified draft-first creation (MUST be before video_generation_bp)
-    app.register_blueprint(video_generation_bp)  # Phase 3: Async video generation (legacy)
+    app.register_blueprint(generation_bp)  # Unified draft-first creation with Cloud Run Jobs
     app.register_blueprint(user_bp)  # Phase 4: User profiles & usernames
     app.register_blueprint(feed_bp)  # Phase 4: Social feed & likes
     
