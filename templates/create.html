@@ -688,6 +688,10 @@
     loadTokenBalance();
     selectType('image');
 
+    // IMPORTANT: Refresh username on page load to ensure correct user
+    // This prevents redirect to wrong user after switching accounts
+    resolveCurrentUsername({ forceRefresh: true });
+
     // View Drafts link handler
     document.addEventListener('DOMContentLoaded', () => {
         const viewDraftsLink = document.getElementById('viewDraftsLink');
@@ -767,8 +771,8 @@
                     }
                 }
 
-                // Immediately redirect to drafts tab
-                const { username } = await redirectToDrafts({ silentOnMissing: false, forceRefresh: false });
+                // Immediately redirect to drafts tab (FORCE REFRESH to get current logged-in user)
+                await redirectToDrafts({ silentOnMissing: false, forceRefresh: true });
                 return;
             }
 
