@@ -1,7 +1,7 @@
 """
 Image Generation Job - Cloud Run Job entry point.
 
-Triggered by Cloud Tasks. Implements money-safe contract.
+Triggered directly via Cloud Run Jobs API. Implements money-safe contract.
 Simpler and faster than video generation.
 
 State Flow:
@@ -337,24 +337,17 @@ def generate_image(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 def main():
     """Cloud Run Job entry point."""
-    # Get payload from environment or stdin
-    payload_json = os.getenv('JOB_PAYLOAD')
+    # Get creation_id from environment variable (set by Cloud Run Jobs API)
+    creation_id = os.getenv('CREATION_ID')
 
-    if not payload_json:
-        try:
-            payload_json = sys.stdin.read()
-        except Exception:
-            payload_json = None
-
-    if not payload_json:
-        logger.error("No job payload provided")
+    if not creation_id:
+        logger.error("No CREATION_ID environment variable provided")
         sys.exit(1)
 
-    try:
-        payload = json.loads(payload_json)
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON payload: {e}")
-        sys.exit(1)
+    logger.info(f"🚀 Starting image generation for creation: {creation_id}")
+
+    # Build payload
+    payload = {"creationId": creation_id}
 
     # Execute job
     result = generate_image(payload)

@@ -4,7 +4,7 @@ Single endpoint for all content generation (images and videos).
 Implements the draft-first workflow where all content starts as pending drafts.
 
 **MIGRATION STATUS**:
-- Images: Using Cloud Tasks (serverless) ✅
+- Images: Using Cloud Run Jobs API (serverless) ✅
 - Videos: Using Celery/Redis (legacy) 🚧
 
 Endpoints:
@@ -23,11 +23,11 @@ from kombu.exceptions import OperationalError as KombuOperationalError
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 try:
-    from google.cloud import tasks_v2
-    CLOUD_TASKS_AVAILABLE = True
+    from google.cloud import run_v2
+    CLOUD_RUN_AVAILABLE = True
 except ImportError:
-    CLOUD_TASKS_AVAILABLE = False
-    tasks_v2 = None
+    CLOUD_RUN_AVAILABLE = False
+    run_v2 = None
 
 from api.auth_routes import login_required
 from middleware.csrf_protection import csrf_protect
@@ -42,55 +42,61 @@ generation_bp = Blueprint('generation', __name__, url_prefix='/api/generate')
 # Initialize services
 creation_service = CreationService()
 
-# Cloud Tasks configuration (for images)
-PROJECT_ID = os.getenv('GCP_PROJECT_ID', 'phoenix-project-386')
+# Cloud Run Jobs configuration (for images)
+PROJECT_ID = os.getenv('GOOGLE_CLOUD_PROJECT', 'phoenix-project-386')
 REGION = 'us-central1'
-IMAGE_QUEUE = 'image-generation-queue'
-IMAGE_JOB_URL = f"https://image-generation-job-234619602247.{REGION}.run.app"  # Cloud Run Job URL
+IMAGE_JOB_NAME = 'image-generation-job'
 
 QUEUE_UNAVAILABLE_ERROR = (
     "Generation queue is unavailable. Please try again."
 )
 
 
-def enqueue_cloud_task(queue_name: str, job_url: str, payload: dict) -> str:
+def execute_cloud_run_job(job_name: str, payload: dict) -> str:
     """
-    Enqueue a Cloud Task to trigger a Cloud Run Job.
+    Execute a Cloud Run Job directly.
 
     Args:
-        queue_name: Name of the Cloud Tasks queue
-        job_url: URL of the Cloud Run Job to invoke
-        payload: JSON payload to send to the job
+        job_name: Name of the Cloud Run Job to execute
+        payload: JSON payload to pass as environment variables
 
     Returns:
-        Task name/ID
+        Execution name/ID
 
     Raises:
-        Exception: If task creation fails
+        Exception: If job execution fails
     """
-    if not CLOUD_TASKS_AVAILABLE:
-        raise Exception("Cloud Tasks not available in this environment")
+    if not CLOUD_RUN_AVAILABLE:
+        raise Exception("Cloud Run API not available in this environment")
 
-    client = tasks_v2.CloudTasksClient()
+    client = run_v2.JobsClient()
 
-    # Construct the fully qualified queue name
-    parent = client.queue_path(PROJECT_ID, REGION, queue_name)
+    # Construct the fully qualified job name
+    job_path = f"projects/{PROJECT_ID}/locations/{REGION}/jobs/{job_name}"
 
-    # Construct the task
-    task = {
-        "http_request": {
-            "http_method": tasks_v2.HttpMethod.POST,
-            "url": job_url,
-            "headers": {"Content-Type": "application/json"},
-            "body": json.dumps(payload).encode(),
-        }
-    }
+    # Create execution with payload as environment variable
+    request = run_v2.RunJobRequest(
+        name=job_path,
+        overrides=run_v2.RunJobRequest.Overrides(
+            container_overrides=[
+                run_v2.RunJobRequest.Overrides.ContainerOverride(
+                    env=[
+                        run_v2.EnvVar(
+                            name="CREATION_ID",
+                            value=payload.get("creationId", "")
+                        )
+                    ]
+                )
+            ]
+        )
+    )
 
-    # Create the task
-    response = client.create_task(request={"parent": parent, "task": task})
+    # Execute the job
+    operation = client.run_job(request=request)
+    execution_name = operation.metadata.name
 
-    logger.info(f"Created Cloud Task: {response.name}")
-    return response.name
+    logger.info(f"Started Cloud Run Job execution: {execution_name}")
+    return execution_name
 
 
 @generation_bp.route('/creation', methods=['POST'])
@@ -200,13 +206,12 @@ def create_generation():
         # Enqueue background job
         try:
             if creation_type == 'image':
-                # NEW: Use Cloud Tasks for images (serverless)
-                task_name = enqueue_cloud_task(
-                    queue_name=IMAGE_QUEUE,
-                    job_url=IMAGE_JOB_URL,
+                # NEW: Execute Cloud Run Job directly for images (serverless)
+                execution_name = execute_cloud_run_job(
+                    job_name=IMAGE_JOB_NAME,
                     payload={"creationId": creation_id}
                 )
-                logger.info(f"🚀 Enqueued image generation via Cloud Tasks: {task_name}")
+                logger.info(f"🚀 Started image generation via Cloud Run Job: {execution_name}")
 
             else:  # video
                 # LEGACY: Still using Celery for video (will migrate later)
@@ -242,9 +247,9 @@ def create_generation():
             }), 503
 
         except Exception as task_error:
-            # Cloud Tasks queue error (image only)
+            # Cloud Run Job execution error (image only)
             logger.error(
-                f"🚨 Cloud Tasks unavailable for creation {creation_id}: {task_error}",
+                f"🚨 Cloud Run Job unavailable for creation {creation_id}: {task_error}",
                 exc_info=True
             )
 
