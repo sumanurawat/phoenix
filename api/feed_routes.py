@@ -90,12 +90,10 @@ def get_explore_feed():
                 'aspectRatio': data.get('aspectRatio', '9:16'),
                 'duration': data.get('duration', 8),
                 'commentCount': data.get('commentCount', 0),  # NEW: Comment count
-                'publishedAt': data.get('publishedAt')
+                'publishedAt': data.get('publishedAt'),
+                # PRIVACY: Only include actual prompt if viewing own creation
+                'prompt': data.get('prompt', '') if (current_user_id and current_user_id == data.get('userId')) else ''
             }
-            
-            # PRIVACY: Only include prompt if viewing own creation
-            if current_user_id and current_user_id == data.get('userId'):
-                creation_data['prompt'] = data.get('prompt')
             
             creations.append(creation_data)
 

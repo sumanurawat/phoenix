@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Instagram-style square card with hover overlay
         const mediaHTML = isVideo
             ? `<video class="creation-media" src="${creation.mediaUrl}" ${posterUrl ? `poster="${posterUrl}"` : ''} muted preload="metadata"></video>`
-            : `<img class="creation-media" src="${creation.mediaUrl}" alt="${escapeHtml(creation.caption || creation.prompt || '')}">`;
+            : `<img class="creation-media" src="${creation.mediaUrl}" alt="${escapeHtml((creation.caption || creation.prompt || '').toString())}">`;
 
         const badgeHTML = isVideo
             ? `<div class="creation-media-badge"><i class="fas fa-play"></i></div>`
