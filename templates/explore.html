@@ -349,6 +349,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function escapeHtml(text) {
+        if (!text) return '';  // Handle null/undefined/empty
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
