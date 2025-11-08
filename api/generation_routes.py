@@ -3,10 +3,10 @@
 Single endpoint for all content generation (images and videos).
 Implements the draft-first workflow where all content starts as pending drafts.
 
-**MIGRATION STATUS**:
-- Images: Using Cloud Run Jobs API (serverless) ✅
-- Videos: Using Cloud Run Jobs API (serverless) ✅
-- Celery/Redis: NO LONGER USED (ready for decommissioning)
+**ARCHITECTURE**:
+- Images: Cloud Run Jobs API (serverless) ✅
+- Videos: Cloud Run Jobs API (serverless) ✅
+- Legacy Celery/Redis infrastructure: FULLY DECOMMISSIONED ✅
 
 Endpoints:
 - POST /api/generate/creation - Create new generation (unified for image/video)
