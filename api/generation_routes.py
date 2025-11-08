@@ -5,7 +5,8 @@ Implements the draft-first workflow where all content starts as pending drafts.
 
 **MIGRATION STATUS**:
 - Images: Using Cloud Run Jobs API (serverless) ✅
-- Videos: Using Celery/Redis (legacy) 🚧
+- Videos: Using Cloud Run Jobs API (serverless) ✅
+- Celery/Redis: NO LONGER USED (ready for decommissioning)
 
 Endpoints:
 - POST /api/generate/creation - Create new generation (unified for image/video)
@@ -19,8 +20,6 @@ import logging
 import os
 from flask import Blueprint, request, jsonify, session
 from firebase_admin import firestore
-from kombu.exceptions import OperationalError as KombuOperationalError
-from redis.exceptions import ConnectionError as RedisConnectionError
 
 try:
     from google.cloud import run_v2
@@ -33,7 +32,6 @@ from api.auth_routes import login_required
 from middleware.csrf_protection import csrf_protect
 from services.creation_service import CreationService
 from services.token_service import InsufficientTokensError
-from jobs.async_video_generation_worker import generate_video_task  # Still using Celery for video
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +40,11 @@ generation_bp = Blueprint('generation', __name__, url_prefix='/api/generate')
 # Initialize services
 creation_service = CreationService()
 
-# Cloud Run Jobs configuration (for images)
+# Cloud Run Jobs configuration
 PROJECT_ID = os.getenv('GOOGLE_CLOUD_PROJECT', 'phoenix-project-386')
 REGION = 'us-central1'
 IMAGE_JOB_NAME = 'image-generation-job'
+VIDEO_JOB_NAME = 'video-generation-job'
 
 QUEUE_UNAVAILABLE_ERROR = (
     "Generation queue is unavailable. Please try again."
@@ -206,7 +205,7 @@ def create_generation():
         # Enqueue background job
         try:
             if creation_type == 'image':
-                # NEW: Execute Cloud Run Job directly for images (serverless)
+                # Execute Cloud Run Job directly for images (serverless)
                 execution_name = execute_cloud_run_job(
                     job_name=IMAGE_JOB_NAME,
                     payload={"creationId": creation_id}
@@ -214,40 +213,15 @@ def create_generation():
                 logger.info(f"🚀 Started image generation via Cloud Run Job: {execution_name}")
 
             else:  # video
-                # LEGACY: Still using Celery for video (will migrate later)
-                task = generate_video_task.apply_async(
-                    args=[creation_id],
-                    task_id=creation_id,
-                    countdown=2
+                # Execute Cloud Run Job directly for videos (serverless)
+                execution_name = execute_cloud_run_job(
+                    job_name=VIDEO_JOB_NAME,
+                    payload={"creationId": creation_id}
                 )
-                logger.info(f"🚀 Enqueued video generation via Celery: {task.id}")
-
-        except (RedisConnectionError, KombuOperationalError) as queue_error:
-            # Celery/Redis queue is down (video only)
-            logger.error(
-                f"🚨 Celery queue unavailable for creation {creation_id}: {queue_error}",
-                exc_info=True
-            )
-
-            creation_service.handle_generation_failure(
-                creation_id=creation_id,
-                original_transaction_id=transaction_id,
-                error_message='queue_unavailable',
-                user_id=user_id
-            )
-
-            return jsonify({
-                'success': False,
-                'error': QUEUE_UNAVAILABLE_ERROR,
-                'refunded': True,
-                'details': (
-                    f'The {creation_type} generation service is temporarily unavailable. '
-                    'Your tokens have been refunded automatically.'
-                )
-            }), 503
+                logger.info(f"🚀 Started video generation via Cloud Run Job: {execution_name}")
 
         except Exception as task_error:
-            # Cloud Run Job execution error (image only)
+            # Cloud Run Job execution error
             logger.error(
                 f"🚨 Cloud Run Job unavailable for creation {creation_id}: {task_error}",
                 exc_info=True

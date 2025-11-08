@@ -114,9 +114,43 @@ steps:
       - '--update-secrets=GEMINI_API_KEY=phoenix-gemini-api-key:latest,R2_ACCESS_KEY_ID=phoenix-r2-access-key-id:latest,R2_SECRET_ACCESS_KEY=phoenix-r2-secret-access-key:latest,R2_ENDPOINT_URL=phoenix-r2-endpoint-url:latest,R2_BUCKET_NAME=phoenix-r2-bucket-name:latest,R2_PUBLIC_URL=phoenix-r2-public-url:latest'
       - '--update-env-vars=GOOGLE_CLOUD_PROJECT=phoenix-project-386'
 
+  # Build Video Generation Job (NEW - Serverless Cloud Run Job)
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/video-generation-job'
+      - '-f'
+      - 'jobs/video_generation_job/Dockerfile'
+      - '.'
+
+  # Push Video Generation Job
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/video-generation-job']
+
+  # Deploy Video Generation Job (Cloud Run Job - Large Machine)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'jobs'
+      - 'deploy'
+      - 'video-generation-job'
+      - '--image=gcr.io/$PROJECT_ID/video-generation-job'
+      - '--region=us-central1'
+      - '--cpu=2'
+      - '--memory=4Gi'
+      - '--task-timeout=600'
+      - '--max-retries=2'
+      - '--service-account=phoenix-service-account@phoenix-project-386.iam.gserviceaccount.com'
+      - '--labels=app=phoenix,service=video-worker,env=prod'
+      - '--update-secrets=GEMINI_API_KEY=phoenix-gemini-api-key:latest,R2_ACCESS_KEY_ID=phoenix-r2-access-key-id:latest,R2_SECRET_ACCESS_KEY=phoenix-r2-secret-access-key:latest,R2_ENDPOINT_URL=phoenix-r2-endpoint-url:latest,R2_BUCKET_NAME=phoenix-r2-bucket-name:latest,R2_PUBLIC_URL=phoenix-r2-public-url:latest'
+      - '--update-env-vars=GOOGLE_CLOUD_PROJECT=phoenix-project-386'
+
 images:
   - 'gcr.io/$PROJECT_ID/phoenix'
   - 'gcr.io/$PROJECT_ID/image-generation-job'
+  - 'gcr.io/$PROJECT_ID/video-generation-job'
 
 # Add options for logging when using a service account
 options:
