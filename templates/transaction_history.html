@@ -91,31 +91,53 @@
     .transactions-table {
         background: white;
         border-radius: 10px;
-        overflow: hidden;
+        overflow-x: auto;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+
+    /* Smooth scrollbar styling */
+    .transactions-table::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .transactions-table::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .transactions-table::-webkit-scrollbar-thumb {
+        background: #667eea;
+        border-radius: 10px;
+    }
+
+    .transactions-table::-webkit-scrollbar-thumb:hover {
+        background: #5568d3;
     }
 
     .transaction-header {
         display: grid;
-        grid-template-columns: 140px 100px 1fr 100px 100px;
-        gap: 12px;
-        padding: 12px 20px;
+        grid-template-columns: minmax(150px, auto) minmax(120px, auto) minmax(200px, 1fr) minmax(100px, auto) minmax(100px, auto);
+        gap: 16px;
+        padding: 16px 24px;
         background: #f8f9fa;
         font-weight: 600;
-        font-size: 0.85rem;
+        font-size: 0.875rem;
         color: #666;
         border-bottom: 2px solid #e0e0e0;
+        min-width: 700px;
     }
 
     .transaction-row {
         display: grid;
-        grid-template-columns: 140px 100px 1fr 100px 100px;
-        gap: 12px;
-        padding: 14px 20px;
+        grid-template-columns: minmax(150px, auto) minmax(120px, auto) minmax(200px, 1fr) minmax(100px, auto) minmax(100px, auto);
+        gap: 16px;
+        padding: 16px 24px;
         border-bottom: 1px solid #f0f0f0;
         align-items: center;
         transition: background 0.2s;
         font-size: 0.9rem;
+        min-width: 700px;
     }
 
     .transaction-row:hover {
@@ -128,7 +150,8 @@
 
     .transaction-date {
         color: #666;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
+        white-space: nowrap;
     }
 
     .transaction-type {
@@ -173,20 +196,24 @@
 
     .transaction-description {
         color: #333;
-        font-size: 0.85rem;
-        line-height: 1.3;
+        font-size: 0.875rem;
+        line-height: 1.4;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
     }
 
     .transaction-details {
         font-size: 0.75rem;
         color: #888;
-        margin-top: 3px;
+        margin-top: 4px;
+        word-wrap: break-word;
     }
 
     .transaction-amount {
         font-size: 1.1rem;
         font-weight: bold;
         text-align: right;
+        white-space: nowrap;
     }
 
     .amount-positive {
@@ -198,10 +225,11 @@
     }
 
     .transaction-balance {
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         font-weight: 600;
         color: #667eea;
         text-align: right;
+        white-space: nowrap;
     }
 
     .loading-state,
@@ -233,20 +261,66 @@
     }
 
     @media (max-width: 768px) {
+        .transaction-header {
+            display: none;
+        }
+
         .transaction-row {
             grid-template-columns: 1fr;
-            gap: 8px;
-            font-size: 0.85rem;
+            gap: 12px;
+            padding: 20px;
+            min-width: unset;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .transaction-row > div {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .transaction-row > div::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: #666;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .transaction-date::before {
+            content: 'Date: ';
         }
 
         .transaction-amount,
         .transaction-balance {
-            text-align: left;
+            text-align: right;
+        }
+
+        .transactions-table {
+            background: transparent;
+            box-shadow: none;
         }
 
         .filter-controls {
             flex-direction: column;
             align-items: stretch;
+        }
+
+        .filter-controls select,
+        .filter-controls input,
+        .btn-refresh {
+            width: 100%;
+        }
+
+        .transaction-history-container {
+            padding: 20px 12px;
+        }
+
+        .balance-summary {
+            grid-template-columns: 1fr;
         }
     }
 </style>
