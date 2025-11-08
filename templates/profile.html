@@ -161,28 +161,25 @@
         font-size: 0.9rem;
     }
 
+    /* Instagram-style 3-column grid */
     .creations-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 1.5rem;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 3px;
         margin-bottom: 2rem;
     }
 
     .creation-item {
-        background: white;
-        border-radius: 12px;
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1;
         overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
         cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
+        background: #000;
     }
 
-    .creation-item:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    .creation-item:hover .creation-overlay {
+        opacity: 1;
     }
 
     .creation-thumbnail {
@@ -195,77 +192,84 @@
     .creation-media-wrapper {
         position: relative;
         width: 100%;
-        aspect-ratio: 9/16;
+        height: 100%;
         background: black;
         overflow: hidden;
     }
 
     .creation-media-wrapper video {
-        background: black;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
 
     .creation-media-badge {
         position: absolute;
-        bottom: 0.75rem;
-        right: 0.75rem;
+        top: 0.5rem;
+        right: 0.5rem;
         background: rgba(0, 0, 0, 0.75);
         color: #fff;
-        padding: 0.35rem 0.65rem;
-        border-radius: 999px;
-        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
         font-weight: 600;
         display: inline-flex;
         align-items: center;
-        gap: 0.35rem;
+        gap: 0.25rem;
         pointer-events: none;
-        letter-spacing: 0.02em;
+        z-index: 2;
     }
 
+    /* Hover overlay (Instagram-style) */
+    .creation-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 2rem;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        z-index: 1;
+    }
+
+    .overlay-stat {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .overlay-stat i {
+        font-size: 1.2rem;
+    }
+
+    /* Hide old card-style info */
     .creation-info {
-        padding: 1rem;
+        display: none;
     }
 
-    .creation-caption {
-        font-size: 0.95rem;
-        color: #2c3e50;
-        font-weight: 500;
-        line-height: 1.4;
-        margin-bottom: 0.5rem;
-        display: -webkit-box;
-        line-clamp: 2;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+        .creations-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+        }
 
-    .creation-prompt {
-        font-size: 0.80rem;
-        color: #7f8c8d;
-        line-height: 1.3;
-        margin-bottom: 0.5rem;
-        display: -webkit-box;
-        line-clamp: 1;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
+        .overlay-stat {
+            font-size: 0.9rem;
+        }
 
-    .creation-meta {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-size: 0.85rem;
-        color: #7f8c8d;
-    }
-
-    .creation-likes {
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-    }
-
-    .creation-likes i {
-        color: #e74c3c;
+        .creation-media-badge {
+            font-size: 0.65rem;
+            padding: 0.2rem 0.4rem;
+        }
     }
 
     .empty-state {
@@ -1169,11 +1173,8 @@
             item.className = 'creation-item';
             item.onclick = () => openModal(index);
 
-            const timeAgo = creation.publishedAt ? formatTimeAgo(new Date(creation.publishedAt)) : '';
-            
-            // Determine what text to display: caption if available, otherwise prompt
-            const displayText = creation.caption && creation.caption.trim() !== '' 
-                ? creation.caption 
+            const displayText = creation.caption && creation.caption.trim() !== ''
+                ? creation.caption
                 : creation.prompt;
 
             const isVideo = creation.mediaType === 'video';
@@ -1196,29 +1197,23 @@
                     >`;
 
             const badgeHTML = isVideo
-                ? `<div class="creation-media-badge"><i class="fas fa-play"></i><span>Video</span></div>`
+                ? `<div class="creation-media-badge"><i class="fas fa-play"></i></div>`
                 : '';
 
+            // Instagram-style hover overlay with stats
             item.innerHTML = `
-                <div class="creation-media-wrapper${isVideo ? ' is-video' : ''}">
+                <div class="creation-media-wrapper">
                     ${mediaContent}
                     ${badgeHTML}
-                </div>
-                <div class="creation-info">
-                    ${creation.caption && creation.caption.trim() !== '' 
-                        ? `<div class="creation-caption">${escapeHtml(creation.caption)}</div>`
-                        : `<div class="creation-caption" style="color: #7f8c8d; font-style: italic;">No caption</div>`
-                    }
-                    <div class="creation-prompt" style="display: flex; align-items: center; gap: 0.25rem;">
-                        <i class="fas fa-lightbulb" style="font-size: 0.7rem;"></i>
-                        <span>${escapeHtml(creation.prompt)}</span>
-                    </div>
-                    <div class="creation-meta">
-                        <span>${timeAgo}</span>
-                        <span class="creation-likes">
+                    <div class="creation-overlay">
+                        <div class="overlay-stat">
                             <i class="fas fa-heart"></i>
-                            ${creation.likeCount || 0}
-                        </span>
+                            <span>${creation.likeCount || 0}</span>
+                        </div>
+                        <div class="overlay-stat">
+                            <i class="fas fa-comment"></i>
+                            <span>${creation.commentCount || 0}</span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1778,10 +1773,10 @@
             if (draft.status === 'pending' || draft.status === 'processing') {
                 // Loading state with shimmer
                 thumbnailContent = `
-                    <div style="width: 100%; aspect-ratio: 9/16; background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; display: flex; align-items: center; justify-content: center; color: #999;">
+                    <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; display: flex; align-items: center; justify-content: center; color: #999;">
                         <div style="text-align: center;">
-                            <div class="spinner-border" style="width: 2.5rem; height: 2.5rem;"></div>
-                            <div style="margin-top: 0.75rem; font-size: 0.85rem;">${draft.status === 'processing' ? 'Processing...' : 'Pending...'}</div>
+                            <div class="spinner-border" style="width: 2rem; height: 2rem;"></div>
+                            <div style="margin-top: 0.5rem; font-size: 0.7rem;">${draft.status === 'processing' ? 'Processing...' : 'Pending...'}</div>
                         </div>
                     </div>
                 `;
@@ -1791,22 +1786,15 @@
                     thumbnailContent = `<img src="${draft.mediaUrl}" alt="${escapeHtml(draft.prompt)}" class="creation-thumbnail">`;
                 } else if (mediaType === 'video') {
                     const posterUrl = draft.thumbnailUrl || draft.mediaUrl;
-                    thumbnailContent = `
-                        <div style="position: relative; width: 100%; aspect-ratio: 9/16;">
-                            <video src="${draft.mediaUrl}" poster="${posterUrl}" class="creation-thumbnail" style="object-fit: cover;"></video>
-                            <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.8); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
-                                <i class="bi bi-play-fill"></i> ${draft.duration || 8}s
-                            </div>
-                        </div>
-                    `;
+                    thumbnailContent = `<video src="${draft.mediaUrl}" poster="${posterUrl}" class="creation-thumbnail" muted preload="metadata"></video>`;
                 }
             } else if (draft.status === 'failed') {
                 // Error state
                 thumbnailContent = `
-                    <div style="width: 100%; aspect-ratio: 9/16; background: linear-gradient(135deg, #fee 0%, #fdd 100%); display: flex; align-items: center; justify-content: center; color: #c33;">
+                    <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #fee 0%, #fdd 100%); display: flex; align-items: center; justify-content: center; color: #c33;">
                         <div style="text-align: center; padding: 1rem;">
-                            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">❌</div>
-                            <div style="font-weight: 600; font-size: 0.9rem;">Generation Failed</div>
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">❌</div>
+                            <div style="font-weight: 600; font-size: 0.8rem;">Failed</div>
                         </div>
                     </div>
                 `;

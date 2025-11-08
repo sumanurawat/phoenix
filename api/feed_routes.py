@@ -57,7 +57,7 @@ def get_explore_feed():
 
         # Query published creations
         query = (db.collection('creations')
-                .where('status', '==', 'published')
+                .where(filter=firestore.FieldFilter('status', '==', 'published'))
                 .order_by('publishedAt', direction=firestore.Query.DESCENDING)
                 .limit(limit + 1))  # +1 to check if there are more
 
@@ -165,8 +165,8 @@ def get_user_creations(username):
 
         # Query user's published creations
         query = (db.collection('creations')
-                .where('userId', '==', user_id)
-                .where('status', '==', 'published')
+                .where(filter=firestore.FieldFilter('userId', '==', user_id))
+                .where(filter=firestore.FieldFilter('status', '==', 'published'))
                 .order_by('publishedAt', direction=firestore.Query.DESCENDING)
                 .limit(limit + 1))
 

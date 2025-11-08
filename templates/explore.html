@@ -9,7 +9,7 @@
     }
 
     .explore-container {
-        max-width: 600px;
+        max-width: 100%;
         margin: 0 auto;
         padding: 2rem 1rem;
     }
@@ -21,6 +21,9 @@
         margin-bottom: 2rem;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         text-align: center;
+        max-width: 900px;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .explore-title {
@@ -38,138 +41,96 @@
         font-size: 1.1rem;
     }
 
+    /* Instagram-style 3-column grid */
+    .explore-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 3px;
+        max-width: 900px;
+        margin: 0 auto 2rem auto;
+    }
+
     .creation-card {
-        background: white;
-        border-radius: 16px;
-        overflow: hidden;
-        margin-bottom: 2rem;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-    }
-
-    .creation-card:hover {
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        transform: translateY(-2px);
-    }
-
-    .creation-header {
-        padding: 1rem 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        border-bottom: 1px solid #f0f0f0;
-    }
-
-    .creator-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 600;
-        font-size: 1.1rem;
-    }
-
-    .creator-info {
-        flex: 1;
-    }
-
-    .creator-username {
-        font-weight: 600;
-        color: #2c3e50;
-        text-decoration: none;
-        font-size: 1rem;
-    }
-
-    .creator-username:hover {
-        color: #667eea;
-    }
-
-    .creation-timestamp {
-        font-size: 0.85rem;
-        color: #95a5a6;
-    }
-
-    .creation-video-container {
         position: relative;
-        background: #000;
         width: 100%;
-        max-height: 600px;
+        aspect-ratio: 1;
+        overflow: hidden;
+        cursor: pointer;
+        background: #000;
+    }
+
+    .creation-card:hover .creation-overlay {
+        opacity: 1;
+    }
+
+    .creation-media {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .creation-media-badge {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: rgba(0, 0, 0, 0.75);
+        color: #fff;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        z-index: 2;
+    }
+
+    /* Instagram-style hover overlay */
+    .creation-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
         display: flex;
         align-items: center;
         justify-content: center;
-    }
-
-    .creation-video {
-        width: 100%;
-        max-height: 600px;
-        object-fit: contain;
-    }
-
-    .creation-caption {
-        padding: 1.5rem;
-    }
-
-    .caption-text {
-        color: #2c3e50;
-        line-height: 1.6;
-        margin-bottom: 1rem;
-    }
-
-    .prompt-text {
-        color: #7f8c8d;
-        font-size: 0.9rem;
-        font-style: italic;
-        padding: 1rem;
-        background: #f8f9fa;
-        border-left: 3px solid #667eea;
-        border-radius: 4px;
-        margin-bottom: 1rem;
-    }
-
-    .creation-actions {
-        display: flex;
         gap: 2rem;
-        padding: 1rem 1.5rem;
-        border-top: 1px solid #f0f0f0;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        z-index: 1;
     }
 
-    .action-button {
-        background: none;
-        border: none;
-        color: #7f8c8d;
-        font-size: 1.2rem;
-        cursor: pointer;
+    .overlay-stat {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        transition: all 0.2s ease;
-        padding: 0.5rem;
-    }
-
-    .action-button:hover {
-        color: #667eea;
-    }
-
-    .action-button.liked {
-        color: #e74c3c;
-    }
-
-    .action-button.liked i {
-        animation: heartbeat 0.3s ease;
-    }
-
-    @keyframes heartbeat {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.2); }
-    }
-
-    .action-count {
-        font-size: 0.9rem;
+        color: white;
         font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .overlay-stat i {
+        font-size: 1.2rem;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+        .explore-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+        }
+
+        .overlay-stat {
+            font-size: 0.9rem;
+        }
+
+        .creation-media-badge {
+            font-size: 0.65rem;
+            padding: 0.2rem 0.4rem;
+        }
     }
 
     .loading-spinner {
@@ -242,11 +203,11 @@
         <h1 class="explore-title">
             <i class="fas fa-compass me-2"></i>Explore
         </h1>
-        <p class="explore-subtitle">Discover amazing AI-generated videos from the community</p>
+        <p class="explore-subtitle">Discover amazing AI-generated content from the community</p>
     </div>
 
     <div id="errorContainer"></div>
-    <div id="feedContainer"></div>
+    <div id="feedContainer" class="explore-grid"></div>
     <div id="loadingSpinner" class="loading-spinner">
         <div class="spinner-border" role="status"></div>
         <div class="loading-text">Loading creations...</div>
@@ -323,55 +284,35 @@ document.addEventListener('DOMContentLoaded', function() {
         card.className = 'creation-card';
         card.dataset.creationId = creation.creationId;
 
-        // Format timestamp
-        let timeAgo = 'Just now';
-        if (creation.publishedAt) {
-            const publishedDate = new Date(creation.publishedAt);
-            timeAgo = formatTimeAgo(publishedDate);
-        }
+        const isVideo = creation.mediaType === 'video';
+        const posterUrl = creation.thumbnailUrl || '';
 
-        // Get first letter of username for avatar
-        const avatarLetter = creation.username ? creation.username[0].toUpperCase() : '?';
+        // Instagram-style square card with hover overlay
+        const mediaHTML = isVideo
+            ? `<video class="creation-media" src="${creation.mediaUrl}" ${posterUrl ? `poster="${posterUrl}"` : ''} muted preload="metadata"></video>`
+            : `<img class="creation-media" src="${creation.mediaUrl}" alt="${escapeHtml(creation.caption || creation.prompt || '')}">`;
+
+        const badgeHTML = isVideo
+            ? `<div class="creation-media-badge"><i class="fas fa-play"></i></div>`
+            : '';
 
         card.innerHTML = `
-            <div class="creation-header">
-                <div class="creator-avatar">${avatarLetter}</div>
-                <div class="creator-info">
-                    <a href="/users/${creation.username}" class="creator-username">@${creation.username}</a>
-                    <div class="creation-timestamp">${timeAgo}</div>
-                </div>
-            </div>
-
-            <div class="creation-video-container">
-                ${creation.mediaType === 'image'
-                    ? `<img class="creation-video" src="${creation.mediaUrl}" alt="${escapeHtml(creation.prompt)}">`
-                    : `<video class="creation-video" controls loop playsinline>
-                        <source src="${creation.mediaUrl}" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>`
-                }
-            </div>
-
-            <div class="creation-caption">
-                ${creation.caption ? `<div class="caption-text">${escapeHtml(creation.caption)}</div>` : ''}
-                <div class="prompt-text">
-                    <i class="fas fa-lightbulb me-2"></i>${escapeHtml(creation.prompt)}
-                </div>
-            </div>
-
-            <div class="creation-actions">
-                <button class="action-button like-button ${creation.isLiked ? 'liked' : ''}" data-creation-id="${creation.creationId}" ${!isLoggedIn ? 'disabled' : ''}>
+            ${mediaHTML}
+            ${badgeHTML}
+            <div class="creation-overlay">
+                <div class="overlay-stat">
                     <i class="fas fa-heart"></i>
-                    <span class="action-count like-count">${creation.likeCount || 0}</span>
-                </button>
+                    <span>${creation.likeCount || 0}</span>
+                </div>
+                <div class="overlay-stat">
+                    <i class="fas fa-comment"></i>
+                    <span>${creation.commentCount || 0}</span>
+                </div>
             </div>
         `;
 
-        // Add like button event listener
-        if (isLoggedIn) {
-            const likeButton = card.querySelector('.like-button');
-            likeButton.addEventListener('click', () => handleLike(creation.creationId, likeButton));
-        }
+        // TODO: Add click handler to open modal with full details
+        // card.addEventListener('click', () => openCreationModal(creation));
 
         return card;
     }

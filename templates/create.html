@@ -771,6 +771,14 @@
                     }
                 }
 
+                // Clear any cached username to ensure we fetch the CURRENT logged-in user
+                cachedUsername = null;
+                try {
+                    sessionStorage.removeItem('phoenixCurrentUsername');
+                } catch (e) {
+                    console.warn('Unable to clear cached username:', e);
+                }
+
                 // Immediately redirect to drafts tab (FORCE REFRESH to get current logged-in user)
                 await redirectToDrafts({ silentOnMissing: false, forceRefresh: true });
                 return;
