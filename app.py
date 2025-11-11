@@ -654,13 +654,12 @@ Keep your response concise and actionable."""
     @app.route('/soho/explore')
     def soho_explore_page():
         """Render Soho Explore page - public feed for Soho social platform (Phase 4 - public)."""
-        return render_template('soho_explore.html', title='Explore - Soho')
+        return render_template('soho_react.html', title='Explore - Soho')
 
-    @app.route('/soho/<username>')
+    @app.route('/soho/profile/<username>')
     def soho_public_profile(username):
         """Render public Soho profile page for a specific user (Phase 4 - public)."""
-        # Use profile.html which has drafts support
-        return render_template('profile.html', username=username, title=f'@{username} - Soho')
+        return render_template('soho_react.html', title=f'@{username} - Soho')
 
     return app
 
