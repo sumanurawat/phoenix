@@ -369,19 +369,23 @@ class CreationService:
                         
                         # Mark as failed and refund tokens
                         original_txn_id = data.get('originalTransactionId')
-                        if original_txn_id:
-                            success = self.handle_generation_failure(
-                                creation_id=doc.id,
-                                original_transaction_id=original_txn_id,
-                                error_message=f"Generation timeout: Task stuck in {status} status for {age_hours:.1f} hours",
-                                user_id=data.get('userId')
+                        fallback_txn_id = original_txn_id or f"auto_cleanup_missing_txn_{doc.id}"
+                        success = self.handle_generation_failure(
+                            creation_id=doc.id,
+                            original_transaction_id=fallback_txn_id,
+                            error_message=f"Generation timeout: Task stuck in {status} status for {age_hours:.1f} hours",
+                            user_id=data.get('userId')
+                        )
+
+                        if success:
+                            marked_count += 1
+                            logger.info(
+                                f"⏰ Marked stale creation {doc.id} as failed (age: {age_hours:.1f}h)"
                             )
-                            
-                            if success:
-                                marked_count += 1
-                                logger.info(f"⏰ Marked stale creation {doc.id} as failed (age: {age_hours:.1f}h)")
                         else:
-                            logger.warning(f"⚠️ Cannot refund stale creation {doc.id} - missing originalTransactionId")
+                            logger.warning(
+                                f"⚠️ Auto-cleanup refund failed for creation {doc.id}"
+                            )
             
             if marked_count > 0:
                 logger.info(f"✅ Marked {marked_count} stale creations as failed")
@@ -413,4 +417,109 @@ class CreationService:
         except Exception as e:
             logger.error(f"Failed to get creation {creation_id}: {e}", exc_info=True)
             return None
+
+    def publish_creation(
+        self,
+        creation_id: str,
+        user_id: str,
+        caption: Optional[str] = None
+    ) -> Tuple[bool, Optional[str], Optional[Dict]]:
+        """Publish a draft creation and return the updated document."""
+        try:
+            creation_ref = self.db.collection('creations').document(creation_id)
+            creation_doc = creation_ref.get()
+
+            if not creation_doc.exists:
+                return False, 'not_found', None
+
+            creation_data = creation_doc.to_dict()
+
+            if creation_data.get('userId') != user_id:
+                return False, 'forbidden', None
+
+            if creation_data.get('status') == 'deleted':
+                return False, 'deleted', None
+
+            if creation_data.get('status') != 'draft':
+                return False, 'invalid_status', None
+
+            if not creation_data.get('mediaUrl'):
+                return False, 'missing_media', None
+
+            caption_text = (caption or '').strip()
+            if len(caption_text) > 500:
+                return False, 'caption_too_long', None
+
+            username = creation_data.get('username')
+            if not username:
+                user_ref = self.db.collection('users').document(user_id)
+                user_doc = user_ref.get()
+                if user_doc.exists:
+                    username = user_doc.to_dict().get('username') or username
+
+            update_data = {
+                'status': 'published',
+                'caption': caption_text,
+                'username': username or creation_data.get('username', 'Unknown'),
+                'publishedAt': firestore.SERVER_TIMESTAMP,
+                'updatedAt': firestore.SERVER_TIMESTAMP,
+            }
+
+            if 'likeCount' not in creation_data:
+                update_data['likeCount'] = 0
+
+            if 'commentCount' not in creation_data:
+                update_data['commentCount'] = 0
+
+            creation_ref.update(update_data)
+
+            updated_doc = creation_ref.get().to_dict()
+            return True, None, updated_doc
+
+        except Exception as e:
+            logger.error(
+                f"Failed to publish creation {creation_id} for user {user_id}: {e}",
+                exc_info=True
+            )
+            return False, 'server_error', None
+
+    def delete_creation(self, creation_id: str, user_id: str) -> Tuple[bool, Optional[str]]:
+        """Soft delete a creation owned by the user."""
+        try:
+            creation_ref = self.db.collection('creations').document(creation_id)
+            creation_doc = creation_ref.get()
+
+            if not creation_doc.exists:
+                return False, 'not_found'
+
+            creation_data = creation_doc.to_dict()
+
+            if creation_data.get('userId') != user_id:
+                return False, 'forbidden'
+
+            status = creation_data.get('status')
+
+            if status == 'deleted':
+                return True, None
+
+            if status == 'published':
+                return False, 'invalid_status'
+
+            if status not in {'draft', 'failed', 'pending', 'processing'}:
+                return False, 'invalid_status'
+
+            creation_ref.update({
+                'status': 'deleted',
+                'deletedAt': firestore.SERVER_TIMESTAMP,
+                'updatedAt': firestore.SERVER_TIMESTAMP
+            })
+
+            return True, None
+
+        except Exception as e:
+            logger.error(
+                f"Failed to delete creation {creation_id} for user {user_id}: {e}",
+                exc_info=True
+            )
+            return False, 'server_error'
 

@@ -331,8 +331,12 @@ def get_drafts():
             creation_data = doc.to_dict()
             creation_data['id'] = doc.id
 
-            # Filter out published if no specific status requested
-            if not status_filter and creation_data.get('status') == 'published':
+            status = creation_data.get('status')
+
+            # Filter out published and deleted drafts unless explicitly requested
+            if not status_filter and status in {'published', 'deleted'}:
+                continue
+            if status == 'deleted' and status_filter != 'deleted':
                 continue
 
             creations.append(creation_data)
@@ -354,3 +358,116 @@ def get_drafts():
             'success': False,
             'error': 'Failed to load drafts'
         }), 500
+
+
+@generation_bp.route('/creation/<creation_id>', methods=['GET'])
+@login_required
+def get_creation_detail(creation_id):
+    """Return a single creation owned by the current user."""
+    try:
+        user_id = session.get('user_id')
+        creation = creation_service.get_creation(creation_id)
+
+        if not creation or creation.get('status') == 'deleted':
+            return jsonify({
+                'success': False,
+                'error': 'Creation not found'
+            }), 404
+
+        if creation.get('userId') != user_id:
+            return jsonify({
+                'success': False,
+                'error': 'You can only view your own creations'
+            }), 403
+
+        creation['id'] = creation_id
+
+        return jsonify({
+            'success': True,
+            'creation': creation
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to fetch creation {creation_id}: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'Failed to fetch creation'
+        }), 500
+
+
+@generation_bp.route('/creation/<creation_id>', methods=['DELETE'])
+@login_required
+@csrf_protect
+def delete_creation(creation_id):
+    """Soft delete a draft, failed, or pending creation."""
+    try:
+        user_id = session.get('user_id')
+        success, error_code = creation_service.delete_creation(creation_id, user_id)
+
+        if success:
+            logger.info(f"🗑️ Deleted creation {creation_id} for user {user_id}")
+            return jsonify({'success': True})
+
+        if error_code == 'not_found':
+            return jsonify({'success': False, 'error': 'Creation not found'}), 404
+
+        if error_code == 'forbidden':
+            return jsonify({'success': False, 'error': 'You can only manage your own creations'}), 403
+
+        if error_code == 'invalid_status':
+            return jsonify({'success': False, 'error': 'Creation cannot be deleted in its current state'}), 400
+
+        logger.error(f"Failed to delete creation {creation_id}: {error_code}")
+        return jsonify({'success': False, 'error': 'Failed to delete creation'}), 500
+
+    except Exception as e:
+        logger.error(f"Failed to delete creation {creation_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': 'Failed to delete creation'}), 500
+
+
+@generation_bp.route('/creation/<creation_id>/publish', methods=['POST'])
+@login_required
+@csrf_protect
+def publish_creation(creation_id):
+    """Publish a draft creation to the public feed."""
+    try:
+        user_id = session.get('user_id')
+        data = request.get_json(silent=True) or {}
+        caption = data.get('caption')
+
+        success, error_code, creation = creation_service.publish_creation(
+            creation_id=creation_id,
+            user_id=user_id,
+            caption=caption
+        )
+
+        if success:
+            logger.info(f"📣 Published creation {creation_id} for user {user_id}")
+            response_creation = creation or {}
+            response_creation['id'] = creation_id
+            return jsonify({'success': True, 'creation': response_creation})
+
+        if error_code == 'not_found':
+            return jsonify({'success': False, 'error': 'Creation not found'}), 404
+
+        if error_code == 'forbidden':
+            return jsonify({'success': False, 'error': 'You can only publish your own drafts'}), 403
+
+        if error_code == 'invalid_status':
+            return jsonify({'success': False, 'error': 'Creation is not ready to publish'}), 400
+
+        if error_code == 'deleted':
+            return jsonify({'success': False, 'error': 'Creation has been deleted'}), 400
+
+        if error_code == 'missing_media':
+            return jsonify({'success': False, 'error': 'Creation is missing generated media'}), 400
+
+        if error_code == 'caption_too_long':
+            return jsonify({'success': False, 'error': 'Caption must be 500 characters or less'}), 400
+
+        logger.error(f"Failed to publish creation {creation_id}: {error_code}")
+        return jsonify({'success': False, 'error': 'Failed to publish creation'}), 500
+
+    except Exception as e:
+        logger.error(f"Failed to publish creation {creation_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': 'Failed to publish creation'}), 500
