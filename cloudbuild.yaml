@@ -1,4 +1,35 @@
 steps:
+  # ========================================
+  # STEP 1: Build Frontend (React + Vite)
+  # ========================================
+  
+  # Install frontend dependencies
+  - name: 'node:18'
+    dir: 'frontend/soho'
+    entrypoint: 'npm'
+    args: ['ci']  # 'ci' is faster than 'install' in CI environments
+  
+  # Build frontend (creates dist/ folder)
+  - name: 'node:18'
+    dir: 'frontend/soho'
+    entrypoint: 'npm'
+    args: ['run', 'build']
+  
+  # Copy built frontend to Flask static folder (so it's included in Docker image)
+  - name: 'gcr.io/cloud-builders/gsutil'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        mkdir -p static/momo
+        cp -r frontend/soho/dist/* static/momo/
+        echo "Frontend built and copied to static/momo/"
+        ls -la static/momo/
+  
+  # ========================================
+  # STEP 2: Build & Deploy Backend (Flask)
+  # ========================================
+  
   # Pull previous images for Docker layer caching (speeds up builds by 70%)
   - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'

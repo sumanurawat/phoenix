@@ -210,7 +210,7 @@ def generate_video(payload: Dict[str, Any]) -> Dict[str, Any]:
     """
     creation_id = payload['creationId']
     user_id = None
-    cost = 10  # Video generation cost
+    cost = 45  # Video generation cost
 
     try:
         logger.info(f"🎬 Starting video generation for {creation_id}")

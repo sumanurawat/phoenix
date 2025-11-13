@@ -8,7 +8,8 @@ import os
 import logging
 import secrets
 from functools import wraps
-from flask import Flask, render_template, session, request, redirect, url_for, flash, abort, jsonify, jsonify
+from flask import Flask, render_template, session, request, redirect, url_for, flash, abort, jsonify, jsonify, send_from_directory
+from flask_cors import CORS
 from flask_session import Session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -121,6 +122,19 @@ def create_app():
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     # Prefer HTTPS for external URLs
     app.config['PREFERRED_URL_SCHEME'] = 'https'
+
+    # Enable CORS for Momo frontend (production + local dev)
+    default_origins = 'https://friedmomo.com,https://www.friedmomo.com,http://localhost:5173'
+    allowed_origins_env = os.getenv('MOMO_ALLOWED_ORIGINS') or os.getenv('SOHO_ALLOWED_ORIGINS')
+    allowed_origins = (allowed_origins_env or default_origins).split(',')
+    allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip()]
+    CORS(
+        app,
+        resources={r"/api/*": {"origins": allowed_origins}},
+        supports_credentials=True,
+        expose_headers=['X-CSRF-Token'],
+        allow_headers=['Content-Type', 'X-CSRF-Token', 'X-Requested-With', 'Authorization']
+    )
 
     # Configure application - Set ENV first
     app.config["ENV"] = FLASK_ENV
@@ -632,8 +646,8 @@ Keep your response concise and actionable."""
 
     @app.route('/soho')
     @login_required
-    def soho_page():
-        """Redirect to user's own Soho profile page (Phase 4 - requires login)."""
+    def soho():
+        """Redirect to the signed-in user's Momo profile page (Phase 4 - requires login)."""
         from firebase_admin import firestore
         try:
             db = firestore.client()
@@ -653,14 +667,32 @@ Keep your response concise and actionable."""
 
     @app.route('/soho/explore')
     def soho_explore_page():
-        """Render Soho Explore page - public feed for Soho social platform (Phase 4 - public)."""
-        return render_template('soho_explore.html', title='Explore - Soho')
+        """Render the public Explore feed for the Momo social platform (Phase 4 - public)."""
+        return render_template('soho_explore.html', title='Explore - Momo')
 
     @app.route('/soho/<username>')
     def soho_public_profile(username):
-        """Render public Soho profile page for a specific user (Phase 4 - public)."""
+        """Render a public Momo profile page for a specific user (Phase 4 - public)."""
         # Use profile.html which has drafts support
-        return render_template('profile.html', username=username, title=f'@{username} - Soho')
+        return render_template('profile.html', username=username, title=f'@{username} - Momo')
+
+    # ========================================
+    # React Frontend Routes (Momo SPA)
+    # ========================================
+    
+    @app.route('/momo')
+    @app.route('/momo/<path:path>')
+    def serve_momo_frontend(path=''):
+        """
+        Serve the React frontend (Momo) as a Single Page Application.
+        All routes are handled by React Router on the client side.
+        """
+        # If requesting a specific file (like .js, .css, .svg), serve it directly
+        if path and os.path.exists(os.path.join('static/momo', path)):
+            return send_from_directory('static/momo', path)
+        
+        # Otherwise, serve index.html and let React Router handle the routing
+        return send_from_directory('static/momo', 'index.html')
 
     return app
 

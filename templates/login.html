@@ -19,6 +19,16 @@
             <p class="subtitle">Sign in to continue to Phoenix AI</p>
         </div>
         
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'info' if category == 'info' else 'danger' }}">
+                        <i class="fas fa-{{ 'info-circle' if category == 'info' else 'exclamation-circle' }}"></i> {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
         {% if error %}
         <div class="alert alert-danger">
             <i class="fas fa-exclamation-circle"></i> {{ error }}

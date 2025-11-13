@@ -29,7 +29,16 @@ def is_safe_url(target):
     """Ensure redirect URL is safe and belongs to our domain"""
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
-    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
+    
+    # Allow same domain
+    if test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc:
+        return True
+    
+    # In development, allow React dev server (localhost:5173)
+    if test_url.netloc == 'localhost:5173' and os.getenv('FLASK_ENV') == 'development':
+        return True
+    
+    return False
 
 
 def login_required(func):
@@ -76,13 +85,61 @@ def signup():
                     pass
             except Exception:
                 pass
-            # Redirect to intended page or default
-            if next_url and is_safe_url(next_url):
-                return redirect(next_url)
+            
+            # Check if this is an API request (from React) or traditional form submission
+            is_api_request = (
+                request.headers.get('Content-Type', '').startswith('application/x-www-form-urlencoded') and
+                request.headers.get('Accept', '').find('application/json') > -1
+            ) or request.path.startswith('/api/')
+            
+            if is_api_request:
+                # Return JSON response for API clients (React)
+                return jsonify({
+                    'success': True,
+                    'user_id': session['user_id'],
+                    'email': session['user_email'],
+                    'next': next_url or '/explore'
+                }), 200
             else:
-                return redirect(url_for('auth.profile'))
+                # Traditional redirect for Flask template forms
+                if next_url and is_safe_url(next_url):
+                    return redirect(next_url)
+                else:
+                    return redirect(url_for('auth.profile'))
         except Exception as e:
-            error = str(e)
+            error_str = str(e)
+            # Check if this is an "email already exists" error
+            if 'EMAIL_EXISTS' in error_str or 'email already exists' in error_str.lower():
+                # Check if API request
+                is_api_request = (
+                    request.headers.get('Content-Type', '').startswith('application/x-www-form-urlencoded') and
+                    request.headers.get('Accept', '').find('application/json') > -1
+                ) or request.path.startswith('/api/')
+                
+                if is_api_request:
+                    return jsonify({
+                        'success': False,
+                        'error': 'EMAIL_EXISTS',
+                        'message': 'This email is already registered. Please sign in instead.'
+                    }), 409
+                else:
+                    # Redirect to login page with a helpful message
+                    flash('This email is already registered. Please sign in instead.', 'info')
+                    login_url = url_for('auth.login')
+                    if next_url:
+                        login_url += f'?next={next_url}'
+                    return redirect(login_url)
+            
+            # Other errors
+            is_api_request = (
+                request.headers.get('Content-Type', '').startswith('application/x-www-form-urlencoded') and
+                request.headers.get('Accept', '').find('application/json') > -1
+            ) or request.path.startswith('/api/')
+            
+            if is_api_request:
+                return jsonify({'success': False, 'error': error_str}), 400
+            
+            error = error_str
     return render_template('signup.html', title='Sign Up', error=error, next=next_url)
 
 
@@ -114,13 +171,33 @@ def login():
                     pass
             except Exception:
                 pass
-            # Redirect to intended page or default
-            if next_url and is_safe_url(next_url):
-                return redirect(next_url)
+            
+            # Check if this is an API request (from React) or traditional form submission
+            is_api_request = (
+                request.headers.get('Content-Type', '').startswith('application/x-www-form-urlencoded') and
+                request.headers.get('Accept', '').find('application/json') > -1
+            ) or request.path.startswith('/api/')
+            
+            if is_api_request:
+                # Return JSON response for API clients (React)
+                return jsonify({
+                    'success': True,
+                    'user_id': session['user_id'],
+                    'email': session['user_email'],
+                    'next': next_url or '/explore'
+                }), 200
             else:
-                return redirect(url_for('auth.profile'))
+                # Traditional redirect for Flask template forms
+                if next_url and is_safe_url(next_url):
+                    return redirect(next_url)
+                else:
+                    return redirect(url_for('auth.profile'))
         except Exception as e:
             error = str(e)
+            # Return JSON error for API requests
+            if request.headers.get('Accept', '').find('application/json') > -1:
+                return jsonify({'success': False, 'error': error}), 401
+    
     return render_template('login.html', title='Login', error=error, next=next_url)
 
 
@@ -239,16 +316,18 @@ def google_callback():
 
         # Handle redirect after OAuth
         next_url = session.pop('oauth_next_url', None)
+        
+        # If we have a next_url and it's safe, use it
         if next_url and is_safe_url(next_url):
             return redirect(next_url)
+        
+        # Default Flask redirect logic based on username status
+        if user_has_username:
+            # User has username, go straight to their profile
+            return redirect(url_for('soho'))
         else:
-            # Direct redirect based on username status
-            if user_has_username:
-                # User has username, go straight to their profile
-                return redirect(url_for('soho'))
-            else:
-                # No username, redirect to username setup
-                return redirect(url_for('username_setup'))
+            # No username, redirect to username setup
+            return redirect(url_for('username_setup'))
     except Exception as e:
         flash(f'Authentication failed: {str(e)}', 'danger')
         return redirect(url_for('auth.login'))
@@ -256,7 +335,23 @@ def google_callback():
 
 @auth_bp.route('/logout')
 def logout():
+    """Clear session and redirect to landing page."""
     session.clear()
+    
+    # Check if redirect parameter specifies where to go
+    redirect_param = request.args.get('redirect', '')
+    redirect_url = request.args.get('redirect_url', '')  # Full URL for redirect
+    
+    if redirect_param in {'soho', 'momo'}:
+        # For React SPA frontend (Soho legacy + Momo rebrand)
+        if redirect_url:
+            # Frontend provided full return URL - use it directly
+            return redirect(redirect_url)
+        else:
+            # Fallback: redirect to root
+            return redirect('/')
+    
+    # Default redirect to main platform
     return redirect(url_for('index'))
 
 
