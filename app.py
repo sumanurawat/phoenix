@@ -124,7 +124,7 @@ def create_app():
     app.config['PREFERRED_URL_SCHEME'] = 'https'
 
     # Enable CORS for Momo frontend (production + local dev)
-    default_origins = 'https://friedmomo.com,https://www.friedmomo.com,http://localhost:5173'
+    default_origins = 'https://friedmomo.com,https://www.friedmomo.com,https://friedmomo.web.app,http://localhost:5173'
     allowed_origins_env = os.getenv('MOMO_ALLOWED_ORIGINS') or os.getenv('SOHO_ALLOWED_ORIGINS')
     allowed_origins = (allowed_origins_env or default_origins).split(',')
     allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip()]
