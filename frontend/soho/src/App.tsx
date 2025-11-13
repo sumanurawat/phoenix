@@ -10,6 +10,7 @@ import { TokensPage } from './pages/TokensPage';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { DemoPage } from './pages/DemoPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { OAuthCallbackPage } from './pages/OAuthCallbackPage';
 
 function App() {
   const { loading } = useAuth();
@@ -32,6 +33,7 @@ function App() {
         {/* Auth routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
 
         {/* Public routes (accessible to everyone) */}
         <Route path="/explore" element={<ExplorePage />} />

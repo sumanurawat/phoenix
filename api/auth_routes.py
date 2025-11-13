@@ -29,15 +29,25 @@ def is_safe_url(target):
     """Ensure redirect URL is safe and belongs to our domain"""
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
-    
+
     # Allow same domain
     if test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc:
         return True
-    
+
     # In development, allow React dev server (localhost:5173)
     if test_url.netloc == 'localhost:5173' and os.getenv('FLASK_ENV') == 'development':
         return True
-    
+
+    # Allow friedmomo.com domains (production frontend)
+    allowed_frontend_domains = [
+        'friedmomo.com',
+        'www.friedmomo.com',
+        'friedmomo.web.app',
+        'friedmomo--production-pfwp1l6e.web.app'  # Firebase preview channel
+    ]
+    if test_url.netloc in allowed_frontend_domains:
+        return True
+
     return False
 
 
@@ -316,11 +326,22 @@ def google_callback():
 
         # Handle redirect after OAuth
         next_url = session.pop('oauth_next_url', None)
-        
-        # If we have a next_url and it's safe, use it
+
+        # Check if redirecting to frontend (cross-domain)
         if next_url and is_safe_url(next_url):
-            return redirect(next_url)
-        
+            parsed_next = urlparse(next_url)
+            frontend_domains = ['friedmomo.com', 'www.friedmomo.com', 'friedmomo.web.app', 'localhost:5173']
+
+            if parsed_next.netloc in frontend_domains:
+                # Cross-domain redirect: pass Firebase ID token in URL
+                # Frontend will use this token to establish its session
+                separator = '&' if '?' in next_url else '?'
+                redirect_url = f"{next_url}{separator}token={firebase_user['idToken']}&user_id={session['user_id']}"
+                return redirect(redirect_url)
+            else:
+                # Same-domain redirect: use session as normal
+                return redirect(next_url)
+
         # Default Flask redirect logic based on username status
         if user_has_username:
             # User has username, go straight to their profile
@@ -331,6 +352,66 @@ def google_callback():
     except Exception as e:
         flash(f'Authentication failed: {str(e)}', 'danger')
         return redirect(url_for('auth.login'))
+
+
+@auth_bp.route('/api/auth/exchange-token', methods=['POST'])
+def exchange_token():
+    """
+    Exchange Firebase ID token for backend session cookie.
+    Used for cross-domain OAuth flows (friedmomo.web.app → backend).
+    """
+    try:
+        data = request.get_json()
+        token = data.get('token')
+        user_id = data.get('user_id')
+
+        if not token or not user_id:
+            return jsonify({'success': False, 'error': 'Missing token or user_id'}), 400
+
+        # Verify the Firebase ID token
+        try:
+            from firebase_admin import auth as firebase_auth
+            decoded_token = firebase_auth.verify_id_token(token)
+
+            if decoded_token['uid'] != user_id:
+                return jsonify({'success': False, 'error': 'Token user ID mismatch'}), 401
+
+            # Get user info from Firestore
+            db = firestore.client()
+            user_ref = db.collection('users').document(user_id)
+            user_doc = user_ref.get()
+
+            if not user_doc.exists:
+                return jsonify({'success': False, 'error': 'User not found'}), 404
+
+            user_data = user_doc.to_dict()
+
+            # Set session variables
+            session['id_token'] = token
+            session['user_id'] = user_id
+            session['user_email'] = decoded_token.get('email', user_data.get('email'))
+            session['user_name'] = user_data.get('name')
+            session['user_picture'] = user_data.get('picture')
+            session.permanent = True
+            session.modified = True
+
+            return jsonify({
+                'success': True,
+                'user': {
+                    'id': user_id,
+                    'email': session['user_email'],
+                    'name': session['user_name'],
+                    'picture': session['user_picture']
+                }
+            }), 200
+
+        except Exception as e:
+            logger.error(f"Token verification failed: {e}")
+            return jsonify({'success': False, 'error': 'Invalid token'}), 401
+
+    except Exception as e:
+        logger.error(f"Token exchange error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @auth_bp.route('/logout')

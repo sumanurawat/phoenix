@@ -56,10 +56,9 @@ export const LoginPage = () => {
   };
 
   const handleGoogleLogin = () => {
-    // Always send full React app URL for Google OAuth callback
-    const nextPath = searchParams.get('next') || '/explore';
-    const reactAppUrl = window.location.origin + nextPath;
-    window.location.href = `${API_BASE_URL}/login/google?next=${encodeURIComponent(reactAppUrl)}`;
+    // Redirect to backend OAuth, which will return to our /oauth/callback page with token
+    const callbackUrl = window.location.origin + '/oauth/callback';
+    window.location.href = `${API_BASE_URL}/login/google?next=${encodeURIComponent(callbackUrl)}`;
   };
 
   return (
