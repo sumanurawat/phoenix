@@ -47,7 +47,28 @@ class AuthService:
             "password": password,
             "returnSecureToken": True,
         })
-        resp.raise_for_status()
+        
+        # Handle Firebase API errors with user-friendly messages
+        if not resp.ok:
+            try:
+                error_data = resp.json()
+                error_message = error_data.get('error', {}).get('message', '')
+                
+                # Map Firebase errors to user-friendly messages
+                if 'EMAIL_EXISTS' in error_message:
+                    raise ValueError('EMAIL_EXISTS: This email is already registered.')
+                elif 'WEAK_PASSWORD' in error_message:
+                    raise ValueError('Password should be at least 6 characters.')
+                elif 'INVALID_EMAIL' in error_message:
+                    raise ValueError('Please enter a valid email address.')
+                else:
+                    # Generic error
+                    raise ValueError(f'Signup failed: {error_message}')
+            except (KeyError, ValueError) as e:
+                if 'EMAIL_EXISTS' in str(e):
+                    raise  # Re-raise our user-friendly error
+                raise ValueError(f'Signup failed. Please try again.')
+        
         return resp.json()
 
     def login_email_password(self, email: str, password: str) -> dict:

@@ -1,0 +1,10 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="momoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8C52FF" />
+      <stop offset="100%" stop-color="#3AA0FF" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#111827" />
+  <path d="M32 92V36h12.8l19.2 28.5L83.2 36H96v56H83.2V68.7L64 95.5 44.8 68.7V92H32z" fill="url(#momoGradient)" />
+</svg>
