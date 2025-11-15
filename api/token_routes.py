@@ -9,6 +9,7 @@ from services.stripe_service import StripeService
 from services.token_service import TokenService
 from services.transaction_service import TransactionService
 from middleware.csrf_protection import csrf_protect
+from config.token_packages import TOKEN_PACKAGES
 import os
 
 logger = logging.getLogger(__name__)
@@ -29,52 +30,6 @@ def login_required(f):
             return jsonify({'error': 'Authentication required'}), 401
         return f(*args, **kwargs)
     return decorated_function
-
-# Token package configurations
-TOKEN_PACKAGES = {
-    'tasting': {
-        'name': 'Tasting Pack',
-        'tokens': 20,
-        'price': 1.00,
-        'bonus': 0,
-        'price_id_env': 'STRIPE_TOKEN_TASTING_PRICE_ID',
-        'description': 'Try it out - perfect for getting started'
-    },
-    'starter': {
-        'name': 'Starter Pack',
-        'tokens': 100,
-        'price': 5.00,
-        'bonus': 0,
-        'price_id_env': 'STRIPE_TOKEN_STARTER_PRICE_ID',
-        'description': 'Perfect for trying out our platform'
-    },
-    'popular': {
-        'name': 'Popular Pack',
-        'tokens': 220,
-        'price': 9.99,
-        'bonus': 20,
-        'price_id_env': 'STRIPE_TOKEN_POPULAR_PRICE_ID',
-        'description': 'Most popular choice - 10% bonus!',
-        'badge': 'MOST POPULAR'
-    },
-    'creator': {
-        'name': 'Creator Pack',
-        'tokens': 500,
-        'price': 20.00,
-        'bonus': 100,
-        'price_id_env': 'STRIPE_TOKEN_PRO_PRICE_ID',
-        'description': 'For power users - 25% bonus!'
-    },
-    'studio': {
-        'name': 'Studio Pack',
-        'tokens': 1400,
-        'price': 50.00,
-        'bonus': 400,
-        'price_id_env': 'STRIPE_TOKEN_CREATOR_PRICE_ID',
-        'description': 'Maximum value - 40% bonus!',
-        'badge': 'BEST VALUE'
-    }
-}
 
 
 @token_bp.route('/packages', methods=['GET'])

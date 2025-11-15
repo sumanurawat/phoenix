@@ -357,18 +357,7 @@ def create_app():
         return render_template('transaction_history.html',
                            title='Transaction History')
 
-    @app.route('/token-purchase-success')
-    @require_auth
-    def token_purchase_success():
-        """Render the token purchase success page."""
-        return render_template('token_purchase_success.html',
-                           title='Payment Successful')
-
-    @app.route('/token-purchase-cancel')
-    def token_purchase_cancel():
-        """Render the token purchase cancel page."""
-        return render_template('token_purchase_cancel.html',
-                           title='Payment Canceled')
+    # Token purchase success/cancel pages removed - handled by friedmomo.com frontend
     
     @app.route('/api/dataset-image/<path:filename>')
     def serve_dataset_image(filename):

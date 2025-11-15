@@ -5,6 +5,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from firebase_admin import firestore
+from config.token_packages import TOKEN_PACKAGES
 
 logger = logging.getLogger(__name__)
 
@@ -16,14 +17,13 @@ class TokenSecurityService:
     MAX_PURCHASES_PER_DAY = 20
     MAX_TOKENS_PER_PURCHASE = 10000
     
-    # Package definitions with price validation
-    # CRITICAL: Must match TOKEN_PACKAGES in api/token_routes.py exactly!
+    # Use centralized package definitions for validation
     VALID_PACKAGES = {
-        'tasting': {'tokens': 20, 'price_cents': 100},      # $1.00 - Tasting Pack
-        'starter': {'tokens': 100, 'price_cents': 500},     # $5.00 - Starter Pack
-        'popular': {'tokens': 220, 'price_cents': 999},     # $9.99 - Popular Pack (200 + 20 bonus)
-        'creator': {'tokens': 500, 'price_cents': 2000},    # $20.00 - Creator Pack (400 + 100 bonus)
-        'studio': {'tokens': 1400, 'price_cents': 5000},    # $50.00 - Studio Pack (1000 + 400 bonus)
+        package_id: {
+            'tokens': config['tokens'],
+            'price_cents': config['price_cents']
+        }
+        for package_id, config in TOKEN_PACKAGES.items()
     }
     
     def __init__(self, db: firestore.Client):

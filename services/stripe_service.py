@@ -311,10 +311,10 @@ class StripeService:
             return None
         
         try:
-            # Build success and cancel URLs
-            base_url = os.getenv('APP_BASE_URL', 'http://localhost:8080')
-            success_url = f"{base_url}/token-purchase-success?session_id={{CHECKOUT_SESSION_ID}}"
-            cancel_url = f"{base_url}/token-purchase-cancel"
+            # Redirect to friedmomo.com after purchase (not old Phoenix UI)
+            frontend_url = os.getenv('FRONTEND_URL', 'https://friedmomo.com')
+            success_url = f"{frontend_url}/purchase-success?session_id={{CHECKOUT_SESSION_ID}}"
+            cancel_url = f"{frontend_url}/shop"
             
             # Enhanced diagnostic logging
             logger.info(f"🔍 Creating checkout session with Price ID: {price_id}")
