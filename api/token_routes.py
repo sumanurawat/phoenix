@@ -51,7 +51,7 @@ TOKEN_PACKAGES = {
     'popular': {
         'name': 'Popular Pack',
         'tokens': 220,
-        'price': 10.00,
+        'price': 9.99,
         'bonus': 20,
         'price_id_env': 'STRIPE_TOKEN_POPULAR_PRICE_ID',
         'description': 'Most popular choice - 10% bonus!',

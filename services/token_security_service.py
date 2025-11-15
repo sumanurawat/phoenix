@@ -21,7 +21,7 @@ class TokenSecurityService:
     VALID_PACKAGES = {
         'tasting': {'tokens': 20, 'price_cents': 100},      # $1.00 - Tasting Pack
         'starter': {'tokens': 100, 'price_cents': 500},     # $5.00 - Starter Pack
-        'popular': {'tokens': 220, 'price_cents': 1000},    # $10.00 - Popular Pack (200 + 20 bonus)
+        'popular': {'tokens': 220, 'price_cents': 999},     # $9.99 - Popular Pack (200 + 20 bonus)
         'creator': {'tokens': 500, 'price_cents': 2000},    # $20.00 - Creator Pack (400 + 100 bonus)
         'studio': {'tokens': 1400, 'price_cents': 5000},    # $50.00 - Studio Pack (1000 + 400 bonus)
     }
