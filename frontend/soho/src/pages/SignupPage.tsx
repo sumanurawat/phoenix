@@ -83,9 +83,9 @@ export const SignupPage = () => {
   };
 
   const handleGoogleSignup = () => {
-    // Redirect to backend OAuth, which will return to our /oauth/callback page with token
+    // Use relative URL so it goes through friedmomo.com (proxied to backend via Firebase Hosting rewrites)
     const callbackUrl = window.location.origin + '/oauth/callback';
-    window.location.href = `${API_BASE_URL}/login/google?next=${encodeURIComponent(callbackUrl)}`;
+    window.location.href = `/login/google?next=${encodeURIComponent(callbackUrl)}`;
   };
 
   return (
