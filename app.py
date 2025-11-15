@@ -151,6 +151,13 @@ def create_app():
     app.config["SESSION_USE_SIGNER"] = SESSION_USE_SIGNER
     app.config["SESSION_FILE_DIR"] = SESSION_FILE_DIR
     app.config["SESSION_FILE_THRESHOLD"] = SESSION_FILE_THRESHOLD
+    
+    # Configure session cookies for cross-domain support (friedmomo.com → backend)
+    app.config["SESSION_COOKIE_SECURE"] = True  # Require HTTPS
+    app.config["SESSION_COOKIE_HTTPONLY"] = True  # Prevent JS access
+    app.config["SESSION_COOKIE_SAMESITE"] = "None"  # Allow cross-domain cookies
+    app.config["SESSION_COOKIE_DOMAIN"] = None  # Don't restrict domain
+    
     Session(app)
 
     # --- Centralized CSRF Protection ---
