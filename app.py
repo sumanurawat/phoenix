@@ -96,11 +96,43 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
 
-# Initialize services
-chat_service = ChatService()
-enhanced_chat_service = EnhancedChatService()
-search_service = SearchService()
-website_stats_service = WebsiteStatsService()
+# Service instances (lazy-loaded)
+_chat_service = None
+_enhanced_chat_service = None
+_search_service = None
+_website_stats_service = None
+
+def get_chat_service():
+    """Get or create ChatService instance (lazy initialization)."""
+    global _chat_service
+    if _chat_service is None:
+        logger.info("Initializing ChatService...")
+        _chat_service = ChatService()
+    return _chat_service
+
+def get_enhanced_chat_service():
+    """Get or create EnhancedChatService instance (lazy initialization)."""
+    global _enhanced_chat_service
+    if _enhanced_chat_service is None:
+        logger.info("Initializing EnhancedChatService...")
+        _enhanced_chat_service = EnhancedChatService()
+    return _enhanced_chat_service
+
+def get_search_service():
+    """Get or create SearchService instance (lazy initialization)."""
+    global _search_service
+    if _search_service is None:
+        logger.info("Initializing SearchService...")
+        _search_service = SearchService()
+    return _search_service
+
+def get_website_stats_service():
+    """Get or create WebsiteStatsService instance (lazy initialization)."""
+    global _website_stats_service
+    if _website_stats_service is None:
+        logger.info("Initializing WebsiteStatsService...")
+        _website_stats_service = WebsiteStatsService()
+    return _website_stats_service
 
 def require_auth(f):
     """Decorator to require authentication for routes."""
@@ -296,11 +328,11 @@ def create_app():
         # If there's a query, perform search and pass results to template
         results = {}
         if query:
-            results = search_service.search(query, category, page)
+            results = get_search_service().search(query, category, page)
             
             # Increment Doogle search stats for non-empty queries
             try:
-                website_stats_service.increment_doogle_searches()
+                get_website_stats_service().increment_doogle_searches()
             except Exception as e:
                 logger.warning(f"Failed to update Doogle search stats: {e}")
             

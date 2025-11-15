@@ -16,6 +16,8 @@ export const OAuthCallbackPage = () => {
   const navigate = useNavigate();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [error, setError] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
+  const [statusMessage, setStatusMessage] = useState('Please wait while we set up your session');
 
   useEffect(() => {
     const handleOAuthCallback = async () => {
@@ -29,27 +31,55 @@ export const OAuthCallbackPage = () => {
         return;
       }
 
-      try {
-        // Exchange token for session cookie
-        const response = await api.post('/api/auth/exchange-token', {
-          token,
-          user_id: userId
-        });
+      // Retry logic with exponential backoff for slow backend startup
+      const MAX_RETRIES = 5;
+      const INITIAL_DELAY = 2000; // 2 seconds
+      
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          setRetryCount(attempt);
+          if (attempt > 0) {
+            setStatusMessage(`Backend is starting up... Retry ${attempt}/${MAX_RETRIES}`);
+          }
 
-        if (response.data.success) {
-          setStatus('success');
-          // Redirect to explore or intended destination
-          setTimeout(() => {
-            navigate('/explore');
-          }, 500);
-        } else {
-          throw new Error('Failed to establish session');
+          // Exchange token for session cookie with timeout
+          const response = await api.post('/api/auth/exchange-token', {
+            token,
+            user_id: userId
+          }, {
+            timeout: 10000 // 10 second timeout
+          });
+
+          if (response.data.success) {
+            setStatus('success');
+            setStatusMessage('Success! Redirecting...');
+            // Redirect to explore or intended destination
+            setTimeout(() => {
+              navigate('/explore');
+            }, 500);
+            return; // Exit on success
+          } else {
+            throw new Error('Failed to establish session');
+          }
+        } catch (err: any) {
+          console.error(`OAuth callback error (attempt ${attempt + 1}):`, err);
+          
+          // If it's the last retry, show error
+          if (attempt === MAX_RETRIES) {
+            setStatus('error');
+            const errorMsg = err.code === 'ECONNABORTED' 
+              ? 'Server is taking too long to respond. Please try again later.'
+              : err.response?.data?.error || 'Authentication failed';
+            setError(errorMsg);
+            setTimeout(() => navigate('/login'), 3000);
+            return;
+          }
+          
+          // Wait with exponential backoff before retry
+          const delay = INITIAL_DELAY * Math.pow(2, attempt);
+          setStatusMessage(`Backend is starting up... Waiting ${delay/1000}s before retry ${attempt + 1}/${MAX_RETRIES}`);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
-      } catch (err: any) {
-        console.error('OAuth callback error:', err);
-        setStatus('error');
-        setError(err.response?.data?.error || 'Authentication failed');
-        setTimeout(() => navigate('/login'), 2000);
       }
     };
 
@@ -86,8 +116,13 @@ export const OAuthCallbackPage = () => {
               Completing Sign In...
             </h2>
             <p className="text-momo-gray-400">
-              Please wait while we set up your session
+              {statusMessage}
             </p>
+            {retryCount > 0 && (
+              <p className="text-momo-gray-500 text-sm mt-2">
+                The server is initializing, please be patient...
+              </p>
+            )}
           </>
         )}
 
