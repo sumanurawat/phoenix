@@ -1,0 +1,41 @@
+name: Deploy Frontend to Firebase
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/soho/**'
+      - 'firebase.json'
+      - '.github/workflows/deploy-frontend.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/soho/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend/soho
+        run: npm ci
+      
+      - name: Build frontend
+        working-directory: frontend/soho
+        run: npm run build
+      
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: phoenix-project-386
+          channelId: live

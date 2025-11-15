@@ -26,6 +26,15 @@ steps:
         echo "Frontend built and copied to static/momo/"
         ls -la static/momo/
   
+  # Deploy frontend to Firebase Hosting (friedmomo.com)
+  - name: 'gcr.io/$PROJECT_ID/firebase'
+    args:
+      - 'deploy'
+      - '--only'
+      - 'hosting'
+      - '--project'
+      - 'phoenix-project-386'
+  
   # ========================================
   # STEP 2: Build & Deploy Backend (Flask)
   # ========================================
