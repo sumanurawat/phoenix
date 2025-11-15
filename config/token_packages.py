@@ -7,7 +7,7 @@ Single source of truth for all token packages across the application.
 # Used by: API routes, Stripe service, security validation, frontend
 TOKEN_PACKAGES = {
     'tasting': {
-        'name': 'Tasting Pack',
+        'name': 'Tokens Tasting Pack',
         'tokens': 20,
         'price': 0.99,
         'price_cents': 99,
@@ -16,7 +16,7 @@ TOKEN_PACKAGES = {
         'description': 'Try it out - perfect for getting started'
     },
     'starter': {
-        'name': 'Starter Pack',
+        'name': 'Token Starter Pack',
         'tokens': 110,
         'price': 4.99,
         'price_cents': 499,
@@ -25,7 +25,7 @@ TOKEN_PACKAGES = {
         'description': 'Perfect for trying out our platform'
     },
     'popular': {
-        'name': 'Popular Pack',
+        'name': 'Token Popular Pack',
         'tokens': 220,
         'price': 9.99,
         'price_cents': 999,
@@ -35,21 +35,21 @@ TOKEN_PACKAGES = {
         'badge': 'MOST POPULAR'
     },
     'creator': {
-        'name': 'Creator Pack',
+        'name': 'Token Creator Pack',
         'tokens': 500,
         'price': 19.99,
         'price_cents': 1999,
         'bonus': 100,
-        'price_id_env': 'STRIPE_TOKEN_PRO_PRICE_ID',
+        'price_id_env': 'STRIPE_TOKEN_CREATOR_PRICE_ID',
         'description': 'For power users - 25% bonus!'
     },
     'studio': {
-        'name': 'Studio Pack',
+        'name': 'Token Studio Pack',
         'tokens': 1400,
         'price': 49.99,
         'price_cents': 4999,
         'bonus': 400,
-        'price_id_env': 'STRIPE_TOKEN_CREATOR_PRICE_ID',
+        'price_id_env': 'STRIPE_TOKEN_STUDIO_PRICE_ID',
         'description': 'Maximum value - 40% bonus!',
         'badge': 'BEST VALUE'
     }
