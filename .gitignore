@@ -26,6 +26,7 @@ ENV/
 
 # Node / Frontend
 node_modules/
+.firebase/
 
 # IDE files
 .idea/
