@@ -218,6 +218,9 @@ def google_login():
     next_url = request.args.get('next')
     if next_url:
         session['oauth_next_url'] = next_url
+        logger.info(f"Stored oauth_next_url in session: {next_url}")
+    else:
+        logger.info("No next_url provided in OAuth initiation")
     
     # Use FRONTEND_URL (friedmomo.com) for OAuth callback so users stay on friedmomo.com
     frontend_url = os.getenv('FRONTEND_URL')
@@ -226,27 +229,34 @@ def google_login():
     else:
         redirect_uri = url_for('auth.google_callback', _external=True)
     
+    logger.info(f"Generating Google OAuth URL | redirect_uri={redirect_uri} | client_id_suffix={os.getenv('GOOGLE_CLIENT_ID', 'MISSING')[-20:]}")
     auth_url, state = auth_service.get_google_auth_url(redirect_uri)
     session['oauth_state'] = state
+    logger.info(f"OAuth state stored in session: {state}")
     return redirect(auth_url)
 
 
 @auth_bp.route('/login/google/callback')
 def google_callback():
     """Handle callback from Google OAuth."""
+    logger.info(f"Google OAuth callback received | state={request.args.get('state')} | code_present={bool(request.args.get('code'))} | session_state={session.get('oauth_state')} | oauth_next_url={session.get('oauth_next_url')}")
+    
     # Verify state to prevent CSRF
     state = session.pop('oauth_state', None)
     if not state or state != request.args.get('state'):
+        logger.error(f"OAuth state mismatch | expected={state} | received={request.args.get('state')}")
         flash('Authentication failed: Invalid state parameter.', 'danger')
         return redirect(url_for('auth.login'))
 
     # Get authorization code from Google
     code = request.args.get('code')
     if not code:
+        logger.error("OAuth callback missing authorization code")
         flash('Authentication failed: No authorization code received.', 'danger')
         return redirect(url_for('auth.login'))
 
     try:
+        logger.info("Starting token exchange with Google")
         # Exchange code for tokens
         token_url = 'https://oauth2.googleapis.com/token'
         
@@ -256,6 +266,8 @@ def google_callback():
             callback_uri_for_token_exchange = frontend_url.rstrip('/') + url_for('auth.google_callback', _external=False)
         else:
             callback_uri_for_token_exchange = url_for('auth.google_callback', _external=True)
+        
+        logger.info(f"Token exchange URI: {callback_uri_for_token_exchange}")
 
         token_data = {
             'code': code,
@@ -267,6 +279,7 @@ def google_callback():
         token_response = requests.post(token_url, data=token_data)
         token_response.raise_for_status()
         tokens = token_response.json()
+        logger.info("Successfully exchanged code for Google tokens")
 
         # Get user info
         userinfo_url = 'https://www.googleapis.com/oauth2/v3/userinfo'
@@ -276,6 +289,7 @@ def google_callback():
         )
         userinfo_response.raise_for_status()
         userinfo = userinfo_response.json()
+        logger.info(f"Retrieved Google user info | email={userinfo.get('email')}")
 
         # Sign in with Firebase using Google token
         firebase_url = f"{auth_service.base_url}/accounts:signInWithIdp?key={auth_service.api_key}"
@@ -287,6 +301,7 @@ def google_callback():
         firebase_response = requests.post(firebase_url, json=firebase_data)
         firebase_response.raise_for_status()
         firebase_user = firebase_response.json()
+        logger.info(f"Firebase sign-in successful | user_id={firebase_user['localId']}")
 
         # Set session variables
         session['id_token'] = firebase_user['idToken']
@@ -327,30 +342,70 @@ def google_callback():
 
         # Handle redirect after OAuth
         next_url = session.pop('oauth_next_url', None)
+        logger.info(f"OAuth redirect logic | next_url={next_url} | frontend_url={os.getenv('FRONTEND_URL')}")
 
-        # Check if redirecting to frontend (cross-domain)
-        if next_url and is_safe_url(next_url):
+        # Determine if this OAuth flow came from friedmomo.com
+        # Check multiple indicators: next_url, referer, or the callback URL itself
+        is_frontend_oauth = False
+        frontend_domains = ['friedmomo.com', 'www.friedmomo.com', 'friedmomo.web.app', 'friedmomo--production-pfwp1l6e.web.app']
+        
+        # Check if next_url is to frontend
+        if next_url:
             parsed_next = urlparse(next_url)
-            frontend_domains = ['friedmomo.com', 'www.friedmomo.com', 'friedmomo.web.app', 'localhost:5173']
-
             if parsed_next.netloc in frontend_domains:
-                # Cross-domain redirect: pass Firebase ID token in URL
-                # Frontend will use this token to establish its session
-                separator = '&' if '?' in next_url else '?'
-                redirect_url = f"{next_url}{separator}token={firebase_user['idToken']}&user_id={session['user_id']}"
-                return redirect(redirect_url)
+                is_frontend_oauth = True
+                logger.info(f"Detected frontend OAuth from next_url: {next_url}")
+        
+        # Check if request came from frontend (referer or host)
+        referer = request.headers.get('Referer', '')
+        if not is_frontend_oauth and referer:
+            parsed_referer = urlparse(referer)
+            if parsed_referer.netloc in frontend_domains:
+                is_frontend_oauth = True
+                logger.info(f"Detected frontend OAuth from referer: {referer}")
+        
+        # Check if the callback URL itself is on friedmomo.com
+        if not is_frontend_oauth and os.getenv('FRONTEND_URL'):
+            frontend_url = os.getenv('FRONTEND_URL')
+            if any(domain in frontend_url for domain in frontend_domains):
+                is_frontend_oauth = True
+                logger.info(f"Detected frontend OAuth from FRONTEND_URL env var: {frontend_url}")
+
+        # If OAuth came from frontend, ALWAYS redirect back to frontend with token
+        if is_frontend_oauth:
+            frontend_url = os.getenv('FRONTEND_URL', 'https://friedmomo.com')
+            # Use next_url if it's a frontend URL, otherwise use default /oauth/callback
+            if next_url and is_safe_url(next_url):
+                parsed_next = urlparse(next_url)
+                if parsed_next.netloc in frontend_domains:
+                    redirect_target = next_url
+                else:
+                    redirect_target = f"{frontend_url}/oauth/callback"
             else:
-                # Same-domain redirect: use session as normal
-                return redirect(next_url)
+                redirect_target = f"{frontend_url}/oauth/callback"
+            
+            # Pass Firebase ID token in URL for frontend to establish session
+            separator = '&' if '?' in redirect_target else '?'
+            redirect_url = f"{redirect_target}{separator}token={firebase_user['idToken']}&user_id={session['user_id']}"
+            logger.info(f"Redirecting to frontend with token | url={redirect_target}")
+            return redirect(redirect_url)
+
+        # Traditional Flask redirect logic (for backend-only flows)
+        if next_url and is_safe_url(next_url):
+            logger.info(f"Using traditional redirect to: {next_url}")
+            return redirect(next_url)
 
         # Default Flask redirect logic based on username status
         if user_has_username:
             # User has username, go straight to their profile
+            logger.info(f"Redirecting to soho (user has username)")
             return redirect(url_for('soho'))
         else:
             # No username, redirect to username setup
+            logger.info(f"Redirecting to username_setup (user has no username)")
             return redirect(url_for('username_setup'))
     except Exception as e:
+        logger.error(f"Google OAuth callback error: {str(e)}", exc_info=True)
         flash(f'Authentication failed: {str(e)}', 'danger')
         return redirect(url_for('auth.login'))
 
