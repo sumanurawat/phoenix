@@ -214,6 +214,13 @@ def login():
 @auth_bp.route('/login/google')
 def google_login():
     """Start Google OAuth flow for sign-in/sign-up."""
+    # Debug logging
+    logger.info(f"=== OAUTH INITIATION DEBUG ===")
+    logger.info(f"Request URL: {request.url}")
+    logger.info(f"Request Host: {request.host}")
+    logger.info(f"Session keys before: {list(session.keys())}")
+    logger.info(f"Session ID: {session.get('_id', 'NO_SID')}")
+    
     # Store the next URL in session for after OAuth
     next_url = request.args.get('next')
     if next_url:
@@ -233,12 +240,29 @@ def google_login():
     auth_url, state = auth_service.get_google_auth_url(redirect_uri)
     session['oauth_state'] = state
     logger.info(f"OAuth state stored in session: {state}")
+    logger.info(f"Session keys after: {list(session.keys())}")
+    logger.info(f"Session modified flag: {session.modified}")
+    
+    # Force session to save
+    session.modified = True
+    
     return redirect(auth_url)
 
 
 @auth_bp.route('/login/google/callback')
 def google_callback():
     """Handle callback from Google OAuth."""
+    # Debug session and cookies
+    logger.info(f"=== OAUTH CALLBACK DEBUG ===")
+    logger.info(f"Request URL: {request.url}")
+    logger.info(f"Request Host: {request.host}")
+    logger.info(f"Request Headers Host: {request.headers.get('Host')}")
+    logger.info(f"Request Cookies: {list(request.cookies.keys())}")
+    logger.info(f"Session Cookie Name: {request.app.config.get('SESSION_COOKIE_NAME', 'session')}")
+    logger.info(f"Session ID from cookie: {request.cookies.get('session', 'NOT_FOUND')[:50] if request.cookies.get('session') else 'NOT_FOUND'}")
+    logger.info(f"Session keys: {list(session.keys())}")
+    logger.info(f"Session SID: {session.get('_id', 'NO_SID')}")
+    
     logger.info(f"Google OAuth callback received | state={request.args.get('state')} | code_present={bool(request.args.get('code'))} | session_state={session.get('oauth_state')} | oauth_next_url={session.get('oauth_next_url')}")
     
     # Verify state to prevent CSRF
