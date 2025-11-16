@@ -176,20 +176,23 @@ def create_app():
     if app.config["ENV"] != "development" and app.config["SECRET_KEY"] == "default-secret-key":
         raise RuntimeError("SECURITY CRITICAL: Default SECRET_KEY is not allowed in production/staging. Please set a strong, unique SECRET_KEY in the environment configuration.")
     
-    # Configure session
-    app.config["SESSION_TYPE"] = SESSION_TYPE
-    app.config["SESSION_PERMANENT"] = SESSION_PERMANENT
-    app.config["SESSION_USE_SIGNER"] = SESSION_USE_SIGNER
-    app.config["SESSION_FILE_DIR"] = SESSION_FILE_DIR
-    app.config["SESSION_FILE_THRESHOLD"] = SESSION_FILE_THRESHOLD
-    
+    # Configure session - Use Cache Service for Cloud Run compatibility
+    # NOTE: Filesystem sessions don't work on Cloud Run (ephemeral containers)
+    # We use Firestore-backed sessions via our cache service instead
+    from services.cache_service.flask_adapter import CacheSessionInterface
+
+    app.session_interface = CacheSessionInterface(
+        key_prefix='friedmomo:session:',
+        permanent_lifetime=2592000  # 30 days
+    )
+
     # Configure session cookies for cross-domain support (friedmomo.com → backend)
     app.config["SESSION_COOKIE_SECURE"] = True  # Require HTTPS
     app.config["SESSION_COOKIE_HTTPONLY"] = True  # Prevent JS access
     app.config["SESSION_COOKIE_SAMESITE"] = "None"  # Allow cross-domain cookies
     app.config["SESSION_COOKIE_DOMAIN"] = None  # Don't restrict domain
-    
-    Session(app)
+    app.config["SESSION_COOKIE_NAME"] = "session"  # Cookie name
+    app.config["PERMANENT_SESSION_LIFETIME"] = 2592000  # 30 days in seconds
 
     # --- Centralized CSRF Protection ---
     from middleware.csrf_protection import csrf

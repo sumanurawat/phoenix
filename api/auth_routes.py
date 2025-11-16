@@ -3,7 +3,7 @@ import os
 import logging
 from functools import wraps
 from urllib.parse import urlparse, urljoin
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, current_app
 import requests
 
 from services.auth_service import AuthService
@@ -258,7 +258,7 @@ def google_callback():
     logger.info(f"Request Host: {request.host}")
     logger.info(f"Request Headers Host: {request.headers.get('Host')}")
     logger.info(f"Request Cookies: {list(request.cookies.keys())}")
-    logger.info(f"Session Cookie Name: {request.app.config.get('SESSION_COOKIE_NAME', 'session')}")
+    logger.info(f"Session Cookie Name: {current_app.config.get('SESSION_COOKIE_NAME', 'session')}")
     logger.info(f"Session ID from cookie: {request.cookies.get('session', 'NOT_FOUND')[:50] if request.cookies.get('session') else 'NOT_FOUND'}")
     logger.info(f"Session keys: {list(session.keys())}")
     logger.info(f"Session SID: {session.get('_id', 'NO_SID')}")
