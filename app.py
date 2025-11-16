@@ -50,7 +50,6 @@ except Exception as e:
 from api.chat_routes import chat_bp
 from api.enhanced_chat_routes import enhanced_chat_bp
 from api.search_routes import search_bp
-from api.robin_routes import robin_bp
 from api.deeplink_routes import deeplink_bp
 from api.auth_routes import auth_bp, login_required
 from api.stats_routes import stats_bp
@@ -222,7 +221,6 @@ def create_app():
     app.register_blueprint(chat_bp)
     app.register_blueprint(enhanced_chat_bp)
     app.register_blueprint(search_bp)
-    app.register_blueprint(robin_bp)
     app.register_blueprint(deeplink_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(stats_bp)

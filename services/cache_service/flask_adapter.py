@@ -193,7 +193,7 @@ class CacheSessionInterface(SessionInterface):
                 logger.error(f"💥 Error saving session {session.sid[:8]}...: {e}", exc_info=True)
 
         # Set session cookie
-        logger.info(f"🍪 Setting cookie: {self.get_cookie_name(app)} | secure={secure} | httponly={httponly} | samesite={samesite}")
+        logger.info(f"🍪 Setting cookie: {self.get_cookie_name(app)} | domain={domain} | path={path} | secure={secure} | httponly={httponly} | samesite={samesite}")
         response.set_cookie(
             self.get_cookie_name(app),
             session.sid,
