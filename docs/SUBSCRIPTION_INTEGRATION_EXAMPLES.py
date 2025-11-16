@@ -5,7 +5,7 @@ This file demonstrates how to integrate subscription checks into your existing
 Phoenix AI features. Copy these patterns to add subscription gating to any feature.
 """
 
-from flask import Blueprint, request, jsonify, session, render_template
+from flask import Blueprint, request, jsonify, session, render_template, redirect, url_for
 from services.subscription_middleware import (
     premium_required, 
     feature_limited, 
@@ -66,35 +66,36 @@ def chat_api():
 # EXAMPLE 3: Manual Usage Checking
 # =============================================================================
 
-@example_bp.route('/api/dataset-analysis', methods=['POST'])
+@example_bp.route('/api/smart-search', methods=['POST'])
 @login_required
-def dataset_analysis():
-    """Example with manual usage checking and custom limits."""
+def smart_search():
+    """Example with manual usage checking for search requests."""
     
     # Check current usage before processing
-    limit_result = check_feature_limit('datasets_analyzed')
+    limit_result = check_feature_limit('searches')
     
     if not limit_result['allowed']:
         return jsonify({
-            'error': 'Daily limit reached',
+            'error': 'Daily search limit reached',
             'message': limit_result['message'],
             'limit': limit_result['limit'],
             'current': limit_result['current'],
             'upgrade_url': '/subscription'
         }), 429
     
-    # Process the dataset analysis
+    # Process the search request
     data = request.json
-    dataset_url = data.get('dataset_url')
+    query = data.get('query')
+    category = data.get('category', 'web')
     
-    analysis_result = analyze_dataset(dataset_url)
+    search_results = perform_search(query, category)
     
     # Manually increment usage after successful processing
     from services.subscription_middleware import increment_feature_usage
-    increment_feature_usage('datasets_analyzed')
+    increment_feature_usage('searches')
     
     return jsonify({
-        'analysis': analysis_result,
+        'results': search_results,
         'usage_remaining': limit_result['remaining'] - 1
     })
 
@@ -381,9 +382,16 @@ def process_chat_message(message):
     """Process a chat message (implement your logic here)."""
     return f"AI response to: {message}"
 
-def analyze_dataset(dataset_url):
-    """Analyze a dataset (implement your logic here)."""
-    return {"summary": "Dataset analysis complete"}
+def perform_search(query, category):
+    """Execute a search request (implement your logic here)."""
+    return {
+        'query': query,
+        'category': category,
+        'items': [
+            {'title': 'Result 1', 'snippet': 'Example search snippet.'},
+            {'title': 'Result 2', 'snippet': 'Another helpful summary.'}
+        ]
+    }
 
 def generate_chat_response(message, model):
     """Generate chat response with specific model (implement your logic here)."""

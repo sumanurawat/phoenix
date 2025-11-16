@@ -1,6 +1,6 @@
 # Phoenix AI Platform
 
-Phoenix is a Flask-based Python web application featuring multiple AI-powered tools including conversational AI (Derplexity), intelligent search (Doogle), news aggregation (Robin), URL shortener (Deeplink), and dataset discovery with video generation. The platform integrates multiple LLM providers (Google Gemini, Claude, Grok, OpenAI) with Firebase Firestore for persistence and Stripe for subscriptions.
+Phoenix is a Flask-based Python web application featuring multiple AI-powered tools including conversational AI (Derplexity), intelligent search (Doogle), news aggregation (Robin), URL shortener (Deeplink), and video generation. The platform integrates multiple LLM providers (Google Gemini, Claude, Grok, OpenAI) with Firebase Firestore for persistence and Stripe for subscriptions.
 
 **Architecture**: Multi-service Flask app with Blueprint-based routing, service-oriented design, and Firebase-first authentication.
 
@@ -190,8 +190,7 @@ Each major feature follows a consistent pattern:
 3. **Doogle** (`/doogle`, `/api/search/`) - AI-powered web/news search with Google Custom Search
 4. **Robin** (`/api/robin/`) - News aggregation and analysis via NewsData.io API
 5. **Deeplink** (`/apps/deeplink/`, `/api/deeplink/`) - URL shortening with click analytics
-6. **Dataset Discovery** (`/datasets`, `/api/dataset/`) - Kaggle dataset search with Docker-based analysis
-7. **Video Generation** (`/video-generation`, `/api/video/`) - AI video generation with Veo API
+6. **Video Generation** (`/video-generation`, `/api/video/`) - AI video generation with Veo API
 
 ### Authentication Patterns
 - **Most routes require `@login_required`** - Firebase auth integration
@@ -255,8 +254,7 @@ phoenix/
 │   └── openai_models.py      # OpenAI/Grok model configurations
 ├── services/                 # Service layer (business logic)
 │   ├── enhanced_llm_service.py  # Multi-provider LLM with fallbacks
-│   ├── subscription_middleware.py  # Feature gating and limits
-│   └── dataset_discovery/    # Kaggle integration and Docker analysis
+│   └── subscription_middleware.py  # Feature gating and limits
 ├── api/                      # Route blueprints (HTTP handling only)
 ├── middleware/               # CSRF protection, etc.
 ├── templates/                # Jinja2 templates with shared layouts

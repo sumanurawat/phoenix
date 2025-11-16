@@ -14,7 +14,6 @@ FEATURE_LIMITS = {
     'free': {
         'chat_messages': 5,  # Per day
         'searches': 10,  # Per day
-        'datasets_analyzed': 2,  # Per day
         'videos_generated': 1,  # Per day
         'ai_models': ['gpt-3.5-turbo', 'gemini-1.0-pro'],  # Basic models only
         'export_enabled': False,
@@ -25,7 +24,6 @@ FEATURE_LIMITS = {
     'premium': {
         'chat_messages': -1,  # Unlimited
         'searches': -1,  # Unlimited
-        'datasets_analyzed': -1,  # Unlimited
         'videos_generated': 10,  # Per day
         'ai_models': 'all',  # All available models
         'export_enabled': True,

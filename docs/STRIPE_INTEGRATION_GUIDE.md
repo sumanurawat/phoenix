@@ -108,7 +108,6 @@ pip install -r requirements.txt
   date: "string",  // YYYY-MM-DD format
   chat_messages: "number",
   searches: "number", 
-  datasets_analyzed: "number",
   videos_generated: "number",
   created_at: "timestamp",
   updated_at: "timestamp"
@@ -120,7 +119,6 @@ pip install -r requirements.txt
 ### Free Plan
 - ✅ 5 AI conversations per day
 - ✅ 10 searches per day  
-- ✅ 2 dataset analyses per day
 - ✅ 1 video generation per day
 - ✅ Basic AI models (GPT-3.5, Gemini 1.0)
 - ❌ Export conversations
@@ -130,7 +128,6 @@ pip install -r requirements.txt
 ### Premium Plan ($5/month)
 - ✅ **Unlimited** AI conversations
 - ✅ **Unlimited** searches
-- ✅ **Unlimited** dataset analyses  
 - ✅ 10 video generations per day
 - ✅ **All premium AI models** (GPT-4, Claude, etc.)
 - ✅ Export conversation history

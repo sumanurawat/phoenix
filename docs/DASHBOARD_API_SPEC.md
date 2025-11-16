@@ -158,42 +158,7 @@ Update widget configuration
 #### DELETE /api/dashboards/{dashboard_id}/widgets/{widget_id}
 Remove widget from dashboard
 
-### 3. Dataset Discovery
-
-#### POST /api/datasets/search
-Search for datasets based on query
-```json
-// Request
-{
-  "query": "climate change temperature data",
-  "sources": ["kaggle", "google-dataset", "world-bank"],
-  "limit": 10
-}
-
-// Response
-{
-  "datasets": [
-    {
-      "title": "Global Temperature Anomalies",
-      "source": "NOAA Climate Data",
-      "description": "Historical temperature data from 1880-2023",
-      "url": "https://example.com/dataset",
-      "format": "CSV",
-      "size": "45 MB",
-      "last_updated": "2024-01-15",
-      "relevance_score": 0.95,
-      "schema_preview": [
-        {"column": "year", "type": "int"},
-        {"column": "temperature_anomaly", "type": "float"}
-      ]
-    }
-  ],
-  "total_found": 25,
-  "search_time_ms": 1250
-}
-```
-
-### 4. Dashboard Creation Job Status
+### 3. Dashboard Creation Job Status
 
 #### GET /api/dashboards/{dashboard_id}/status
 Get creation job status
@@ -201,22 +166,22 @@ Get creation job status
 {
   "status": "processing", // "pending", "processing", "completed", "failed"
   "progress": 65,
-  "current_step": "analyzing_datasets",
+  "current_step": "syncing_sources",
   "steps": [
     {
-      "name": "search_datasets",
+      "name": "collect_requirements",
       "status": "completed",
-      "message": "Found 3 relevant datasets"
+      "message": "Requirements gathered from user brief"
     },
     {
-      "name": "download_datasets",
+      "name": "ingest_sources",
       "status": "completed",
-      "message": "Downloaded to GCS"
+      "message": "Connected to provided data sources"
     },
     {
-      "name": "analyzing_datasets",
+      "name": "syncing_sources",
       "status": "processing",
-      "message": "Analyzing data structure and relationships"
+      "message": "Normalizing metrics and relationships"
     },
     {
       "name": "generate_visualizations",
@@ -228,12 +193,12 @@ Get creation job status
 }
 ```
 
-### 5. Public Dashboard Access
+### 4. Public Dashboard Access
 
 #### GET /api/public/dashboards/{dashboard_id}
 Access public dashboard (no authentication required)
 
-### 6. Dashboard Analytics
+### 5. Dashboard Analytics
 
 #### POST /api/dashboards/{dashboard_id}/view
 Record dashboard view (for analytics)
@@ -241,7 +206,7 @@ Record dashboard view (for analytics)
 #### GET /api/dashboards/{dashboard_id}/analytics
 Get dashboard usage analytics (owner only)
 
-### 7. Export and Sharing
+### 6. Export and Sharing
 
 #### GET /api/dashboards/{dashboard_id}/export
 Export dashboard data (PDF, PNG, etc.)

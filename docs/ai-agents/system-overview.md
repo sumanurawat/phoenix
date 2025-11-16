@@ -7,10 +7,10 @@ This document provides essential context about the Phoenix platform that every A
 Phoenix is a sophisticated AI-powered platform that combines multiple services into a unified web application. It demonstrates modern web development practices with advanced AI integration.
 
 ### **Core Services**
-1. **Derplexity** - AI-powered search and question answering
+1. **Derplexity** - Multi-turn conversational AI assistant
 2. **Doogle** - Intelligent web search with AI summaries  
-3. **Robin** - Advanced AI chat interface with multi-provider support
-4. **Dataset Discovery & Analysis** - Kaggle integration with automated analysis
+3. **Robin** - AI-powered news aggregation and analysis
+4. **Reel Maker & Video Generation** - Short-form video workflows with Veo API
 5. **URL Shortener (Deep Links)** - Link management with analytics
 
 ### **Key Features**
@@ -89,7 +89,6 @@ All sensitive information stored in GCP Secret Manager:
 - `phoenix-claude-api-key`: Claude API access  
 - `phoenix-openai-api-key`: OpenAI API access
 - `phoenix-firebase-key`: Firebase service account
-- `phoenix-kaggle-username` & `phoenix-kaggle-key`: Kaggle API
 
 ### **Authentication Flow**
 - Firebase Auth for user management
@@ -102,7 +101,6 @@ All sensitive information stored in GCP Secret Manager:
 - **users**: User profiles and preferences
 - **links**: URL shortener data with analytics
 - **conversations**: Chat history and interactions
-- **datasets**: Dataset discovery and analysis results
 
 ### **Key Data Patterns**
 - Real-time updates using Firestore listeners
@@ -131,7 +129,6 @@ All sensitive information stored in GCP Secret Manager:
 ### **Response Times**
 - **Static Pages**: <100ms
 - **AI Queries**: 2-10 seconds (depending on model)
-- **Dataset Analysis**: 30-120 seconds (iterative mode)
 - **Database Queries**: <500ms
 
 ### **Scalability**
@@ -143,7 +140,6 @@ All sensitive information stored in GCP Secret Manager:
 
 ### **Target Users**
 - Developers seeking AI-powered tools
-- Researchers needing dataset analysis
 - Teams requiring collaborative AI interfaces
 - Organizations wanting cost-controlled AI access
 
@@ -162,7 +158,7 @@ All sensitive information stored in GCP Secret Manager:
 
 ### **Planned Improvements**
 - Enhanced analytics dashboard
-- Advanced dataset analysis features
+- Expanded reel/video creation workflows
 - Improved cost optimization tools
 - Better error handling and recovery
 
@@ -176,7 +172,6 @@ All sensitive information stored in GCP Secret Manager:
 
 ### **Core Services**
 - `services/enhanced_llm_service.py`: Multi-provider AI integration
-- `services/dataset_discovery/`: Complete dataset analysis system
 - `api/`: REST API endpoints
 - `templates/`: HTML templates with modern UI
 

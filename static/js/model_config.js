@@ -1,6 +1,6 @@
 /**
  * Centralized Model Configuration for Phoenix AI Platform
- * Used by all apps: Derplexity, Doogle, Dataset Discovery, etc.
+ * Used by all apps: Derplexity, Doogle, Deeplink, etc.
  */
 
 const PHOENIX_MODELS = {

@@ -11,7 +11,7 @@ This directory contains documentation specifically designed for AI agents workin
 - 🛠️ **Development**: Follow `docs/ai-agents/development-patterns.md`
 
 ### **Key System Context**
-- **Platform**: Multi-service AI platform (Derplexity, Doogle, Robin, Dataset Analysis)
+- **Platform**: Multi-service AI platform (Derplexity, Doogle, Robin, Video Generation)
 - **Infrastructure**: GCP Cloud Run + Firebase + Docker
 - **AI Integration**: Multi-provider LLM support (Gemini, Claude, OpenAI)
 - **Development Model**: Staging (dev branch) → Production (main branch)
@@ -74,7 +74,7 @@ This directory contains documentation specifically designed for AI agents workin
 python scripts/fetch_logs.py --environment production --hours 6 --severity ERROR
 
 # Search for specific issues  
-python scripts/fetch_logs.py --search "dataset" --hours 12
+python scripts/fetch_logs.py --search "video" --hours 12
 
 # Get staging logs with full analysis
 python scripts/fetch_logs.py --environment staging --hours 2 --save-json
@@ -104,15 +104,11 @@ git push origin main
 python test_enhanced_llm.py
 
 # Debug specific features
-python debug_dataset_discovery.py
-python debug_kaggle_api.py
+python debug_enhanced_llm.py
 ```
 
 ### **Testing & Validation**
 ```bash
-# Run dataset discovery tests
-python test_dataset_discovery.py
-
 # Test Docker fallback
 python test_docker_fallback.py
 

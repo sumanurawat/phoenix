@@ -85,7 +85,6 @@ yarn-error.log*
 # Large data files
 *.csv
 data/
-datasets/
 # Note: We need package.json and package-lock.json for builds!
 
 # Test files

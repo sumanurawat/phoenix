@@ -978,7 +978,6 @@ class StripeService:
             return {
                 'chat_messages': 0,
                 'searches': 0,
-                'datasets_analyzed': 0,
                 'videos_generated': 0,
                 'date': today
             }

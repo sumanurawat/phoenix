@@ -305,15 +305,6 @@
                     {% endif %}
                 </div>
                 <div class="usage-item">
-                    <div class="usage-value">{{ usage.datasets_analyzed|default(0) }}</div>
-                    <div class="usage-label">Datasets Analyzed</div>
-                    {% if not subscription.is_premium %}
-                        <div class="progress">
-                            <div class="progress-bar" style="width: {{ (usage.datasets_analyzed|default(0) / 2 * 100)|int }}%"></div>
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="usage-item">
                     <div class="usage-value">{{ usage.videos_generated|default(0) }}</div>
                     <div class="usage-label">Videos Generated</div>
                     {% if not subscription.is_premium %}
@@ -345,7 +336,7 @@
                     </li>
                     <li>
                         <i class="fas fa-check-circle"></i>
-                        <span>2 dataset analyses per day</span>
+                        <span>Short link analytics with Deeplink</span>
                     </li>
                     <li>
                         <i class="fas fa-check-circle"></i>
@@ -398,7 +389,7 @@
                     </li>
                     <li>
                         <i class="fas fa-check-circle"></i>
-                        <span><strong>Unlimited</strong> dataset analyses</span>
+                        <span><strong>Unlimited</strong> short links with click analytics</span>
                     </li>
                     <li>
                         <i class="fas fa-check-circle"></i>

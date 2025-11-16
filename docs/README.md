@@ -62,14 +62,12 @@ Welcome to the comprehensive documentation for the Phoenix AI-powered platform. 
 ├── architecture/
 │   ├── DEEPLINK_SYSTEM_DESIGN.md       # URL shortener architecture
 │   ├── UX_DESIGN_PHILOSOPHY.md         # Design guidelines
-│   ├── DASHBOARD_BACKEND_PLAN.md       # Backend architecture
 │   └── DASHBOARD_API_SPEC.md           # API specifications
 ```
 
 ### **🎯 Feature Documentation**
 ```
 ├── features/
-│   ├── DATASET_DISCOVERY_IMPLEMENTATION.md  # Dataset analysis system
 │   ├── enhanced_chat_service_readme.md      # Chat system documentation
 │   ├── DEEPLINK_IMPLEMENTATION_PLAN.md      # URL shortener features
 │   ├── DEEPLINK_PRD.md                     # Product requirements
@@ -90,8 +88,6 @@ Welcome to the comprehensive documentation for the Phoenix AI-powered platform. 
 ```
 ├── future-plans/
 │   ├── README.md                       # Planning methodology
-│   ├── production-dataset-analysis.md  # Scalable analysis pipeline
-│   ├── dashboard-backend-plan.md       # Backend enhancements
 │   └── [Additional roadmaps]           # Feature and system evolution
 ```
 
@@ -106,7 +102,6 @@ Welcome to the comprehensive documentation for the Phoenix AI-powered platform. 
 ### **For Understanding the System**
 1. **[AI Agent System Overview](./ai-agents/system-overview.md)** - Essential context
 2. **[Development Workflow](./DEVELOPMENT_WORKFLOW_GUIDE.md)** - How development works
-3. **[Dataset Discovery Implementation](./features/DATASET_DISCOVERY_IMPLEMENTATION.md)** - Key feature architecture
 
 ### **For Safe Operations**
 1. **[Deployment Procedures](./ai-agents/deployment-procedures.md)** - Safe deployment practices

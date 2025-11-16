@@ -12,7 +12,7 @@ The `scripts/fetch_logs.py` script is your most powerful debugging tool. It prov
 python scripts/fetch_logs.py --environment production --hours 6 --severity ERROR
 
 # Search for specific issues
-python scripts/fetch_logs.py --search "dataset" --hours 12
+python scripts/fetch_logs.py --search "video" --hours 12
 python scripts/fetch_logs.py --search "claude" --hours 6
 python scripts/fetch_logs.py --search "404" --hours 2
 
@@ -106,12 +106,8 @@ git push origin dev
 python test_enhanced_llm.py
 
 # 3. Feature-specific testing
-python test_dataset_discovery.py
+python test_image_generation.py
 python test_docker_fallback.py
-
-# 4. Debug specific components
-python debug_kaggle_api.py
-python debug_dataset_info.py
 ```
 
 ### **Post-Deployment Validation**
@@ -129,8 +125,8 @@ curl -I https://phoenix-dev-234619602247.us-central1.run.app
 
 # 4. Test key functionality
 # - Visit the web interface
-# - Test dataset discovery
-# - Verify AI model selection
+# - Verify short links, reels, and AI chat flows
+# - Validate AI model selection
 ```
 
 ## 🔧 **Development Patterns**
@@ -159,7 +155,7 @@ git checkout -b feature/new-feature-name
 
 # 3. Run relevant tests
 python test_enhanced_llm.py  # For AI changes
-python debug_kaggle_api.py   # For dataset features
+python test_image_generation.py  # For media workflows
 
 # 4. Deploy to staging for validation
 git add .
@@ -175,8 +171,8 @@ git push origin dev
 pip install -r requirements.txt
 
 # Example: Fix version compatibility issue
-# Change: scikit-learn==1.7.0 (requires Python 3.10+)
-# To: scikit-learn==1.6.1 (Python 3.9 compatible)
+# Change: httpx==0.28.0 (beta release)
+# To: httpx==0.27.2 (stable & verified)
 ```
 
 ## 🔒 **Security & Secrets Management**
@@ -200,7 +196,6 @@ echo -n "SECRET_VALUE" | gcloud secrets create new-secret-name --data-file=- --p
 - **Claude API**: Store in `phoenix-claude-api-key` 
 - **OpenAI API**: Store in `phoenix-openai-api-key`
 - **Firebase**: Store in `phoenix-firebase-key`
-- **Kaggle**: Store in `phoenix-kaggle-username` and `phoenix-kaggle-key`
 
 ## 🐛 **Troubleshooting Common Issues**
 
@@ -270,7 +265,7 @@ python scripts/fetch_logs.py --environment production --hours 24 --severity ERRO
 ./scripts/manage_env.sh logs staging --hours 6
 
 # 3. Verify key services
-# - Dataset discovery working
+# - Reel maker/video pipelines healthy
 # - AI models responding
 # - Authentication functioning
 ```

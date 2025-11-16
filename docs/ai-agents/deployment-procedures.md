@@ -107,17 +107,17 @@ python scripts/fetch_logs.py --environment staging --hours 1 --severity ERROR
 ```bash
 # 1. Test key endpoints
 curl -f https://phoenix-234619602247.us-central1.run.app/ || echo "Homepage failed"
-curl -f https://phoenix-234619602247.us-central1.run.app/datasets || echo "Datasets failed"
+curl -f https://phoenix-234619602247.us-central1.run.app/video-generation || echo "Video generation page failed"
 
 # 2. Run automated tests if available
 python test_enhanced_llm.py
-python test_dataset_discovery.py
+python test_image_generation.py
 
 # 3. Manual verification checklist:
 # - Homepage loads correctly
 # - User authentication works
 # - AI model selection functions
-# - Dataset discovery searches work
+# - Reel maker jobs progress updates
 # - Error pages display properly
 ```
 
