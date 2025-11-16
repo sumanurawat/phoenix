@@ -190,7 +190,11 @@ def create_app():
     app.config["SESSION_COOKIE_SECURE"] = True  # Require HTTPS
     app.config["SESSION_COOKIE_HTTPONLY"] = True  # Prevent JS access
     app.config["SESSION_COOKIE_SAMESITE"] = "None"  # Allow cross-domain cookies
-    app.config["SESSION_COOKIE_DOMAIN"] = None  # Don't restrict domain
+    # Set cookie domain based on environment - use .friedmomo.com for production
+    if os.getenv('FLASK_ENV') == 'development':
+        app.config["SESSION_COOKIE_DOMAIN"] = None  # localhost
+    else:
+        app.config["SESSION_COOKIE_DOMAIN"] = ".friedmomo.com"  # Works for friedmomo.com and all subdomains
     app.config["SESSION_COOKIE_NAME"] = "session"  # Cookie name
     app.config["PERMANENT_SESSION_LIFETIME"] = 2592000  # 30 days in seconds
 
