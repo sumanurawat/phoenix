@@ -49,7 +49,6 @@ except Exception as e:
 # Import API routes (AFTER Firebase initialization)
 from api.chat_routes import chat_bp
 from api.enhanced_chat_routes import enhanced_chat_bp
-from api.deeplink_routes import deeplink_bp
 from api.auth_routes import auth_bp, login_required
 from api.stats_routes import stats_bp
 from api.stripe_routes import stripe_bp, subscription_bp
@@ -196,7 +195,6 @@ def create_app():
     # Register blueprints
     app.register_blueprint(chat_bp)
     app.register_blueprint(enhanced_chat_bp)
-    app.register_blueprint(deeplink_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(stats_bp)
     app.register_blueprint(stripe_bp)

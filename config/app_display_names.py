@@ -11,14 +11,10 @@ from typing import Optional
 # Ordered list of (prefix, display_name) tuples; first match wins
 DISPLAY_NAME_PREFIXES = [
     ('/derplexity', 'Derplexity'),
-    ('/apps/deeplink', 'URL Keeper'),  # short links & analytics
-    ('/reel-maker', 'Reel Maker'),
-    ('/video-generation', 'Video Maker'),
 ]
 
 # Fallback mapping by Flask blueprint name
 BLUEPRINT_DISPLAY_NAMES = {
-    'deeplink': 'URL Keeper',
     'subscription': 'Subscription',
     'stripe': 'Subscription',
 }
@@ -28,8 +24,6 @@ ENDPOINT_DISPLAY_NAMES = {
     'derplexity': 'Derplexity',
     'derplexity_enhanced': 'Derplexity',
     'derplexity_legacy': 'Derplexity',
-    'reel_maker': 'Reel Maker',
-    'video_generation': 'Video Maker',
 }
 
 

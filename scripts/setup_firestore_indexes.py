@@ -118,7 +118,6 @@ def test_analytics_after_indexes():
     
     try:
         from services.click_tracking_service import ClickTrackingService
-        from services.deeplink_service import get_links_for_user
         
         cts = ClickTrackingService()
         
