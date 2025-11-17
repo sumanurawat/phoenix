@@ -37,7 +37,7 @@ class EnhancedChatService:
         Args:
             user_id: User ID creating the conversation
             user_email: User email
-            origin: Application origin (derplexity, robin, doogle)
+            origin: Application origin (derplexity)
             title: Optional conversation title
             
         Returns:
@@ -127,7 +127,7 @@ class EnhancedChatService:
         
         Args:
             user_id: User ID
-            origin: Optional origin filter (derplexity, robin, doogle)
+            origin: Optional origin filter (derplexity)
             limit: Maximum number of conversations to return
             
         Returns:

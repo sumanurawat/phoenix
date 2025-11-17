@@ -81,72 +81,6 @@
                                 </div>
                             </div>
 
-                            <!-- Derplexity row -->
-                            <div class="compact-app-row">
-                                <a href="{{ url_for('derplexity') }}" class="text-decoration-none flex-grow-1">
-                                    <div class="compact-project-item">
-                                        <div class="compact-project-icon">
-                                            <i class="fas fa-robot"></i>
-                                        </div>
-                                        <div class="compact-project-content">
-                                            <div class="compact-project-title">Derplexity</div>
-                                            <div class="compact-project-desc">Conversational AI powered by Gemini</div>
-                                        </div>
-                                    </div>
-                                </a>
-                                <div class="inline-mini-cards">
-                                    <div class="mini-card">
-                                        <div class="mini-number" id="chat-sessions">-</div>
-                                        <div class="mini-label">Conversations Started</div>
-                                    </div>
-                                    <div class="mini-card">
-                                        <div class="mini-number" id="chat-messages">-</div>
-                                        <div class="mini-label">Messages Exchanged</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Doogle row -->
-                            <div class="compact-app-row">
-                                <a href="{{ url_for('doogle') }}" class="text-decoration-none flex-grow-1">
-                                    <div class="compact-project-item">
-                                        <div class="compact-project-icon">
-                                            <i class="fas fa-search"></i>
-                                        </div>
-                                        <div class="compact-project-content">
-                                            <div class="compact-project-title">Doogle</div>
-                                            <div class="compact-project-desc">AI-powered search with smart summaries</div>
-                                        </div>
-                                    </div>
-                                </a>
-                                <div class="inline-mini-cards">
-                                    <div class="mini-card">
-                                        <div class="mini-number" id="doogle-searches">-</div>
-                                        <div class="mini-label">Searches Performed</div>
-                                    </div>
-                                    <div class="mini-card placeholder"></div>
-                                </div>
-                            </div>
-
-                            <!-- Robin row -->
-                            <div class="compact-app-row">
-                                <a href="{{ url_for('robin.robin_page') }}" class="text-decoration-none flex-grow-1">
-                                    <div class="compact-project-item">
-                                        <div class="compact-project-icon">
-                                            <i class="far fa-newspaper"></i>
-                                        </div>
-                                        <div class="compact-project-content">
-                                            <div class="compact-project-title">Robin</div>
-                                            <div class="compact-project-desc">AI news summarizer and aggregator</div>
-                                        </div>
-                                    </div>
-                                </a>
-                                <div class="inline-mini-cards">
-                                    <div class="mini-card">
-                                        <div class="mini-number" id="robin-answers">-</div>
-                                        <div class="mini-label">News Queries Answered</div>
-                                    </div>
-                                    <div class="mini-card placeholder"></div>
                                 </div>
                             </div>
 
@@ -308,8 +242,6 @@
             const map = {
                 'chat-sessions': data.conversations_started,
                 'chat-messages': data.messages_exchanged,
-                'doogle-searches': data.doogle_searches_made,
-                'robin-answers': data.robin_queries_answered,
                 'total-links': data.total_links,
                 'total-clicks': data.total_clicks,
                 'videos-generated': data.videos_generated,
@@ -322,7 +254,7 @@
         })
         .catch(error => {
             console.error('Error fetching stats:', error);
-            const ids = ['chat-sessions','chat-messages','doogle-searches','robin-answers','total-links','total-clicks','videos-generated','reel-seconds-generated'];
+            const ids = ['chat-sessions','chat-messages','total-links','total-clicks','videos-generated','reel-seconds-generated'];
             ids.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '0'; });
         });
 </script>

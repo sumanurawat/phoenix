@@ -50,7 +50,7 @@ def get_current_user():
 def get_conversations():
     """Get user's conversations, optionally filtered by origin."""
     user = get_current_user()
-    origin = request.args.get('origin')  # derplexity, robin, doogle
+    origin = request.args.get('origin')  # derplexity
     limit = request.args.get('limit', 50, type=int)
     
     conversations = chat_service.get_user_conversations(
@@ -87,7 +87,7 @@ def create_conversation():
     title = data.get('title')
     
     # Validate origin
-    valid_origins = ['derplexity', 'robin', 'doogle']
+    valid_origins = ['derplexity']
     if origin not in valid_origins:
         return jsonify({"success": False, "error": f"Invalid origin. Must be one of: {valid_origins}"}), 400
     

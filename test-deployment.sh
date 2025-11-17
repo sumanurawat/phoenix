@@ -67,7 +67,6 @@ REQUIRED_SECRETS=(
     "phoenix-secret-key" 
     "phoenix-google-api-key"
     "phoenix-search-engine-id"
-    "phoenix-newsdata-api-key"
     "phoenix-kaggle-username"
     "phoenix-kaggle-key"
     "phoenix-claude-api-key"

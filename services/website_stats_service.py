@@ -37,13 +37,11 @@ class WebsiteStatsService:
                 # New metrics (initialized to 0)
                 'total_conversations_started': 0,
                 'total_messages_exchanged': 0,
-                'doogle_searches_made': 0,
-                'robin_queries_answered': 0,
                 'total_videos_generated': 3,  # Video Generator: 3 videos already generated
                 'total_video_seconds_generated': 24,  # Reel Maker: 24 seconds (3 x 8s videos)
                 'last_updated': firestore.SERVER_TIMESTAMP,
                 'created_at': firestore.SERVER_TIMESTAMP,
-                'version': 4
+                'version': 6
             }
             
             # Set the document (will overwrite if exists)
@@ -109,32 +107,6 @@ class WebsiteStatsService:
             return True
         except Exception as e:
             logger.error(f"Error incrementing messages exchanged: {e}")
-            return False
-
-    def increment_doogle_searches(self, amount: int = 1) -> bool:
-        try:
-            stats_ref = self.db.collection(self.stats_collection).document(self.stats_doc_id)
-            stats_ref.update({
-                'doogle_searches_made': firestore.Increment(amount),
-                'last_updated': firestore.SERVER_TIMESTAMP
-            })
-            logger.info(f"Incremented doogle_searches_made by {amount}")
-            return True
-        except Exception as e:
-            logger.error(f"Error incrementing Doogle searches: {e}")
-            return False
-
-    def increment_robin_queries(self, amount: int = 1) -> bool:
-        try:
-            stats_ref = self.db.collection(self.stats_collection).document(self.stats_doc_id)
-            stats_ref.update({
-                'robin_queries_answered': firestore.Increment(amount),
-                'last_updated': firestore.SERVER_TIMESTAMP
-            })
-            logger.info(f"Incremented robin_queries_answered by {amount}")
-            return True
-        except Exception as e:
-            logger.error(f"Error incrementing Robin queries answered: {e}")
             return False
 
     def increment_videos_generated(self, amount: int = 1) -> bool:
@@ -216,8 +188,6 @@ class WebsiteStatsService:
                 'total_clicks': '0',
                 'conversations_started': '0',
                 'messages_exchanged': '0',
-                'doogle_searches_made': '0',
-                'robin_queries_answered': '0',
                 'videos_generated': '0',
                 'video_seconds_generated': '0',
                 'last_updated': 'Never'
@@ -228,8 +198,6 @@ class WebsiteStatsService:
             'total_clicks': f"{stats.get('total_clicks', 0):,}",
             'conversations_started': f"{stats.get('total_conversations_started', 0):,}",
             'messages_exchanged': f"{stats.get('total_messages_exchanged', 0):,}",
-            'doogle_searches_made': f"{stats.get('doogle_searches_made', 0):,}",
-            'robin_queries_answered': f"{stats.get('robin_queries_answered', 0):,}",
             'videos_generated': f"{stats.get('total_videos_generated', 0):,}",
             'video_seconds_generated': f"{stats.get('total_video_seconds_generated', 0):,}",
             'last_updated': stats.get('last_updated', 'Unknown')

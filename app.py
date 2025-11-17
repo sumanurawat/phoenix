@@ -49,7 +49,6 @@ except Exception as e:
 # Import API routes (AFTER Firebase initialization)
 from api.chat_routes import chat_bp
 from api.enhanced_chat_routes import enhanced_chat_bp
-from api.search_routes import search_bp
 from api.deeplink_routes import deeplink_bp
 from api.auth_routes import auth_bp, login_required
 from api.stats_routes import stats_bp
@@ -67,8 +66,6 @@ from api.feed_routes import feed_bp
 # Import services (AFTER Firebase initialization)
 from services.chat_service import ChatService
 from services.enhanced_chat_service import EnhancedChatService
-from services.search_service import SearchService
-from services.website_stats_service import WebsiteStatsService
 from services.subscription_middleware import (
     init_subscription_context, 
     subscription_context_processor
@@ -97,8 +94,6 @@ except Exception as e:
 # Service instances (lazy-loaded)
 _chat_service = None
 _enhanced_chat_service = None
-_search_service = None
-_website_stats_service = None
 
 def get_chat_service():
     """Get or create ChatService instance (lazy initialization)."""
@@ -115,22 +110,6 @@ def get_enhanced_chat_service():
         logger.info("Initializing EnhancedChatService...")
         _enhanced_chat_service = EnhancedChatService()
     return _enhanced_chat_service
-
-def get_search_service():
-    """Get or create SearchService instance (lazy initialization)."""
-    global _search_service
-    if _search_service is None:
-        logger.info("Initializing SearchService...")
-        _search_service = SearchService()
-    return _search_service
-
-def get_website_stats_service():
-    """Get or create WebsiteStatsService instance (lazy initialization)."""
-    global _website_stats_service
-    if _website_stats_service is None:
-        logger.info("Initializing WebsiteStatsService...")
-        _website_stats_service = WebsiteStatsService()
-    return _website_stats_service
 
 def require_auth(f):
     """Decorator to require authentication for routes."""
@@ -220,7 +199,6 @@ def create_app():
     # Register blueprints
     app.register_blueprint(chat_bp)
     app.register_blueprint(enhanced_chat_bp)
-    app.register_blueprint(search_bp)
     app.register_blueprint(deeplink_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(stats_bp)
@@ -315,35 +293,6 @@ def create_app():
         """Render the Derplexity chat interface with persistent conversations."""
         return render_template('derplexity.html', 
                             title='Derplexity Chat')
-    
-    @app.route('/doogle')
-    @login_required
-    def doogle():
-        """Render the Doogle search interface."""
-        query = request.args.get('q', '')
-        category = request.args.get('category', 'web')
-        page = int(request.args.get('page', 1))
-        
-        # Validate category - only allow web or news
-        if category not in ['web', 'news']:
-            category = 'web'
-        
-        # If there's a query, perform search and pass results to template
-        results = {}
-        if query:
-            results = get_search_service().search(query, category, page)
-            
-            # Increment Doogle search stats for non-empty queries
-            try:
-                get_website_stats_service().increment_doogle_searches()
-            except Exception as e:
-                logger.warning(f"Failed to update Doogle search stats: {e}")
-            
-        return render_template('doogle.html', 
-                           title='Doogle Search', 
-                           query=query,
-                           category=category,
-                           results=results)
     
     @app.route('/phase4-test')
     @login_required

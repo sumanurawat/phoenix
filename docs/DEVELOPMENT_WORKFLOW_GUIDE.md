@@ -144,8 +144,8 @@ steps:
     - '1Gi'
     - '--max-instances'
     - '5'
-    - '--update-secrets'
-    - 'GEMINI_API_KEY=phoenix-gemini-api-key:latest,SECRET_KEY=phoenix-secret-key:latest,GOOGLE_API_KEY=phoenix-google-api-key:latest,GOOGLE_SEARCH_ENGINE_ID=phoenix-search-engine-id:latest,NEWSDATA_API_KEY=phoenix-newsdata-api-key:latest'
+  - '--update-secrets'
+  - 'GEMINI_API_KEY=phoenix-gemini-api-key:latest,SECRET_KEY=phoenix-secret-key:latest,GOOGLE_API_KEY=phoenix-google-api-key:latest,GOOGLE_SEARCH_ENGINE_ID=phoenix-search-engine-id:latest'
 
 images:
   - 'gcr.io/$PROJECT_ID/phoenix-dev'

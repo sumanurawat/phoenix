@@ -43,7 +43,7 @@ CLAUDE_API_KEY=sk-ant-api03-[REDACTED_FOR_SECURITY]
 ### 2. `cloudbuild.yaml` (Production Deployment)
 ```yaml
 - '--update-secrets'
-- 'GEMINI_API_KEY=phoenix-gemini-api-key:latest,SECRET_KEY=phoenix-secret-key:latest,GOOGLE_API_KEY=phoenix-google-api-key:latest,GOOGLE_SEARCH_ENGINE_ID=phoenix-search-engine-id:latest,NEWSDATA_API_KEY=phoenix-newsdata-api-key:latest,KAGGLE_USERNAME=phoenix-kaggle-username:latest,KAGGLE_KEY=phoenix-kaggle-key:latest,CLAUDE_API_KEY=phoenix-claude-api-key:latest'
+- 'GEMINI_API_KEY=phoenix-gemini-api-key:latest,SECRET_KEY=phoenix-secret-key:latest,GOOGLE_API_KEY=phoenix-google-api-key:latest,GOOGLE_SEARCH_ENGINE_ID=phoenix-search-engine-id:latest,KAGGLE_USERNAME=phoenix-kaggle-username:latest,KAGGLE_KEY=phoenix-kaggle-key:latest,CLAUDE_API_KEY=phoenix-claude-api-key:latest'
 ```
 
 ### 3. `requirements.txt` (Dependencies)
