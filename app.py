@@ -163,12 +163,10 @@ def create_app():
     # Configure session cookies for cross-domain support (friedmomo.com → backend)
     app.config["SESSION_COOKIE_SECURE"] = True  # Require HTTPS
     app.config["SESSION_COOKIE_HTTPONLY"] = True  # Prevent JS access
-    app.config["SESSION_COOKIE_SAMESITE"] = "None"  # Allow cross-domain cookies
-    # Set cookie domain based on environment - use .friedmomo.com for production
-    if os.getenv('FLASK_ENV') == 'development':
-        app.config["SESSION_COOKIE_DOMAIN"] = None  # localhost
-    else:
-        app.config["SESSION_COOKIE_DOMAIN"] = ".friedmomo.com"  # Works for friedmomo.com and all subdomains
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # Lax for same-site (Firebase proxy makes all requests same-site)
+    # Don't set cookie domain - let it default to the request domain
+    # This way cookies work whether accessed via friedmomo.com (Firebase proxy) or run.app (direct)
+    app.config["SESSION_COOKIE_DOMAIN"] = None
     app.config["SESSION_COOKIE_NAME"] = "session"  # Cookie name
     app.config["PERMANENT_SESSION_LIFETIME"] = 2592000  # 30 days in seconds
 
