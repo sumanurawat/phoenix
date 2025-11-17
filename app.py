@@ -52,12 +52,11 @@ from api.enhanced_chat_routes import enhanced_chat_bp
 from api.deeplink_routes import deeplink_bp
 from api.auth_routes import auth_bp, login_required
 from api.stats_routes import stats_bp
-from api.video_routes import video_bp
 from api.stripe_routes import stripe_bp, subscription_bp
 from api.token_routes import token_bp
 from api.socials_routes import socials_bp
 from api.image_routes import image_bp
-from api.generation_routes import generation_bp  # Unified creation endpoint
+from api.generation_routes import generation_bp  # Unified creation endpoint (images + videos for Friedmomo)
 from api.user_routes import user_bp
 from api.feed_routes import feed_bp
 
@@ -200,13 +199,12 @@ def create_app():
     app.register_blueprint(deeplink_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(stats_bp)
-    app.register_blueprint(video_bp)
     app.register_blueprint(stripe_bp)
     app.register_blueprint(subscription_bp)
     app.register_blueprint(token_bp)
     app.register_blueprint(socials_bp)
     app.register_blueprint(image_bp)
-    app.register_blueprint(generation_bp)  # Unified draft-first creation with Cloud Run Jobs
+    app.register_blueprint(generation_bp)  # Unified draft-first creation with Cloud Run Jobs (Friedmomo)
     app.register_blueprint(user_bp)  # Phase 4: User profiles & usernames
     app.register_blueprint(feed_bp)  # Phase 4: Social feed & likes
     
@@ -401,30 +399,6 @@ def create_app():
                 "error_type": type(e).__name__
             }), 500
 
-    @app.route('/videos/<path:relpath>')
-    def serve_generated_video(relpath: str):
-        """Serve locally generated video files saved under VIDEO_OUTPUT_DIR (default generated_videos).
-
-        Security: ensures the resolved absolute path stays within the base directory to prevent traversal.
-        """
-        from flask import abort, send_file
-        base_dir = os.getenv('VIDEO_OUTPUT_DIR', 'generated_videos')
-        # Normalize paths
-        base_abs = os.path.abspath(base_dir)
-        target_abs = os.path.abspath(os.path.join(base_dir, relpath))
-        if not target_abs.startswith(base_abs):
-            abort(403)
-        if not os.path.exists(target_abs):
-            abort(404)
-        # Basic content type assumption (could inspect)
-        return send_file(target_abs, mimetype='video/mp4')
-    
-    @app.route('/video-generation')
-    @login_required
-    def video_generation():
-        """Render the Video Generation page (requires login)."""
-        return render_template('video_generation.html', title='Video Generation - Phoenix AI')
-    
     @app.route('/image-generator')
     @login_required
     def image_generator():
