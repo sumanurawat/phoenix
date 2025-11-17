@@ -1,5 +1,0 @@
-# This file is ignored by the main .gcloudignore during stitching job build
-# We need these files for the stitching job Docker build
-!jobs/video_stitching/
-!jobs/shared/
-!jobs/base/

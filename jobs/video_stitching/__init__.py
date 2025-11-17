@@ -1,1 +1,0 @@
-"""Video stitching job implementation."""

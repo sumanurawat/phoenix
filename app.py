@@ -55,8 +55,6 @@ from api.stats_routes import stats_bp
 from api.video_routes import video_bp
 from api.stripe_routes import stripe_bp, subscription_bp
 from api.token_routes import token_bp
-from api.reel_routes import reel_bp
-from api.job_routes import job_bp
 from api.socials_routes import socials_bp
 from api.image_routes import image_bp
 from api.generation_routes import generation_bp  # Unified creation endpoint
@@ -206,8 +204,6 @@ def create_app():
     app.register_blueprint(stripe_bp)
     app.register_blueprint(subscription_bp)
     app.register_blueprint(token_bp)
-    app.register_blueprint(reel_bp)
-    app.register_blueprint(job_bp)
     app.register_blueprint(socials_bp)
     app.register_blueprint(image_bp)
     app.register_blueprint(generation_bp)  # Unified draft-first creation with Cloud Run Jobs
@@ -434,12 +430,6 @@ def create_app():
     def image_generator():
         """Render the Image Generator page (requires login)."""
         return render_template('image_generator.html', title='Image Generator - Phoenix AI')
-    
-    @app.route('/reel-maker')
-    @login_required
-    def reel_maker():
-        """Render the Reel Maker page (requires login)."""
-        return render_template('reel_maker.html', title='Reel Maker - Phoenix AI')
 
     @app.route('/username-setup')
     @login_required
