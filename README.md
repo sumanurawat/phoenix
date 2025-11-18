@@ -1,134 +1,202 @@
-# Phoenix - AI Platform
+# Friedmomo - Where Prompts Become Creation
 
-A collection of intelligent AI-powered tools showcasing modern approaches to natural language processing, search, and news aggregation.
+**🌐 Live at: [friedmomo.com](https://friedmomo.com)**
 
-## Explore the Platform
+## The Future of Work is Already Here
 
-Visit the live application at: https://phoenix-234619602247.us-central1.run.app
+In a world where AI transforms ideas into reality in seconds, **prompts are the new currency of creativity**. Friedmomo is your gateway to this future—a social platform where anyone can become a creator with just their imagination.
 
-## Featured Projects
+### Why Friedmomo?
 
-### Derplexity
-An advanced conversational AI interface powered by Google's Gemini. Derplexity provides natural and intuitive dialogues, allowing users to interact with cutting-edge language models through a clean, user-friendly interface. Perfect for brainstorming, research assistance, or simply engaging in thought-provoking conversations.
+**The prompt revolution is happening now.** While others are still figuring out how to use AI, Friedmomo users are already:
+- 🎨 **Creating stunning images** powered by Google's Imagen 3 (1 token)
+- 🎬 **Generating professional videos** with Veo 3.1 AI (45 tokens)
+- 🌍 **Sharing their creations** with a vibrant community
+- 💬 **Engaging with fellow creators** through likes and comments
+- ⚡ **Iterating rapidly** with an affordable token-based economy
 
-### Doogle
-An intelligent search engine that leverages AI to deliver precise, contextually relevant results. Unlike traditional search engines that rely solely on keyword matching, Doogle understands the semantic meaning behind your queries, providing more accurate and useful results for complex questions and research needs.
+**This is your chance to join the party early.** Before AI-generated content becomes mainstream, before everyone is doing it—stake your claim as a pioneer in the prompt-driven creator economy.
 
-### Robin
-A smart news aggregator that curates personalized real-time updates on topics that matter to you. Robin scans thousands of news sources to deliver the most relevant and timely information, all presented in a clean, distraction-free interface. Stay informed without the noise.
+## What Makes Friedmomo Different?
 
-### URL Shortener / Deep Linking
-A robust URL shortening service that allows authenticated users to create, manage, and track short links for any URL.
+### 1. **Democratized AI Access**
+No expensive subscriptions. No complex APIs. Just buy tokens and create:
+- **$10 = 1,000 tokens** = 1,000 images OR 22 videos
+- **Free tier: 100 tokens** to start experimenting immediately
+- Pay only for what you use
 
-**Current Implementation Status:**
-- ✅ **Authentication Required**: All users must log in to create/manage links
-- ✅ **Universal URL Support**: Supports any valid HTTP/HTTPS URL (not just YouTube)
-- ✅ **Link Management Dashboard**: View, copy, and delete your links at `/apps/deeplink/profile/links`
-- ✅ **Click Tracking**: Real-time click counting for all short links
-- ✅ **Firestore Storage**: Scalable data persistence
-- ✅ **Mobile-Friendly**: Responsive design for all devices
+### 2. **Social-First Platform**
+Your creations deserve an audience:
+- Public gallery showcasing the best AI-generated content
+- Like, comment, and discover trending creations
+- User profiles to build your creator brand
+- Community-driven inspiration
 
-**Technology**: 
-- Backend: Flask with Firebase Firestore
-- Frontend: Bootstrap 5 with responsive design
-- Authentication: Firebase Authentication integration
+### 3. **Production-Quality Results**
+Powered by Google's cutting-edge AI:
+- **Imagen 3**: State-of-the-art image generation
+- **Veo 3.1**: Professional-grade video synthesis
+- Instant image results, videos in 2-5 minutes
+- Direct integration with Google's latest models
 
-**Usage**:
-- **Access**: Click "URL Shortener" on homepage → Login/Signup → Create & manage links
-- **Create Links**: Enter any URL in the dashboard to generate a short link
-- **Manage Links**: View all your links with click counts and creation dates
-- **Share**: Copy short links in format `yourdomain.com/apps/deeplink/r/<short_code>`
+### 4. **Built for Speed**
+- **Cloud Run Jobs** architecture for scalable, async generation
+- Real-time progress tracking
+- Cloudflare R2 storage for lightning-fast delivery
+- Single-instance sessions (no auto-scaling issues)
 
-**User Flow**:
-1. User clicks "URL Shortener" on homepage
-2. If not logged in → redirected to login/signup
-3. After authentication → redirected to link management dashboard
-4. Create, view, and manage all short links in one place
+## The Prompt Economy is Here
+
+**Why wait?** Every day you delay is a day someone else is building their portfolio, refining their prompting skills, and establishing themselves in the AI creator space.
+
+- **Content creators**: Generate unique visuals for your brand
+- **Marketers**: Test hundreds of concepts in minutes
+- **Artists**: Explore new creative directions
+- **Entrepreneurs**: Build visual assets without hiring designers
+- **Hobbyists**: Turn your wildest ideas into reality
+
+**The barrier to entry has never been lower. The opportunity has never been bigger.**
+
+## How It Works
+
+1. **Sign up** with Google OAuth (30 seconds)
+2. **Get 100 free tokens** to start creating immediately
+3. **Enter a prompt** for an image or video
+4. **Watch the magic happen** as AI brings your vision to life
+5. **Share publicly** and engage with the community
 
 ## Technology Stack
 
-- Backend: Flask (Python)
-- AI Models: Google Gemini (latest models), Claude, Grok
-- Database: Firebase Firestore
-- Authentication: Firebase Auth
-- Frontend: Bootstrap 5, React (Reel Maker)
-- Deployment: Google Cloud Run
+**Modern, scalable, production-ready:**
 
-## 🚀 Quick Start - Local Development
+- **Backend**: Flask (Python) with service-oriented architecture
+- **AI Models**: Google Imagen 3 (images), Veo 3.1 (videos)
+- **Database**: Firebase Firestore for real-time data
+- **Authentication**: Firebase Auth with Google OAuth
+- **Storage**: Cloudflare R2 for media delivery
+- **Infrastructure**: Google Cloud Run + Cloud Run Jobs
+- **Frontend**: React SPA deployed at friedmomo.com
+- **Payments**: Stripe integration for token purchases
 
-### Single Command (Builds Everything)
+## 🚀 Local Development
+
+### Quick Start
 ```bash
 ./start_local.sh
 ```
 
 This script automatically:
-- ✅ Builds React frontend (Reel Maker feature)
+- ✅ Sets up Python virtual environment
+- ✅ Installs dependencies
 - ✅ Starts Flask backend on port 8080
-- ✅ Serves complete application
+- ✅ Serves the complete API
 
-**Access**: http://localhost:8080
+**Access Backend**: http://localhost:8080
 
-### Development Mode (Hot Reload)
-```bash
-./start_dev_mode.sh
-```
+### Frontend Development
+The React frontend is located in `frontend/soho/` and deploys separately to friedmomo.com.
 
-For active frontend development with instant React updates.
+**Documentation**: See [SOHO_ARCHITECTURE.md](SOHO_ARCHITECTURE.md) for detailed architecture
 
-**Documentation**: See [RUNNING_THE_APP.md](RUNNING_THE_APP.md) for detailed startup options.
+## Core Features
 
-## 🎬 Reel Maker Feature
+### 🎨 Image Generation (1 token)
+- Powered by Google Imagen 3
+- Instant results
+- High-quality, prompt-accurate images
+- Perfect for rapid ideation
 
-Create AI-powered video reels using Google's Veo. Features include:
-- Project-based video management
-- JSON prompt editing for scenes
-- Real-time generation progress
-- GCS-backed video storage
+### 🎬 Video Generation (45 tokens)
+- Powered by Google Veo 3.1
+- 2-5 minute processing time
+- Professional-grade output
+- Real-time progress tracking
 
-**Setup**: [REEL_MAKER_SETUP.md](REEL_MAKER_SETUP.md)  
-**Quick Reference**: [REEL_MAKER_QUICK_REFERENCE.md](REEL_MAKER_QUICK_REFERENCE.md)  
-**Access**: http://localhost:8080/reel-maker
-- Frontend: HTML5, CSS3, JavaScript
-- AI Integration: Google Gemini, custom NLP models
-- Database: Firebase Firestore (for features like URL Shortener)
-- Deployment: Google Cloud Run
+### 💰 Token Economy
+- **Free tier**: 100 tokens on signup
+- **Affordable pricing**: $10 = 1,000 tokens
+- Pay-as-you-go model
+- Stripe payment integration
 
-## Setup and Local Development
+### 🌍 Social Platform
+- Public gallery of creations
+- Like and comment system
+- User profiles and portfolios
+- Discover trending content
+- Build your creator reputation
 
-### Prerequisites
+### 🔐 Authentication
+- Google OAuth integration
+- Secure session management
+- User-specific content tracking
+
+## Prerequisites for Development
+
 - Python 3.8+
-- Google Cloud SDK (for some deployment tasks)
-- Access to a Firebase project
+- Google Cloud SDK (for deployment)
+- Firebase project with Admin SDK credentials
+- Environment variables configured (see `.env.example`)
 
 ### Firebase Setup
 
-This project uses Firebase Firestore for data storage for features like the URL Shortener, and Firebase Authentication.
+1. **Service Account Credentials:**
+   - Download Firebase service account JSON from Firebase Console
+   - Save as `firebase-credentials.json` (excluded from git)
+   
+2. **Environment Variables:**
+   ```bash
+   export GOOGLE_APPLICATION_CREDENTIALS="./firebase-credentials.json"
+   ```
 
-1.  **Service Account Credentials:**
-    *   Download your Firebase service account JSON key file from the Firebase console (Project settings -> Service accounts -> Generate new private key).
-    *   Save this file securely in a location not accessible by your web server directly, e.g., outside your project directory or in a secure credentials folder. **Do not commit it to your repository.**
-2.  **Environment Variable:**
-    *   Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the absolute path of this JSON key file.
-      For Linux/macOS:
-      ```bash
-      export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/serviceAccountKey.json"
-      ```
-      For Windows (PowerShell):
-      ```powershell
-      $env:GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\your\serviceAccountKey.json"
-      ```
-    *   The application (specifically the `firebase-admin` SDK) uses this environment variable to authenticate with Firebase services.
-    *   For local development, you can set this in your shell, or use a `.env` file with `python-dotenv` (ensure `.env` is in `.gitignore`).
-    *   For deployment (e.g., on Cloud Run), you will need to configure this environment variable in your service's settings. Refer to your hosting provider's documentation for setting environment variables.
+3. **Required API Keys:**
+   - `GEMINI_API_KEY` - Google Gemini for AI features
+   - `FIREBASE_API_KEY` - Firebase authentication
+   - `STRIPE_SECRET_KEY` - Payment processing
+   - See `.env.example` for complete list
 
-### General Local Setup
-1. Clone the repository.
-2. Create a virtual environment: `python -m venv venv`
-3. Activate it: `source venv/bin/activate` (Linux/macOS) or `venv\Scripts\activate` (Windows)
+### Installation
+1. Clone the repository
+2. Create virtual environment: `python -m venv venv`
+3. Activate: `source venv/bin/activate` (macOS/Linux)
 4. Install dependencies: `pip install -r requirements.txt`
-5. Set necessary environment variables (like `GOOGLE_APPLICATION_CREDENTIALS`, Flask specific variables if any).
-6. Run the application: `flask run` or `gunicorn app:app` (for production-like environment).
+5. Configure environment variables
+6. Run: `./start_local.sh`
 
-## About the Developer
+## Join the Prompt Revolution
 
-Created by [Sumanu Rawat](https://github.com/sumanurawat). Connect on [LinkedIn](https://www.linkedin.com/in/sumanurawat/).
+**🚀 Start creating now: [friedmomo.com](https://friedmomo.com)**
+
+The future belongs to those who master the art of prompting. Every great creator started somewhere—why not start here, today?
+
+- **100 free tokens** to experiment
+- **No credit card required** to start
+- **Join a growing community** of AI creators
+- **Build your portfolio** before the masses arrive
+
+## Architecture Highlights
+
+- **Cloud Run Jobs**: Scalable async processing for video generation
+- **Firestore**: Real-time database for creations, users, and social features
+- **R2 Storage**: Fast, cost-effective media delivery
+- **Single-instance sessions**: Optimized for Cloud Run free tier
+- **Service-oriented design**: Clean separation of concerns
+- **Blueprint-based routing**: Modular Flask architecture
+
+**Read More**: 
+- [SOHO_ARCHITECTURE.md](SOHO_ARCHITECTURE.md) - System design
+- [IMAGE_VS_VIDEO_EXPLAINED.md](IMAGE_VS_VIDEO_EXPLAINED.md) - Feature comparison
+- [TOKEN_ECONOMY_QUICK_REFERENCE.md](TOKEN_ECONOMY_QUICK_REFERENCE.md) - Pricing details
+
+## Contributing
+
+This is a production application serving real users. For significant changes, please open an issue first to discuss the proposed modifications.
+
+## About
+
+**Friedmomo** - Empowering creativity through AI-generated content.
+
+Created by [Sumanu Rawat](https://github.com/sumanurawat) | Connect on [LinkedIn](https://www.linkedin.com/in/sumanurawat/)
+
+---
+
+*"The best time to start creating with AI was yesterday. The second best time is now."*
