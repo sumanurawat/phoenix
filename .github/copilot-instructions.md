@@ -1,8 +1,8 @@
-# Phoenix AI Platform
+# Friedmomo (Phoenix) - AI Image & Video Generation Platform
 
-Phoenix is a Flask-based Python web application featuring multiple AI-powered tools including conversational AI (Derplexity), intelligent search (Doogle), URL shortener (Deeplink), and video generation. The platform integrates multiple LLM providers (Google Gemini, Claude, Grok, OpenAI) with Firebase Firestore for persistence and Stripe for subscriptions.
+Friedmomo is a Flask-based Python web application for AI-powered image and video generation. Users can create images (1 token) and videos (45 tokens), share them publicly, and interact with other creators. The platform uses Google Imagen 3 for images and Veo 3.1 for videos, with Firebase Firestore for persistence and Stripe for token purchases.
 
-**Architecture**: Multi-service Flask app with Blueprint-based routing, service-oriented design, and Firebase-first authentication.
+**Architecture**: Multi-service Flask app with Blueprint-based routing, Cloud Run Jobs for async generation, and Firebase-first authentication. Frontend at friedmomo.com (React SPA), backend API only.
 
 Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
 
@@ -178,23 +178,24 @@ response = llm.generate_text(prompt, enable_fallback=True)
 ## Core Features and Routing Patterns
 
 ### Application Structure
-Each major feature follows a consistent pattern:
-- **Frontend route** in `app.py` (e.g., `/derplexity`, `/doogle`)
-- **API blueprint** in `api/` (e.g., `chat_routes.py`, `search_routes.py`)
-- **Service layer** in `services/` (e.g., `chat_service.py`, `search_service.py`)
+Friedmomo follows a consistent pattern:
+- **Frontend** - React SPA at `frontend/soho/` (deployed to friedmomo.com)
+- **Backend API** - Flask blueprints in `api/` (generation_routes.py, auth_routes.py, etc.)
+- **Service layer** - `services/` contains business logic (creation_service.py, token_service.py, etc.)
+- **Cloud Run Jobs** - Async image/video generation in `jobs/`
 
-### Feature Breakdown
-1. **Derplexity** (`/derplexity`, `/api/chat/`) - Multi-turn conversations with LLM providers
-2. **Enhanced Chat** (`/api/enhanced-chat/`) - Advanced chat with model selection and thinking modes
-3. **Doogle** (`/doogle`, `/api/search/`) - AI-powered web/news search with Google Custom Search
-4. **Deeplink** (`/apps/deeplink/`, `/api/deeplink/`) - URL shortening with click analytics
-5. **Video Generation** (`/video-generation`, `/api/video/`) - AI video generation with Veo API
+### Core Features
+1. **Image Generation** - Imagen 3 API, 1 token, instant results via Cloud Run Job
+2. **Video Generation** - Veo 3.1 API, 45 tokens, 2-5 min processing via Cloud Run Job
+3. **Social Feed** - Public gallery, likes, comments, user profiles
+4. **Token Economy** - Stripe integration, $10 = 1000 tokens, free tier 100 tokens
+5. **Authentication** - Firebase Auth (Google OAuth), session-based backend
 
 ### Authentication Patterns
-- **Most routes require `@login_required`** - Firebase auth integration
-- **Session-based user data** - `session['user_id']`, `session['user_email']`, etc.
+- **All routes require `@login_required`** - Firebase auth integration via `api.auth_routes`
+- **Session-based user data** - `session['user_id']`, `session['user_email']`, `session['username']`
 - **CSRF protection** on all POST/PUT/DELETE via `@csrf_protect`
-- **Subscription middleware** for premium feature gating
+- **Token gating** - Check token balance before allowing generation
 
 ## Deployment and Production
 
@@ -277,269 +278,3 @@ phoenix/
 - **No automated testing** without Firebase setup
 - **Single-threaded development server** - use gunicorn for production
 - ~~**Session storage** - not suitable for multi-instance deployment~~ **FIXED**: Set max-instances=1 to prevent autoscaling and session loss
-## Cloud Run Jobs Integration (Reel Maker Video Stitching)
-
-### Architecture Overview
-Phoenix uses **Cloud Run Jobs** for isolated, scalable video processing:
-- **Job Orchestrator** (`services/job_orchestrator.py`) - Manages job lifecycle and state
-- **Video Stitching Job** (`jobs/video_stitching/`) - FFmpeg-based video processing
-- **Progress Monitoring** - Real-time updates via Firestore subcollections
-- **Smart Reconciliation** - Automatic detection of completed/stale jobs
-
-### Job Orchestration Patterns
-
-#### Triggering Jobs
-```python
-from services.job_orchestrator import get_job_orchestrator
-
-orchestrator = get_job_orchestrator()
-job = orchestrator.trigger_stitching_job(
-    project_id=project_id,
-    user_id=user_id,
-    clip_paths=['gs://bucket/clip1.mp4', 'gs://bucket/clip2.mp4'],
-    output_path='gs://bucket/output.mp4',
-    orientation='portrait',  # or 'landscape'
-    compression='optimized',  # or 'lossless'
-    force_restart=False  # Skip duplicate job check
-)
-```
-
-#### Job State Management
-- **Jobs are tracked in Firestore** (`reel_jobs` collection)
-- **Progress logs** stored in subcollection (`reel_jobs/{jobId}/progress_logs`)
-- **Automatic reconciliation** checks:
-  1. GCS output file exists → mark as completed
-  2. Cloud Run execution status → update from API
-  3. Job age > 15 minutes with no progress → mark as stale/failed
-
-#### Fallback Strategy
-- **Cloud Run Jobs unavailable?** → Falls back to local `video_stitching_service`
-- **Import fails?** → Gracefully degrades to local processing
-- **GCS client missing?** → Uses local file paths
-- **Always backward compatible** with existing code
-
-### Deployment Workflow
-
-#### Local Development
-```bash
-# Activate environment
-source venv/bin/activate
-
-# Start app (uses local stitching automatically)
-./start_local.sh
-
-# Jobs won't execute but app remains fully functional
-```
-
-#### Dev Environment Deployment
-```bash
-# Deploy main app
-gcloud builds submit --config cloudbuild-dev.yaml
-
-# Deploy Cloud Run Jobs (one-time setup)
-./scripts/setup_job_queue.sh
-./scripts/deploy_jobs.sh
-```
-
-#### Production Deployment
-```bash
-# Deploy main app (automated via GitHub webhook)
-git push origin main  # Triggers Cloud Build automatically
-
-# Deploy jobs (if job code changed)
-gcloud builds submit --config=jobs/video_stitching/cloudbuild.yaml
-
-# Monitor deployment
-gcloud run jobs describe reel-stitching-job --region=us-central1
-```
-
-### Cloud Run Jobs Configuration
-
-#### Resource Allocation
-- **CPU**: 2 vCPUs (hardcoded in cloudbuild.yaml)
-- **Memory**: 4Gi (adequate for Veo videos at 1080x1920, 8s)
-- **Timeout**: 900 seconds (15 minutes)
-- **Max Retries**: 2
-- **Region**: us-central1
-
-**Why Static Resources?**
-- Veo-generated videos have consistent specs (8s, 1080x1920)
-- Predictable resource requirements
-- Simpler configuration
-- Cost-effective (~$0.003 per execution)
-
-#### Job Structure
-```
-jobs/
-├── video_stitching/
-│   ├── main.py           # Entry point, handles Cloud Run execution
-│   ├── stitcher.py       # FFmpeg video processing logic
-│   ├── Dockerfile        # Container with Python 3.11 + FFmpeg
-│   ├── cloudbuild.yaml   # Build AND deploy configuration
-│   └── requirements.txt  # Job-specific dependencies
-├── shared/               # Shared utilities (config, schemas, utils)
-├── base/                 # Base framework (runners, monitoring, GCS)
-└── cloudbuild-all-jobs.yaml  # Master config for bulk deployment
-```
-
-### Progress Monitoring Pattern
-
-#### Publishing Progress (in Job)
-```python
-from jobs.base.progress_publisher import ProgressPublisher
-
-publisher = ProgressPublisher(job_id)
-
-# Publish progress update
-publisher.publish(
-    progress_percent=45.0,
-    message='Stitching video: 50%',
-    stage='stitching',
-    metadata={'fps': 30.5, 'speed': 1.2}
-)
-
-# Publish FFmpeg progress (auto-calculates percentage)
-publisher.publish_ffmpeg_progress(
-    current_time=25.5,
-    total_duration=60.0,
-    fps=30.0,
-    speed=1.5
-)
-```
-
-#### Consuming Progress (in Frontend)
-```javascript
-// Fetch progress logs
-const response = await fetch(`/api/reel/projects/${projectId}/jobs/${jobId}/progress?since=0`);
-const { logs, job_status } = await response.json();
-
-// Use JobProgressMonitor component
-const monitor = new JobProgressMonitor({
-  container: document.getElementById('progress-container'),
-  fetchProgress: async () => {
-    const res = await fetch(progressEndpoint);
-    return res.json();
-  },
-  pollInterval: 3500  // 3.5 seconds
-});
-```
-
-### Common Patterns and Best Practices
-
-#### Pattern 1: Check for Existing Jobs Before Starting
-```python
-# In api/reel_routes.py stitch_clips endpoint
-existing_job = orchestrator._get_active_job(project_id, "video_stitching")
-if existing_job and existing_job.status in ['queued', 'running']:
-    return jsonify({
-        "success": False,
-        "error": "Job already in progress"
-    }), 409
-```
-
-#### Pattern 2: Graceful Error Handling with Fallbacks
-```python
-try:
-    from services.job_orchestrator import get_job_orchestrator
-    JOB_ORCHESTRATOR_AVAILABLE = True
-except ImportError:
-    JOB_ORCHESTRATOR_AVAILABLE = False
-    logger.warning("Cloud Run Jobs unavailable, using local processing")
-
-if JOB_ORCHESTRATOR_AVAILABLE:
-    # Use Cloud Run Jobs
-    job = orchestrator.trigger_stitching_job(...)
-else:
-    # Fall back to local processing
-    video_stitching_service.stitch_clips(...)
-```
-
-#### Pattern 3: Smart Job Reconciliation on Project Load
-```python
-# When loading a project with status='stitching', reconcile state
-existing_job = orchestrator._get_active_job(project_id, "video_stitching")
-if existing_job:
-    job_data = db.collection('reel_jobs').document(existing_job.job_id).get().to_dict()
-    was_updated = orchestrator._auto_reconcile_job_state(existing_job.job_id, job_data)
-    if was_updated:
-        # Job state changed, re-fetch project
-        project = reel_project_service.get_project(project_id, user_id)
-```
-
-#### Pattern 4: Progress Logs with Structured Data
-```python
-# Store progress in Firestore with metadata
-progress_ref.document(f"{log_counter:05d}").set({
-    'timestamp': datetime.now(timezone.utc),
-    'progress_percent': 65.0,
-    'message': 'Stitching video: 70%',
-    'stage': 'stitching',
-    'log_number': log_counter,
-    'metadata': {
-        'fps': 30.5,
-        'speed': 1.2,
-        'eta_seconds': 45
-    }
-})
-```
-
-### Troubleshooting Cloud Run Jobs
-
-#### Job Not Starting
-1. **Check Cloud Tasks queue**: `gcloud tasks queues describe reel-jobs-queue --location=us-central1`
-2. **Check job exists**: `gcloud run jobs describe reel-stitching-job --region=us-central1`
-3. **Check IAM permissions**: Service account needs Cloud Run Admin, Storage Object Admin, Firestore User
-
-#### Job Stuck in "Running"
-- **Reconciliation runs automatically** when project is loaded
-- **Manual reconciliation**: Call `orchestrator._auto_reconcile_job_state(job_id, job_data)`
-- **Check Cloud Run execution**: `gcloud run jobs executions list --region=us-central1`
-
-#### Progress Not Updating
-1. **Check Firestore writes**: Look for `progress_logs` subcollection in job document
-2. **Check ProgressPublisher initialization**: Must pass `job_id` to VideoStitcher
-3. **Verify polling**: Frontend should poll every 3.5 seconds
-
-#### GCS Output Missing
-- **Reconciliation checks GCS automatically**: If file exists, marks job as completed
-- **Manual check**: `gsutil ls gs://phoenix-videos/reel-maker/[project-id]/`
-- **Verify permissions**: Job service account needs Storage Object Admin
-
-### Key Files for Cloud Run Jobs
-
-```
-📁 Core Service
-services/job_orchestrator.py        # Job lifecycle management
-
-📁 Job Implementation  
-jobs/video_stitching/main.py        # Job entry point
-jobs/video_stitching/stitcher.py    # FFmpeg processing
-jobs/base/progress_publisher.py     # Firestore progress updates
-jobs/base/gcs_client.py             # GCS operations
-
-📁 API Integration
-api/reel_routes.py                  # stitch_clips endpoint, progress endpoint
-
-📁 Deployment
-jobs/video_stitching/cloudbuild.yaml     # Build & deploy config
-scripts/setup_job_queue.sh               # One-time infrastructure setup
-scripts/deploy_jobs.sh                   # Deploy jobs
-
-📁 Frontend
-static/reel_maker/components/JobProgressMonitor.js    # Progress UI
-static/reel_maker/components/progress-monitor-integration.js
-```
-
-### Cost Considerations
-- **Cloud Run Jobs**: Pay only when running (~$0.003 per execution)
-- **Cloud Tasks**: Free tier covers typical usage
-- **Firestore**: Progress logs cleaned up after completion
-- **GCS**: Standard storage costs for videos
-- **Monthly estimate** (1000 stitching jobs): ~$3.50
-
-### Future Enhancements Roadmap
-1. **Dynamic resource allocation** - Scale CPU/RAM based on video specs
-2. **Batch processing** - Multiple projects in single job
-3. **GPU acceleration** - For faster encoding
-4. **Webhook notifications** - Alert users on completion
-5. **Analytics dashboard** - Job success rate, avg duration, cost tracking
