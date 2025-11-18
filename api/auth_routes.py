@@ -3,6 +3,7 @@ import os
 import json
 import base64
 import logging
+import uuid
 from functools import wraps
 from urllib.parse import urlparse, urljoin
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, current_app
@@ -461,19 +462,45 @@ def exchange_token():
     Used for cross-domain OAuth flows (friedmomo.web.app → backend).
     """
     try:
+        request_id = request.headers.get('X-Request-ID') or uuid.uuid4().hex[:8]
+        logger.info(
+            f"[exchange-token:{request_id}] Incoming request",
+            extra={
+                'path': request.path,
+                'remote_addr': request.remote_addr,
+                'user_agent': request.headers.get('User-Agent'),
+                'referer': request.headers.get('Referer'),
+            }
+        )
+
         data = request.get_json()
         token = data.get('token')
         user_id = data.get('user_id')
 
         if not token or not user_id:
+            logger.warning(
+                f"[exchange-token:{request_id}] Missing credentials",
+                extra={'has_token': bool(token), 'has_user_id': bool(user_id)}
+            )
             return jsonify({'success': False, 'error': 'Missing token or user_id'}), 400
 
         # Verify the Firebase ID token
         try:
             from firebase_admin import auth as firebase_auth
+            logger.info(
+                f"[exchange-token:{request_id}] Verifying Firebase token",
+                extra={
+                    'user_id': user_id,
+                    'token_prefix': token[:6] + '...' if token else None
+                }
+            )
             decoded_token = firebase_auth.verify_id_token(token)
 
             if decoded_token['uid'] != user_id:
+                logger.warning(
+                    f"[exchange-token:{request_id}] Token user mismatch",
+                    extra={'decoded_uid': decoded_token.get('uid'), 'payload_user_id': user_id}
+                )
                 return jsonify({'success': False, 'error': 'Token user ID mismatch'}), 401
 
             # Get user info from Firestore
@@ -482,6 +509,7 @@ def exchange_token():
             user_doc = user_ref.get()
 
             if not user_doc.exists:
+                logger.warning(f"[exchange-token:{request_id}] User not found in Firestore", extra={'user_id': user_id})
                 return jsonify({'success': False, 'error': 'User not found'}), 404
 
             user_data = user_doc.to_dict()
@@ -495,6 +523,16 @@ def exchange_token():
             session.permanent = True
             session.modified = True
 
+            logger.info(
+                f"[exchange-token:{request_id}] Session established",
+                extra={
+                    'user_id': user_id,
+                    'email': session['user_email'],
+                    'has_name': bool(session['user_name']),
+                    'has_picture': bool(session['user_picture'])
+                }
+            )
+
             return jsonify({
                 'success': True,
                 'user': {
@@ -506,11 +544,18 @@ def exchange_token():
             }), 200
 
         except Exception as e:
-            logger.error(f"Token verification failed: {e}")
+            logger.error(
+                f"[exchange-token:{request_id}] Token verification failed: {e}",
+                exc_info=True,
+                extra={'user_id': user_id}
+            )
             return jsonify({'success': False, 'error': 'Invalid token'}), 401
 
     except Exception as e:
-        logger.error(f"Token exchange error: {e}")
+        logger.error(
+            f"[exchange-token] Unexpected error: {e}",
+            exc_info=True
+        )
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
