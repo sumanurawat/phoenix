@@ -1,5 +1,7 @@
 """Routes for user profile management and username operations."""
 import logging
+import os
+import uuid as uuid_module
 from flask import Blueprint, request, session, jsonify
 from api.auth_routes import login_required
 from services.user_service import (
@@ -9,6 +11,10 @@ from services.user_service import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Instance ID for tracking which Cloud Run instance handles requests
+INSTANCE_ID = os.getenv('K_REVISION', 'local')[:20]
+CONTAINER_ID = uuid_module.uuid4().hex[:8]
 
 user_bp = Blueprint('user', __name__)
 user_service = UserService()
@@ -133,9 +139,20 @@ def get_current_user():
         404: User not found
         500: Server error
     """
+    # Debug logging for session issues
+    all_cookies = list(request.cookies.keys())
+    session_cookie = request.cookies.get('__session') or request.cookies.get('session')
+    request_id = uuid_module.uuid4().hex[:8]
+    
+    logger.info(f"[users/me:{request_id}] Request received | instance={INSTANCE_ID}/{CONTAINER_ID}")
+    logger.info(f"[users/me:{request_id}] Cookies: {all_cookies} | __session={'present' if session_cookie else 'MISSING'}")
+    logger.info(f"[users/me:{request_id}] Session keys: {list(session.keys())} | user_id={session.get('user_id', 'NONE')}")
+    logger.info(f"[users/me:{request_id}] Headers - Host: {request.headers.get('Host')} | Origin: {request.headers.get('Origin')}")
+    
     user_id = session.get('user_id')
 
     if not user_id:
+        logger.warning(f"[users/me:{request_id}] No user_id in session - returning 401")
         return jsonify({'error': 'User not authenticated'}), 401
 
     try:

@@ -95,12 +95,16 @@ class CacheSessionInterface(SessionInterface):
         cookie_name = self.get_cookie_name(app)
         sid = request.cookies.get(cookie_name)
 
+        # Debug: Log all cookies received
+        all_cookies = list(request.cookies.keys())
         logger.info(f"🔓 OPEN_SESSION: path={request.path} | cookie_name={cookie_name}")
+        logger.info(f"🍪 All cookies received: {all_cookies}")
+        logger.info(f"🌐 Request headers - Host: {request.headers.get('Host')} | Origin: {request.headers.get('Origin')} | Referer: {request.headers.get('Referer', 'none')[:50] if request.headers.get('Referer') else 'none'}")
 
         if not sid:
             # No session cookie - create new session
             sid = self._generate_sid()
-            logger.info(f"🆕 Creating new session (no cookie): {sid[:8]}...")
+            logger.warning(f"🆕 Creating new session (no cookie named '{cookie_name}'): {sid[:8]}... | cookies_present={all_cookies}")
             return self.session_class(sid=sid, new=True)
 
         logger.info(f"🔑 Found session cookie: {sid[:8]}...")
@@ -193,9 +197,14 @@ class CacheSessionInterface(SessionInterface):
                 logger.error(f"💥 Error saving session {session.sid[:8]}...: {e}", exc_info=True)
 
         # Set session cookie
-        logger.info(f"🍪 Setting cookie: {self.get_cookie_name(app)} | domain={domain} | path={path} | secure={secure} | httponly={httponly} | samesite={samesite}")
+        cookie_name = self.get_cookie_name(app)
+        logger.info(f"🍪 Setting cookie: {cookie_name} | value={session.sid[:8]}... | domain={domain} | path={path} | secure={secure} | httponly={httponly} | samesite={samesite} | expires={expires}")
+        
+        # Log the actual Set-Cookie header that will be sent
+        logger.info(f"📤 Set-Cookie will be: {cookie_name}={session.sid[:8]}...; Path={path}; {'Secure; ' if secure else ''}HttpOnly; SameSite={samesite}")
+        
         response.set_cookie(
-            self.get_cookie_name(app),
+            cookie_name,
             session.sid,
             expires=expires,
             httponly=httponly,

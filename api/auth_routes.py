@@ -18,6 +18,12 @@ auth_bp = Blueprint('auth', __name__)
 auth_service = AuthService()
 logger = logging.getLogger(__name__)
 
+# Instance ID for tracking which Cloud Run instance handles requests
+# This helps debug autoscaling issues
+import os
+INSTANCE_ID = os.getenv('K_REVISION', 'local')[:20]  # Cloud Run revision name
+CONTAINER_ID = uuid.uuid4().hex[:8]  # Unique per container start
+
 
 @auth_bp.route('/api/csrf-token', methods=['GET'])
 def get_csrf_token():
@@ -57,7 +63,17 @@ def is_safe_url(target):
 def login_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
+        # Debug logging for auth issues
+        all_cookies = list(request.cookies.keys())
+        session_cookie = request.cookies.get('__session') or request.cookies.get('session')
+        has_id_token = 'id_token' in session
+        
+        logger.info(f"[login_required] Checking auth for {request.path} | instance={INSTANCE_ID}/{CONTAINER_ID}")
+        logger.info(f"[login_required] Cookies received: {all_cookies} | __session={'present' if session_cookie else 'MISSING'}")
+        logger.info(f"[login_required] Session has id_token: {has_id_token} | session_keys: {list(session.keys())}")
+        
         if 'id_token' not in session:
+            logger.warning(f"[login_required] AUTH FAILED - No id_token in session | path={request.path}")
             # Check if this is an AJAX request (expects JSON response)
             if request.headers.get('Content-Type') == 'application/json' or \
                request.headers.get('Accept', '').find('application/json') > -1 or \
@@ -65,6 +81,8 @@ def login_required(func):
                 return jsonify({"error": "Authentication required", "redirect": "/login"}), 401
             else:
                 return redirect(url_for('auth.login', next=request.url))
+        
+        logger.info(f"[login_required] AUTH SUCCESS for {request.path} | user_id={session.get('user_id', 'unknown')}")
         return func(*args, **kwargs)
     return wrapper
 
@@ -463,8 +481,13 @@ def exchange_token():
     """
     try:
         request_id = request.headers.get('X-Request-ID') or uuid.uuid4().hex[:8]
+        
+        # Log all cookies to debug Firebase Hosting proxy behavior
+        all_cookies = list(request.cookies.keys())
+        session_cookie = request.cookies.get('__session') or request.cookies.get('session')
+        
         logger.info(
-            f"[exchange-token:{request_id}] Incoming request",
+            f"[exchange-token:{request_id}] Incoming request | instance={INSTANCE_ID}/{CONTAINER_ID}",
             extra={
                 'path': request.path,
                 'remote_addr': request.remote_addr,
@@ -472,6 +495,8 @@ def exchange_token():
                 'referer': request.headers.get('Referer'),
             }
         )
+        logger.info(f"[exchange-token:{request_id}] Cookies received: {all_cookies} | __session={'present' if session_cookie else 'MISSING'}")
+        logger.info(f"[exchange-token:{request_id}] Headers - Host: {request.headers.get('Host')} | Origin: {request.headers.get('Origin')}")
 
         data = request.get_json()
         token = data.get('token')
