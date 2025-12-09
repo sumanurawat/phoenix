@@ -587,11 +587,19 @@ def exchange_token():
 @auth_bp.route('/logout')
 def logout():
     """Clear session and redirect to landing page."""
+    # Log logout attempt
+    user_id = session.get('user_id', 'unknown')
+    session_keys = list(session.keys())
+    logger.info(f"[logout] Starting logout | user_id={user_id} | session_keys={session_keys} | instance={INSTANCE_ID}/{CONTAINER_ID}")
+    
     session.clear()
+    logger.info(f"[logout] Session cleared successfully for user_id={user_id}")
     
     # Check if redirect parameter specifies where to go
     redirect_param = request.args.get('redirect', '')
     redirect_url = request.args.get('redirect_url', '')  # Full URL for redirect
+    
+    logger.info(f"[logout] Redirect params: redirect={redirect_param} | redirect_url={redirect_url}")
     
     if redirect_param in {'soho', 'momo'}:
         # For React SPA frontend (Soho legacy + Momo rebrand)
