@@ -36,10 +36,9 @@ export const Header = () => {
   };
 
   const handleLogout = () => {
-    // Use full backend URL to bypass React Router
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-  const returnUrl = `${window.location.origin}/`; // Go to React landing page after logout
-  window.location.href = `${API_BASE_URL}/logout?redirect=momo&redirect_url=${encodeURIComponent(returnUrl)}`;
+    // Use same-origin for logout (works with Firebase Hosting proxy)
+    const returnUrl = `${window.location.origin}/`; // Go to React landing page after logout
+    window.location.href = `/logout?redirect=momo&redirect_url=${encodeURIComponent(returnUrl)}`;
   };
 
   return (
