@@ -167,7 +167,10 @@ def create_app():
     # Don't set cookie domain - let it default to the request domain
     # This way cookies work whether accessed via friedmomo.com (Firebase proxy) or run.app (direct)
     app.config["SESSION_COOKIE_DOMAIN"] = None
-    app.config["SESSION_COOKIE_NAME"] = "session"  # Cookie name
+    # IMPORTANT: Firebase Hosting only forwards cookies named '__session'
+    # All other cookies are stripped when proxying to Cloud Run/Cloud Functions
+    # See: https://firebase.google.com/docs/hosting/manage-cache#using_cookies
+    app.config["SESSION_COOKIE_NAME"] = "__session"  # Must be __session for Firebase Hosting proxy
     app.config["PERMANENT_SESSION_LIFETIME"] = 2592000  # 30 days in seconds
 
     # --- Centralized CSRF Protection ---

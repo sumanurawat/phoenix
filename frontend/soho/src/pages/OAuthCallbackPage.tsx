@@ -51,12 +51,36 @@ export const OAuthCallbackPage = () => {
           });
 
           if (response.data.success) {
+            // Wait a moment for the browser to fully process the Set-Cookie header
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Verify session is working by making a test request
+            try {
+              const verifyResponse = await api.get('/api/users/me');
+              if (verifyResponse.status === 200) {
+                console.log('Session verified successfully');
+                setStatus('success');
+                setStatusMessage('Success! Redirecting...');
+                // Use window.location for a full page navigation to ensure cookies are sent
+                setTimeout(() => {
+                  window.location.href = '/explore';
+                }, 300);
+                return;
+              }
+            } catch (verifyErr: any) {
+              console.warn('Session verification failed, trying hard reload...', verifyErr);
+              // Session not working - do a hard reload to /explore
+              // This ensures the browser re-reads all cookies
+              window.location.href = '/explore';
+              return;
+            }
+            
             setStatus('success');
             setStatusMessage('Success! Redirecting...');
-            // Redirect to explore or intended destination
+            // Fallback: use hard navigation
             setTimeout(() => {
-              navigate('/explore');
-            }, 500);
+              window.location.href = '/explore';
+            }, 300);
             return; // Exit on success
           } else {
             throw new Error('Failed to establish session');
