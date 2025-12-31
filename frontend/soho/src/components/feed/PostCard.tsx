@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import type { Creation } from '../../types/creation';
 
 interface PostCardProps {
@@ -6,16 +7,29 @@ interface PostCardProps {
 }
 
 export const PostCard = ({ creation, onOpenModal }: PostCardProps) => {
+  const navigate = useNavigate();
+
+  const handleUsernameClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/profile/${creation.username}`);
+  };
+
   return (
     <article className="bg-momo-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow">
       {/* Header */}
       <div className="flex items-center gap-3 p-4">
-        <div className="w-10 h-10 rounded-full bg-momo-purple flex items-center justify-center">
+        <button
+          onClick={handleUsernameClick}
+          className="w-10 h-10 rounded-full bg-momo-purple flex items-center justify-center hover:ring-2 hover:ring-momo-purple/50 transition-all"
+        >
           <span className="text-sm font-semibold">
             {creation.username[0].toUpperCase()}
           </span>
-        </div>
-        <button className="font-semibold hover:underline text-left">
+        </button>
+        <button
+          onClick={handleUsernameClick}
+          className="font-semibold hover:underline text-left hover:text-momo-purple transition-colors"
+        >
           @{creation.username}
         </button>
       </div>
