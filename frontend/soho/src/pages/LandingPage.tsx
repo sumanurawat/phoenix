@@ -93,7 +93,7 @@ export const LandingPage = () => {
               className="flex items-center gap-2 hover:opacity-80 transition"
             >
               <img
-                src="/static/fried_momo_text.png"
+                src="/fried_momo_text.png"
                 alt="Fried Momo"
                 className="h-10 w-auto mix-blend-screen"
               />
@@ -166,7 +166,7 @@ export const LandingPage = () => {
           {/* Brain Logo */}
           <div className="flex justify-center mb-8">
             <img
-              src="/static/fried_momo_logo.png"
+              src="/fried_momo_logo.png"
               alt="Fried Momo Brain"
               className="w-64 md:w-80 lg:w-96 h-auto mix-blend-screen"
             />
@@ -427,7 +427,7 @@ export const LandingPage = () => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
               <img
-                src="/static/fried_momo_text.png"
+                src="/fried_momo_text.png"
                 alt="Fried Momo"
                 className="h-8 w-auto mix-blend-screen"
               />

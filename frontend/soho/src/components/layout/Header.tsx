@@ -51,7 +51,7 @@ export const Header = () => {
             title="Go to home"
           >
             <img
-              src="/static/fried_momo_text.png"
+              src="/fried_momo_text.png"
               alt="Fried Momo"
               className="h-10 w-auto mix-blend-screen"
             />
