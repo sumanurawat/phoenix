@@ -50,11 +50,9 @@ export const Header = () => {
             onClick={() => navigate('/')}
             title="Go to home"
           >
-            <img
-              src="/fried_momo_text.png"
-              alt="Fried Momo"
-              className="h-10 w-auto mix-blend-screen"
-            />
+            <span className="text-2xl font-bold bg-gradient-to-r from-momo-purple to-momo-blue bg-clip-text text-transparent">
+              fried momo
+            </span>
           </button>
         </div>
 

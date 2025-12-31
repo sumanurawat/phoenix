@@ -90,13 +90,11 @@ export const LandingPage = () => {
           <div className="flex justify-between items-center h-16">
             <button
               onClick={() => navigate('/')}
-              className="flex items-center gap-2 hover:opacity-80 transition"
+              className="hover:opacity-80 transition"
             >
-              <img
-                src="/fried_momo_text.png"
-                alt="Fried Momo"
-                className="h-10 w-auto mix-blend-screen"
-              />
+              <span className="text-2xl font-bold bg-gradient-to-r from-momo-purple to-momo-blue bg-clip-text text-transparent">
+                fried momo
+              </span>
             </button>
 
             {/* Desktop Menu */}
@@ -163,15 +161,6 @@ export const LandingPage = () => {
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4">
         <div className="max-w-7xl mx-auto text-center">
-          {/* Brain Logo */}
-          <div className="flex justify-center mb-8">
-            <img
-              src="/fried_momo_logo.png"
-              alt="Fried Momo Brain"
-              className="w-64 md:w-80 lg:w-96 h-auto mix-blend-screen"
-            />
-          </div>
-
           <div className="inline-block mb-4 px-4 py-2 bg-momo-purple/20 rounded-full border border-momo-purple/30">
             <span className="text-momo-purple text-sm">The Prompt Economy is Here</span>
           </div>
@@ -426,11 +415,9 @@ export const LandingPage = () => {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
-              <img
-                src="/fried_momo_text.png"
-                alt="Fried Momo"
-                className="h-8 w-auto mix-blend-screen"
-              />
+              <span className="text-xl font-bold bg-gradient-to-r from-momo-purple to-momo-blue bg-clip-text text-transparent">
+                fried momo
+              </span>
             </div>
 
             <div className="text-momo-gray-400 text-center md:text-left mb-4 md:mb-0">
