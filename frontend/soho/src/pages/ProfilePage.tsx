@@ -6,6 +6,8 @@ import { DraftCard } from '../components/feed/DraftCard';
 import { PostCardSkeleton } from '../components/common/PostCardSkeleton';
 import { CreationModal } from '../components/modals/CreationModal';
 import { DraftModal } from '../components/modals/DraftModal';
+import { SendTokens } from '../components/profile/SendTokens';
+import { useAuth } from '../hooks/useAuth';
 import type { Creation } from '../types/creation';
 import { api, endpoints } from '../services/api';
 import { normalizeCreation } from '../utils/creationMapper';
@@ -24,6 +26,7 @@ export const ProfilePage = () => {
   const { username: routeUsername } = useParams<{ username?: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const profileUsername = routeUsername && routeUsername !== 'undefined'
     ? routeUsername.trim()
     : null;
@@ -301,6 +304,13 @@ export const ProfilePage = () => {
                   <span className="text-momo-gray-400 ml-1">{tokensLabel}</span>
                 </div>
               </div>
+
+              {/* Send Tokens - only show on other users' profiles when logged in */}
+              {!isOwnProfile && currentUser && profile.username && (
+                <div className="pt-2">
+                  <SendTokens recipientUsername={profile.username} />
+                </div>
+              )}
             </div>
           </div>
         ) : null}

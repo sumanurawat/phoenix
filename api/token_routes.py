@@ -269,3 +269,147 @@ def get_transactions():
             'success': False,
             'error': 'Failed to fetch transactions'
         }), 500
+
+
+@token_bp.route('/transfer', methods=['POST'])
+@login_required
+@csrf_protect
+def transfer_tokens():
+    """
+    Transfer tokens from the current user to another user.
+
+    Request body:
+        recipientUsername: str - Username of the recipient
+        amount: int - Number of tokens to transfer (must be positive integer)
+
+    Returns:
+        200: {success: true, newBalance: int, message: str}
+        400: {success: false, error: str} - Invalid request (bad amount, self-transfer, etc.)
+        402: {success: false, error: str} - Insufficient tokens
+        404: {success: false, error: str} - Recipient not found
+        500: {success: false, error: str} - Server error
+    """
+    try:
+        sender_id = session['user_id']
+        data = request.get_json()
+
+        # Validate request body
+        if not data:
+            return jsonify({'success': False, 'error': 'Request body required'}), 400
+
+        recipient_username = data.get('recipientUsername', '').strip()
+        amount = data.get('amount')
+
+        # Validate recipient username
+        if not recipient_username:
+            return jsonify({'success': False, 'error': 'Recipient username is required'}), 400
+
+        # Validate amount - must be a positive integer
+        if amount is None:
+            return jsonify({'success': False, 'error': 'Amount is required'}), 400
+
+        try:
+            amount = int(amount)
+        except (ValueError, TypeError):
+            return jsonify({'success': False, 'error': 'Amount must be a valid integer'}), 400
+
+        if amount <= 0:
+            return jsonify({'success': False, 'error': 'Amount must be greater than zero'}), 400
+
+        if amount > 10000:
+            return jsonify({'success': False, 'error': 'Maximum transfer amount is 10,000 tokens'}), 400
+
+        # Look up recipient by username
+        from firebase_admin import firestore as admin_firestore
+        db = admin_firestore.client()
+
+        # Query users collection by username
+        recipient_query = db.collection('users').where('username', '==', recipient_username).limit(1)
+        recipient_docs = list(recipient_query.stream())
+
+        if not recipient_docs:
+            return jsonify({'success': False, 'error': f'User @{recipient_username} not found'}), 404
+
+        recipient_doc = recipient_docs[0]
+        recipient_id = recipient_doc.id
+        recipient_data = recipient_doc.to_dict()
+
+        # Prevent self-transfer
+        if sender_id == recipient_id:
+            return jsonify({'success': False, 'error': 'Cannot send tokens to yourself'}), 400
+
+        # Get sender's current balance to validate
+        sender_balance = token_service.get_balance(sender_id)
+        if sender_balance < amount:
+            return jsonify({
+                'success': False,
+                'error': f'Insufficient tokens. You have {sender_balance} tokens, but tried to send {amount}.'
+            }), 402
+
+        # Get sender's username for transaction record
+        sender_doc = db.collection('users').document(sender_id).get()
+        sender_username = sender_doc.to_dict().get('username', 'Unknown') if sender_doc.exists else 'Unknown'
+
+        logger.info(f"Token transfer initiated: {sender_username} ({sender_id}) -> {recipient_username} ({recipient_id}), amount: {amount}")
+
+        # Perform the atomic transfer
+        from services.token_service import InsufficientTokensError
+        try:
+            token_service.transfer_tokens(
+                sender_id=sender_id,
+                recipient_id=recipient_id,
+                amount=amount
+            )
+        except InsufficientTokensError as e:
+            logger.warning(f"Transfer failed - insufficient tokens: {e}")
+            return jsonify({
+                'success': False,
+                'error': 'Insufficient tokens for this transfer'
+            }), 402
+        except ValueError as e:
+            logger.warning(f"Transfer failed - validation error: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 400
+
+        # Record both sides of the transaction
+        # Get updated balances after transfer
+        sender_balance_after = token_service.get_balance(sender_id)
+        recipient_balance_after = token_service.get_balance(recipient_id)
+
+        # Record sender's transaction (tip sent)
+        transaction_service.record_transaction(
+            user_id=sender_id,
+            transaction_type='tip_sent',
+            amount=-amount,  # Negative for sender
+            balance_after=sender_balance_after,
+            details={
+                'recipientId': recipient_id,
+                'recipientUsername': recipient_username
+            }
+        )
+
+        # Record recipient's transaction (tip received)
+        transaction_service.record_transaction(
+            user_id=recipient_id,
+            transaction_type='tip_received',
+            amount=amount,  # Positive for recipient
+            balance_after=recipient_balance_after,
+            details={
+                'senderId': sender_id,
+                'senderUsername': sender_username
+            }
+        )
+
+        logger.info(f"Token transfer completed: {sender_username} -> {recipient_username}, amount: {amount}")
+
+        return jsonify({
+            'success': True,
+            'newBalance': sender_balance_after,
+            'message': f'Successfully sent {amount} tokens to @{recipient_username}'
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Token transfer error: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'Failed to transfer tokens. Please try again.'
+        }), 500

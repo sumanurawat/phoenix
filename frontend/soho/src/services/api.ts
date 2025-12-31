@@ -122,4 +122,5 @@ export const endpoints = {
   transactions: '/api/tokens/transactions',
   packages: '/api/tokens/packages',
   checkout: '/api/tokens/create-checkout-session',
+  transferTokens: '/api/tokens/transfer',
 };
