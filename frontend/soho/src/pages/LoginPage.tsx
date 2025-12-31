@@ -1,60 +1,6 @@
-import { useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+import { Link } from 'react-router-dom';
 
 export const LoginPage = () => {
-  const [searchParams] = useSearchParams();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      // Get CSRF token first
-      const csrfResponse = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
-        withCredentials: true
-      });
-      const csrfToken = csrfResponse.data.csrf_token;
-
-      // Submit login form
-      const formData = new FormData();
-      formData.append('email', email);
-      formData.append('password', password);
-      formData.append('csrf_token', csrfToken);
-
-      const response = await axios.post(`${API_BASE_URL}/login`, formData, {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json', // Request JSON response
-        },
-      });
-
-      // Success - redirect to next URL or home
-      if (response.data.success) {
-        const nextUrl = searchParams.get('next') || '/explore';
-        window.location.href = nextUrl; // Full page reload to establish session
-      }
-    } catch (err: any) {
-      setLoading(false);
-      if (err.response?.data?.error) {
-        setError(err.response.data.error);
-      } else if (err.response?.status === 401) {
-        setError('Invalid email or password. Please try again.');
-      } else {
-        setError('Login failed. Please try again.');
-      }
-    }
-  };
-
   const handleGoogleLogin = () => {
     // Use relative URL so it goes through friedmomo.com (proxied to backend via Firebase Hosting rewrites)
     const callbackUrl = window.location.origin + '/oauth/callback';
@@ -77,98 +23,6 @@ export const LoginPage = () => {
 
         {/* Login Card */}
         <div className="bg-momo-gray-800/50 backdrop-blur-xl rounded-2xl border border-momo-gray-700 p-8">
-          {error && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm">
-              <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Field */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-momo-gray-300 mb-2">
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-momo-gray-900 border border-momo-gray-600 rounded-lg text-momo-white placeholder-momo-gray-500 focus:outline-none focus:ring-2 focus:ring-momo-purple focus:border-transparent"
-                placeholder="you@example.com"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            {/* Password Field */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-momo-gray-300 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-momo-gray-900 border border-momo-gray-600 rounded-lg text-momo-white placeholder-momo-gray-500 focus:outline-none focus:ring-2 focus:ring-momo-purple focus:border-transparent"
-                  placeholder="Enter your password"
-                  required
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-momo-gray-400 hover:text-momo-white"
-                >
-                  {showPassword ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-6 py-3 bg-gradient-to-r from-momo-purple to-momo-blue rounded-lg font-semibold text-white hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Signing in...
-                </span>
-              ) : (
-                'Sign In'
-              )}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-momo-gray-600"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-momo-gray-800/50 text-momo-gray-400">or</span>
-            </div>
-          </div>
-
           {/* Google Login */}
           <button
             onClick={handleGoogleLogin}
@@ -187,7 +41,7 @@ export const LoginPage = () => {
           <div className="mt-6 text-center text-sm text-momo-gray-400">
             Don't have an account?{' '}
             <Link
-              to={`/signup${searchParams.get('next') ? `?next=${searchParams.get('next')}` : ''}`}
+              to="/signup"
               className="text-momo-purple hover:text-momo-blue transition font-semibold"
             >
               Sign up
