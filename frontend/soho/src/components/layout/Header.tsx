@@ -9,7 +9,6 @@ export const Header = () => {
   const { user, loading: authLoading } = useAuth();
   const { balance, loading: balanceLoading } = useTokenBalance();
   const isAuthenticated = Boolean(user?.username);
-  const userInitial = isAuthenticated ? user?.username?.charAt(0)?.toUpperCase() : '';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -132,33 +131,26 @@ export const Header = () => {
             </svg>
           </button>
 
-          {/* Profile Avatar */}
+          {/* Profile Avatar / Username */}
           {isAuthenticated && user ? (
             <div className="relative" ref={menuRef}>
               <button
-                className="w-8 h-8 rounded-full bg-momo-purple flex items-center justify-center hover:ring-2 hover:ring-momo-purple/50 transition-all"
+                className="h-8 px-3 rounded-full bg-momo-purple flex items-center justify-center gap-2 hover:ring-2 hover:ring-momo-purple/50 transition-all"
                 title={`@${user.username}`}
                 onClick={() => setIsMenuOpen((prev) => !prev)}
                 aria-haspopup="menu"
                 aria-expanded={isMenuOpen}
               >
-                {user.profileImageUrl ? (
+                {user.profileImageUrl && (
                   <img
                     src={user.profileImageUrl}
                     alt={user.username}
-                    className="w-full h-full rounded-full object-cover"
+                    className="w-6 h-6 rounded-full object-cover"
                   />
-                ) : (
-                  userInitial ? (
-                    <span className="text-sm font-semibold text-white">
-                      {userInitial}
-                    </span>
-                  ) : (
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5z" />
-                    </svg>
-                  )
                 )}
+                <span className="text-sm font-semibold text-white">
+                  {user.username}
+                </span>
               </button>
 
               {isMenuOpen && (
