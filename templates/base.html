@@ -38,9 +38,7 @@
                 <!-- Social Platform Navigation -->
                 {% if session.get('user_id') %}
                 <div class="col-auto d-none d-md-flex align-items-center gap-3">
-                    <a href="https://friedmomo.com" class="nav-link text-decoration-none fw-semibold text-primary">
-                        <i class="fas fa-user-circle me-1"></i> Soho
-                    </a>
+
                     <a href="{{ url_for('create_page') }}" class="nav-link text-decoration-none fw-semibold">
                         <i class="fas fa-wand-magic-sparkles me-1"></i> Create
                     </a>
@@ -100,12 +98,7 @@
                                 <li><a class="dropdown-item" href="{{ url_for('subscription.manage') }}">
                                     <i class="fas fa-credit-card me-2"></i>Subscription
                                 </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('dashboard_page') }}">
-                                    <i class="fas fa-chart-bar me-2"></i>Dashboard
-                                </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('socials_page') }}">
-                                    <i class="fas fa-share-alt me-2"></i>Socials
-                                </a></li>
+
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}" id="logoutLink">
                                     <i class="fas fa-sign-out-alt me-2"></i>Logout

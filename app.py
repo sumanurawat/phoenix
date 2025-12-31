@@ -277,42 +277,10 @@ def create_app():
     # Define routes
     @app.route('/')
     def index():
-        """Render the main index page."""
-        return render_template('index.html', title='Phoenix AI Platform')
+        """Redirect to the main Friedmomo application."""
+        return redirect('https://friedmomo.com')
 
-    @app.route('/derplexity')
-    @login_required
-    def derplexity():
-        """Render the Derplexity chat interface with persistent conversations."""
-        return render_template('derplexity.html', 
-                            title='Derplexity Chat')
-    
-    @app.route('/phase4-test')
-    @login_required
-    def phase4_test():
-        """Phase 4 API testing page."""
-        return render_template('phase4_test.html', title='Phase 4 API Test')
 
-    @app.route('/socials')
-    @login_required
-    def socials_page():
-        """Render the Social Media Timeline page."""
-        return render_template('socials.html', title='Social Timeline - Phoenix AI')
-    
-    @app.route('/blogs')
-    def blogs():
-        """Render the Technical Blogs page."""
-        return render_template('blogs.html', 
-                           title='Technical Blogs - Sumanu Rawat')
-    
-    @app.route('/dashboard')
-    @require_auth
-    def dashboard_page():
-        """Render the Dashboard page - requires authentication."""
-        return render_template('dashboard.html', 
-                           title='My Dashboards',
-                           user_name=session.get('user_name'),
-                           user_email=session.get('user_email'))
     
     @app.route('/buy-tokens')
     @require_auth
