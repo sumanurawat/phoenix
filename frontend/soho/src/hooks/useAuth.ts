@@ -14,17 +14,21 @@ const mapUser = (payload: unknown): User | null => {
   }
 
   const data = raw as Record<string, unknown>;
-  const username = data.username;
+  const uid = data.firebase_uid ?? data.uid;
 
-  if (typeof username !== 'string' || username.trim() === '') {
+  // User must have a uid to be considered authenticated
+  if (typeof uid !== 'string' || !uid) {
     return null;
   }
 
-  const uid = data.firebase_uid ?? data.uid;
+  const username = typeof data.username === 'string' && data.username.trim() !== ''
+    ? data.username
+    : undefined;
 
   return {
-    uid: typeof uid === 'string' && uid ? uid : username,
+    uid,
     username,
+    needsUsername: !username,  // Flag for users who need to set up username
     displayName: typeof data.displayName === 'string' ? data.displayName : undefined,
     bio: typeof data.bio === 'string' ? data.bio : undefined,
     profileImageUrl: typeof data.profileImageUrl === 'string' ? data.profileImageUrl : undefined,

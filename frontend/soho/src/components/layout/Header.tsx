@@ -8,7 +8,8 @@ export const Header = () => {
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
   const { balance, loading: balanceLoading } = useTokenBalance();
-  const isAuthenticated = Boolean(user?.username);
+  const isAuthenticated = Boolean(user);  // User exists = authenticated
+  const hasUsername = Boolean(user?.username);  // Has completed username setup
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -59,11 +60,10 @@ export const Header = () => {
         {/* Navigation */}
         <nav className="flex items-center gap-6">
           <button
-            className={`p-2 rounded-lg transition-colors ${
-              location.pathname === '/explore'
+            className={`p-2 rounded-lg transition-colors ${location.pathname === '/explore'
                 ? 'bg-momo-gray-800 text-momo-purple'
                 : 'hover:bg-momo-gray-800 text-momo-white'
-            }`}
+              }`}
             title="Explore"
             onClick={() => navigate('/explore')}
           >
@@ -73,11 +73,10 @@ export const Header = () => {
           </button>
 
           <button
-            className={`p-2 rounded-lg transition-colors ${
-              location.pathname === '/create'
+            className={`p-2 rounded-lg transition-colors ${location.pathname === '/create'
                 ? 'bg-momo-gray-800'
                 : 'hover:bg-momo-gray-800'
-            }`}
+              }`}
             title="Create"
             onClick={() => navigate('/create')}
           >
@@ -87,13 +86,12 @@ export const Header = () => {
           </button>
 
           <button
-            className={`p-2 rounded-lg transition-colors ${
-              location.pathname.startsWith('/profile')
+            className={`p-2 rounded-lg transition-colors ${location.pathname.startsWith('/profile')
                 ? 'bg-momo-gray-800 text-momo-purple'
                 : 'hover:bg-momo-gray-800 text-momo-white'
-            } ${!isAuthenticated && 'opacity-50 cursor-default'}`}
-            title={isAuthenticated ? 'Profile' : 'Sign in to view profile'}
-            onClick={() => isAuthenticated && user?.username && navigate(`/profile/${user.username}`)}
+              } ${!hasUsername && 'opacity-50 cursor-default'}`}
+            title={hasUsername ? 'Profile' : 'Set up your username first'}
+            onClick={() => hasUsername && user?.username && navigate(`/profile/${user.username}`)}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -105,15 +103,14 @@ export const Header = () => {
         <div className="flex items-center gap-4">
           {/* Token Balance */}
           <div
-            className={`flex items-center gap-2 px-3 py-2 bg-momo-gray-800 rounded-lg transition-colors ${
-              user ? 'hover:bg-momo-gray-700 cursor-pointer' : 'opacity-50 cursor-default'
-            }`}
+            className={`flex items-center gap-2 px-3 py-2 bg-momo-gray-800 rounded-lg transition-colors ${user ? 'hover:bg-momo-gray-700 cursor-pointer' : 'opacity-50 cursor-default'
+              }`}
             title={user ? 'Token Balance' : 'Sign in to view token balance'}
             onClick={() => user && navigate('/tokens')}
           >
             <svg className="w-5 h-5 text-momo-gold" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
-              <path d="M12 8.5l-3 3 3 3 3-3-3-3z" opacity="0.7"/>
+              <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
+              <path d="M12 8.5l-3 3 3 3 3-3-3-3z" opacity="0.7" />
             </svg>
             <span className="font-semibold text-momo-white">
               {balanceLoading ? '...' : user ? balance : '—'}
@@ -122,9 +119,8 @@ export const Header = () => {
 
           {/* Transactions */}
           <button
-            className={`p-2 rounded-lg transition-colors ${
-              isAuthenticated ? 'hover:bg-momo-gray-800' : 'opacity-50 cursor-default'
-            }`}
+            className={`p-2 rounded-lg transition-colors ${isAuthenticated ? 'hover:bg-momo-gray-800' : 'opacity-50 cursor-default'
+              }`}
             title={isAuthenticated ? 'Transactions' : 'Sign in to view transactions'}
             onClick={() => isAuthenticated && navigate('/transactions')}
           >
@@ -138,7 +134,7 @@ export const Header = () => {
             <div className="relative" ref={menuRef}>
               <button
                 className="h-8 px-3 rounded-full bg-momo-purple flex items-center justify-center gap-2 hover:ring-2 hover:ring-momo-purple/50 transition-all"
-                title={`@${user.username}`}
+                title={hasUsername ? `@${user.username}` : 'Complete your profile'}
                 onClick={() => setIsMenuOpen((prev) => !prev)}
                 aria-haspopup="menu"
                 aria-expanded={isMenuOpen}
@@ -146,12 +142,12 @@ export const Header = () => {
                 {user.profileImageUrl && (
                   <img
                     src={user.profileImageUrl}
-                    alt={user.username}
+                    alt={user.username || 'User'}
                     className="w-6 h-6 rounded-full object-cover"
                   />
                 )}
                 <span className="text-sm font-semibold text-white">
-                  {user.username}
+                  {user.username || 'Set up profile'}
                 </span>
               </button>
 
@@ -163,13 +159,23 @@ export const Header = () => {
                   </div>
 
                   <div className="py-1">
-                    <button
-                      className="w-full px-4 py-2 text-left text-sm text-momo-white hover:bg-momo-gray-800"
-                      onClick={() => navigateAndCloseMenu(`/profile/${user.username}`)}
-                      role="menuitem"
-                    >
-                      Profile
-                    </button>
+                    {user.needsUsername ? (
+                      <button
+                        className="w-full px-4 py-2 text-left text-sm text-momo-purple hover:bg-momo-gray-800 font-semibold"
+                        onClick={() => navigateAndCloseMenu('/username-setup')}
+                        role="menuitem"
+                      >
+                        Set up username
+                      </button>
+                    ) : (
+                      <button
+                        className="w-full px-4 py-2 text-left text-sm text-momo-white hover:bg-momo-gray-800"
+                        onClick={() => navigateAndCloseMenu(`/profile/${user.username}`)}
+                        role="menuitem"
+                      >
+                        Profile
+                      </button>
+                    )}
                     <button
                       className="w-full px-4 py-2 text-left text-sm text-momo-white hover:bg-momo-gray-800"
                       onClick={() => navigateAndCloseMenu('/tokens')}

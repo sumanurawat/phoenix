@@ -34,7 +34,7 @@ export const OAuthCallbackPage = () => {
       // Retry logic with exponential backoff for slow backend startup
       const MAX_RETRIES = 5;
       const INITIAL_DELAY = 2000; // 2 seconds
-      
+
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
           setRetryCount(attempt);
@@ -53,18 +53,29 @@ export const OAuthCallbackPage = () => {
           if (response.data.success) {
             // Wait a moment for the browser to fully process the Set-Cookie header
             await new Promise(resolve => setTimeout(resolve, 100));
-            
+
             // Verify session is working by making a test request
             try {
               const verifyResponse = await api.get('/api/users/me');
               if (verifyResponse.status === 200) {
                 console.log('Session verified successfully');
                 setStatus('success');
-                setStatusMessage('Success! Redirecting...');
-                // Use window.location for a full page navigation to ensure cookies are sent
-                setTimeout(() => {
-                  window.location.href = '/explore';
-                }, 300);
+
+                // Check if user needs to set up username
+                const userData = verifyResponse.data?.user;
+                const needsUsername = !userData?.username || userData.username.trim() === '';
+
+                if (needsUsername) {
+                  setStatusMessage('Welcome! Setting up your profile...');
+                  setTimeout(() => {
+                    window.location.href = '/username-setup';
+                  }, 300);
+                } else {
+                  setStatusMessage('Success! Redirecting...');
+                  setTimeout(() => {
+                    window.location.href = '/explore';
+                  }, 300);
+                }
                 return;
               }
             } catch (verifyErr: any) {
@@ -74,7 +85,7 @@ export const OAuthCallbackPage = () => {
               window.location.href = '/explore';
               return;
             }
-            
+
             setStatus('success');
             setStatusMessage('Success! Redirecting...');
             // Fallback: use hard navigation
@@ -87,21 +98,21 @@ export const OAuthCallbackPage = () => {
           }
         } catch (err: any) {
           console.error(`OAuth callback error (attempt ${attempt + 1}):`, err);
-          
+
           // If it's the last retry, show error
           if (attempt === MAX_RETRIES) {
             setStatus('error');
-            const errorMsg = err.code === 'ECONNABORTED' 
+            const errorMsg = err.code === 'ECONNABORTED'
               ? 'Server is taking too long to respond. Please try again later.'
               : err.response?.data?.error || 'Authentication failed';
             setError(errorMsg);
             setTimeout(() => navigate('/login'), 3000);
             return;
           }
-          
+
           // Wait with exponential backoff before retry
           const delay = INITIAL_DELAY * Math.pow(2, attempt);
-          setStatusMessage(`Backend is starting up... Waiting ${delay/1000}s before retry ${attempt + 1}/${MAX_RETRIES}`);
+          setStatusMessage(`Backend is starting up... Waiting ${delay / 1000}s before retry ${attempt + 1}/${MAX_RETRIES}`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
