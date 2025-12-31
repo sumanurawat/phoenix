@@ -88,16 +88,15 @@ export const LandingPage = () => {
       <nav className="fixed w-full bg-momo-gray-900/80 backdrop-blur-xl z-50 border-b border-momo-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <button 
+            <button
               onClick={() => navigate('/')}
               className="flex items-center gap-2 hover:opacity-80 transition"
             >
-              <svg className="w-8 h-8 text-momo-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <span className="text-2xl font-bold bg-gradient-to-r from-momo-purple to-momo-blue bg-clip-text text-transparent">
-                MOMO
-              </span>
+              <img
+                src="/static/fried_momo_text.png"
+                alt="Fried Momo"
+                className="h-10 w-auto mix-blend-screen"
+              />
             </button>
 
             {/* Desktop Menu */}
@@ -164,6 +163,15 @@ export const LandingPage = () => {
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4">
         <div className="max-w-7xl mx-auto text-center">
+          {/* Brain Logo */}
+          <div className="flex justify-center mb-8">
+            <img
+              src="/static/fried_momo_logo.png"
+              alt="Fried Momo Brain"
+              className="w-64 md:w-80 lg:w-96 h-auto mix-blend-screen"
+            />
+          </div>
+
           <div className="inline-block mb-4 px-4 py-2 bg-momo-purple/20 rounded-full border border-momo-purple/30">
             <span className="text-momo-purple text-sm">The Prompt Economy is Here</span>
           </div>
@@ -418,10 +426,11 @@ export const LandingPage = () => {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
-              <svg className="w-6 h-6 text-momo-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <span className="text-xl font-bold">MOMO</span>
+              <img
+                src="/static/fried_momo_text.png"
+                alt="Fried Momo"
+                className="h-8 w-auto mix-blend-screen"
+              />
             </div>
 
             <div className="text-momo-gray-400 text-center md:text-left mb-4 md:mb-0">

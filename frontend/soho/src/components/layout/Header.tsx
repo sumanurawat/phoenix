@@ -45,13 +45,17 @@ export const Header = () => {
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-8">
-          <h1
-            className="text-2xl font-bold text-momo-white cursor-pointer hover:opacity-80 transition"
+          <button
+            className="cursor-pointer hover:opacity-80 transition"
             onClick={() => navigate('/')}
             title="Go to home"
           >
-            MOMO
-          </h1>
+            <img
+              src="/static/fried_momo_text.png"
+              alt="Fried Momo"
+              className="h-10 w-auto mix-blend-screen"
+            />
+          </button>
         </div>
 
         {/* Navigation */}
