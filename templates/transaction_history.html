@@ -88,6 +88,17 @@
         background: #5568d3;
     }
 
+    .username-link {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .username-link:hover {
+        color: #5568d3;
+        text-decoration: underline;
+    }
+
     .transactions-table {
         background: white;
         border-radius: 10px;
@@ -276,13 +287,13 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .transaction-row > div {
+        .transaction-row>div {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .transaction-row > div::before {
+        .transaction-row>div::before {
             content: attr(data-label);
             font-weight: 600;
             color: #666;
@@ -439,10 +450,12 @@
                 return prompt;
 
             case 'tip_sent':
-                return `Tipped creator for post ${details.postId || 'unknown'}`;
+                const recipientUsername = details.recipientUsername || 'Unknown';
+                return `Tipped <a href="/soho/${recipientUsername}" class="username-link">@${recipientUsername}</a>`;
 
             case 'tip_received':
-                return `Received tip for your post ${details.postId || ''}`;
+                const senderUsername = details.senderUsername || 'Unknown';
+                return `Received tip from <a href="/soho/${senderUsername}" class="username-link">@${senderUsername}</a>`;
 
             case 'signup_bonus':
                 return details.reason || 'Welcome to Phoenix!';
@@ -466,13 +479,7 @@
             parts.push(`Post: ${details.postId}`);
         }
 
-        if (type === 'tip_sent' && details.recipientId) {
-            parts.push(`To: ${details.recipientId.substring(0, 10)}...`);
-        }
-
-        if (type === 'tip_received' && details.senderId) {
-            parts.push(`From: ${details.senderId.substring(0, 10)}...`);
-        }
+        // Removed truncated user IDs - usernames are now shown in description with links
 
         return parts.join(' • ');
     }
@@ -563,8 +570,8 @@
             const typeClass = `type-${tx.type.replace('_', '')}`;
             const additionalDetails = getAdditionalDetails(tx);
 
-            const balanceAfter = (tx.balanceAfter !== undefined && tx.balanceAfter !== null) 
-                ? tx.balanceAfter.toLocaleString() 
+            const balanceAfter = (tx.balanceAfter !== undefined && tx.balanceAfter !== null)
+                ? tx.balanceAfter.toLocaleString()
                 : '--';
 
             row.innerHTML = `
