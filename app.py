@@ -161,7 +161,9 @@ def create_app():
     )
 
     # Configure session cookies for cross-domain support (friedmomo.com → backend)
-    app.config["SESSION_COOKIE_SECURE"] = True  # Require HTTPS
+    # In development, disable Secure flag so cookies work over HTTP
+    is_development = app.config.get('ENV') == 'development' or app.config.get('DEBUG')
+    app.config["SESSION_COOKIE_SECURE"] = not is_development  # Require HTTPS only in production
     app.config["SESSION_COOKIE_HTTPONLY"] = True  # Prevent JS access
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # Lax for same-site (Firebase proxy makes all requests same-site)
     # Don't set cookie domain - let it default to the request domain
@@ -278,6 +280,9 @@ def create_app():
     @app.route('/')
     def index():
         """Redirect to the main Friedmomo application."""
+        # In development, redirect to local frontend; in production, redirect to friedmomo.com
+        if app.config.get('ENV') == 'development' or app.config.get('DEBUG'):
+            return redirect('http://localhost:5173')
         return redirect('https://friedmomo.com')
 
 

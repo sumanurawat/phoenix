@@ -20,9 +20,11 @@ from services.transaction_service import TransactionService, TransactionType
 
 logger = logging.getLogger(__name__)
 
-# Generation costs
+# Generation costs (in tokens)
+# Images: Low cost, quick generation via Imagen API
+# Videos: Higher cost due to Veo 3.1 API compute requirements
 IMAGE_GENERATION_COST = 1
-VIDEO_GENERATION_COST = 10
+VIDEO_GENERATION_COST = 45
 
 
 class CreationService:

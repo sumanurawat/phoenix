@@ -190,7 +190,7 @@ def create_generation():
             )
 
         except InsufficientTokensError as e:
-            cost = 1 if creation_type == 'image' else 10
+            cost = 1 if creation_type == 'image' else 45
             logger.warning(f"Insufficient tokens for {user_id}: {e}")
             return jsonify({
                 'success': False,
@@ -245,7 +245,7 @@ def create_generation():
             }), 503
 
         # Return 202 Accepted
-        cost = 1 if creation_type == 'image' else 10
+        cost = 1 if creation_type == 'image' else 45
         return jsonify({
             'success': True,
             'creationId': creation_id,

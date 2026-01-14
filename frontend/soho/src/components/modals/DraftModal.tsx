@@ -181,7 +181,7 @@ export const DraftModal = ({ creation, isOpen, onClose, onPublished }: DraftModa
             {creation.aspectRatio && (
               <span>{creation.aspectRatio}</span>
             )}
-            {creation.duration && (
+            {creation.mediaType === 'video' && creation.duration && (
               <span>{creation.duration}s</span>
             )}
           </div>

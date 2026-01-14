@@ -36,9 +36,11 @@ export const Header = () => {
   };
 
   const handleLogout = () => {
-    // Use same-origin for logout (works with Firebase Hosting proxy)
+    // In development, go directly to backend; in production, use relative URL (Firebase proxy)
+    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const backendUrl = isDev ? 'http://localhost:8080' : '';
     const returnUrl = `${window.location.origin}/`; // Go to React landing page after logout
-    window.location.href = `/logout?redirect=momo&redirect_url=${encodeURIComponent(returnUrl)}`;
+    window.location.href = `${backendUrl}/logout?redirect=momo&redirect_url=${encodeURIComponent(returnUrl)}`;
   };
 
   return (

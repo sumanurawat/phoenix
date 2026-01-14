@@ -40,6 +40,7 @@ instance/
 flask_session/
 
 # Logs and temp files
+*.log
 temp_logs/
 celery_worker.log
 

@@ -2,9 +2,11 @@ import { Link } from 'react-router-dom';
 
 export const LoginPage = () => {
   const handleGoogleLogin = () => {
-    // Use relative URL so it goes through friedmomo.com (proxied to backend via Firebase Hosting rewrites)
+    // In development, go directly to backend; in production, use relative URL (Firebase proxy)
+    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const backendUrl = isDev ? 'http://localhost:8080' : '';
     const callbackUrl = window.location.origin + '/oauth/callback';
-    window.location.href = `/login/google?next=${encodeURIComponent(callbackUrl)}`;
+    window.location.href = `${backendUrl}/login/google?next=${encodeURIComponent(callbackUrl)}`;
   };
 
   return (

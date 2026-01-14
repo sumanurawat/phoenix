@@ -5,6 +5,22 @@ interface DraftCardProps {
   onOpenModal?: (creation: Creation) => void;
 }
 
+/**
+ * DraftCard - Displays a user's draft/pending creation
+ *
+ * States:
+ * - pending: Queued for generation (shows spinner + "Pending...")
+ * - processing: Currently generating (shows spinner + "Processing...")
+ * - draft: Ready to publish (shows media thumbnail)
+ * - failed: Generation failed (shows error + "Click to delete" hint)
+ *
+ * Structure:
+ * - Header: User avatar + username
+ * - Media area: Loading spinner / Error state / Media thumbnail
+ * - Status badge: Top-left corner (Pending/Processing/Ready/Failed)
+ * - Duration badge: Bottom-right, only for videos (not images)
+ * - Footer: Caption preview (only for ready drafts)
+ */
 export const DraftCard = ({ creation, onOpenModal }: DraftCardProps) => {
   const getStatusDisplay = () => {
     switch (creation.status) {
@@ -87,6 +103,7 @@ export const DraftCard = ({ creation, onOpenModal }: DraftCardProps) => {
             <div className="text-center p-4">
               <div className="text-5xl mb-3">❌</div>
               <div className="text-sm font-semibold text-red-400">Generation Failed</div>
+              <div className="text-xs text-momo-gray-500 mt-2">Click to delete</div>
             </div>
           </div>
         ) : creation.mediaUrl ? (
@@ -114,8 +131,8 @@ export const DraftCard = ({ creation, onOpenModal }: DraftCardProps) => {
           <span className={`text-xs font-semibold ${status.text}`}>{status.badge}</span>
         </div>
 
-        {/* Duration badge for videos */}
-        {creation.duration && creation.mediaUrl && (
+        {/* Duration badge - only shown for videos, not images */}
+        {creation.mediaType === 'video' && creation.duration && creation.mediaUrl && (
           <div className="absolute bottom-2 right-2 bg-black/75 text-white text-xs px-2 py-1 rounded">
             {Math.floor(creation.duration)}s
           </div>

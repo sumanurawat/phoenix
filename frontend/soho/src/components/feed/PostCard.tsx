@@ -6,6 +6,17 @@ interface PostCardProps {
   onOpenModal?: (creation: Creation) => void;
 }
 
+/**
+ * PostCard - Displays a published creation in the feed
+ *
+ * Structure:
+ * - Header: User avatar + username (clickable → profile)
+ * - Media: Video (autoplays muted) or Image
+ * - Duration badge: Only shown for videos (bottom-right corner)
+ * - Actions: Comment button + count
+ * - Caption: Username + caption text
+ * - Comments link: Opens modal to view comments
+ */
 export const PostCard = ({ creation, onOpenModal }: PostCardProps) => {
   const navigate = useNavigate();
 
@@ -57,7 +68,8 @@ export const PostCard = ({ creation, onOpenModal }: PostCardProps) => {
           />
         )}
 
-        {creation.duration && (
+        {/* Duration badge - only shown for videos, not images */}
+        {creation.mediaType === 'video' && creation.duration && (
           <div className="absolute bottom-2 right-2 bg-black/75 text-white text-xs px-2 py-1 rounded">
             {Math.floor(creation.duration)}s
           </div>

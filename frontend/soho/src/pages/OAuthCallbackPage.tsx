@@ -1,125 +1,66 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 
 /**
  * OAuth Callback Handler
  *
- * After Google OAuth completes, the backend redirects here with:
- * - token: Firebase ID token
- * - user_id: Firebase user ID
- *
- * This page exchanges these for a backend session cookie.
+ * After Google OAuth completes, the backend redirects here.
+ * The session cookie is already set by the backend - we just need to verify it works.
  */
 export const OAuthCallbackPage = () => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [error, setError] = useState('');
-  const [retryCount, setRetryCount] = useState(0);
-  const [statusMessage, setStatusMessage] = useState('Please wait while we set up your session');
+  const [statusMessage, setStatusMessage] = useState('Please wait while we verify your session');
 
   useEffect(() => {
     const handleOAuthCallback = async () => {
-      const token = searchParams.get('token');
-      const userId = searchParams.get('user_id');
+      // The backend has already set the session cookie via the OAuth flow
+      // We just need to verify it's working by calling /api/users/me
+      try {
+        setStatusMessage('Verifying your session...');
 
-      if (!token || !userId) {
-        setStatus('error');
-        setError('Missing authentication credentials');
-        setTimeout(() => navigate('/login'), 2000);
-        return;
-      }
+        const verifyResponse = await api.get('/api/users/me', {
+          timeout: 10000
+        });
 
-      // Retry logic with exponential backoff for slow backend startup
-      const MAX_RETRIES = 5;
-      const INITIAL_DELAY = 2000; // 2 seconds
+        if (verifyResponse.status === 200) {
+          console.log('Session verified successfully');
+          setStatus('success');
 
-      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-        try {
-          setRetryCount(attempt);
-          if (attempt > 0) {
-            setStatusMessage(`Backend is starting up... Retry ${attempt}/${MAX_RETRIES}`);
-          }
+          // Check if user needs to set up username
+          const userData = verifyResponse.data?.user;
+          const needsUsername = !userData?.username || userData.username.trim() === '';
 
-          // Exchange token for session cookie with timeout
-          const response = await api.post('/api/auth/exchange-token', {
-            token,
-            user_id: userId
-          }, {
-            timeout: 10000 // 10 second timeout
-          });
-
-          if (response.data.success) {
-            // Wait a moment for the browser to fully process the Set-Cookie header
-            await new Promise(resolve => setTimeout(resolve, 100));
-
-            // Verify session is working by making a test request
-            try {
-              const verifyResponse = await api.get('/api/users/me');
-              if (verifyResponse.status === 200) {
-                console.log('Session verified successfully');
-                setStatus('success');
-
-                // Check if user needs to set up username
-                const userData = verifyResponse.data?.user;
-                const needsUsername = !userData?.username || userData.username.trim() === '';
-
-                if (needsUsername) {
-                  setStatusMessage('Welcome! Setting up your profile...');
-                  setTimeout(() => {
-                    window.location.href = '/username-setup';
-                  }, 300);
-                } else {
-                  setStatusMessage('Success! Redirecting...');
-                  setTimeout(() => {
-                    window.location.href = '/explore';
-                  }, 300);
-                }
-                return;
-              }
-            } catch (verifyErr: any) {
-              console.warn('Session verification failed, trying hard reload...', verifyErr);
-              // Session not working - do a hard reload to /explore
-              // This ensures the browser re-reads all cookies
-              window.location.href = '/explore';
-              return;
-            }
-
-            setStatus('success');
+          if (needsUsername) {
+            setStatusMessage('Welcome! Setting up your profile...');
+            setTimeout(() => {
+              window.location.href = '/username-setup';
+            }, 300);
+          } else {
             setStatusMessage('Success! Redirecting...');
-            // Fallback: use hard navigation
             setTimeout(() => {
               window.location.href = '/explore';
             }, 300);
-            return; // Exit on success
-          } else {
-            throw new Error('Failed to establish session');
           }
-        } catch (err: any) {
-          console.error(`OAuth callback error (attempt ${attempt + 1}):`, err);
-
-          // If it's the last retry, show error
-          if (attempt === MAX_RETRIES) {
-            setStatus('error');
-            const errorMsg = err.code === 'ECONNABORTED'
-              ? 'Server is taking too long to respond. Please try again later.'
-              : err.response?.data?.error || 'Authentication failed';
-            setError(errorMsg);
-            setTimeout(() => navigate('/login'), 3000);
-            return;
-          }
-
-          // Wait with exponential backoff before retry
-          const delay = INITIAL_DELAY * Math.pow(2, attempt);
-          setStatusMessage(`Backend is starting up... Waiting ${delay / 1000}s before retry ${attempt + 1}/${MAX_RETRIES}`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          return;
         }
+      } catch (err: any) {
+        console.error('OAuth callback verification error:', err);
+
+        // Session verification failed
+        setStatus('error');
+        const errorMsg = err.response?.status === 401
+          ? 'Session not established. Please try logging in again.'
+          : err.response?.data?.error || 'Authentication verification failed';
+        setError(errorMsg);
+        setTimeout(() => navigate('/login'), 3000);
       }
     };
 
     handleOAuthCallback();
-  }, [searchParams, navigate]);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-momo-black via-momo-purple/20 to-momo-black flex items-center justify-center px-4">
@@ -153,11 +94,6 @@ export const OAuthCallbackPage = () => {
             <p className="text-momo-gray-400">
               {statusMessage}
             </p>
-            {retryCount > 0 && (
-              <p className="text-momo-gray-500 text-sm mt-2">
-                The server is initializing, please be patient...
-              </p>
-            )}
           </>
         )}
 
