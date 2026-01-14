@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, endpoints } from '../services/api';
+import { api } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 
 export const UsernameSetupPage = () => {
