@@ -275,17 +275,17 @@ export const CreationModal = ({ creation, isOpen, onClose }: CreationModalProps)
             </div>
 
             {/* Comment Input */}
-            {user && (
-              <form onSubmit={handleSubmitComment} className="flex gap-2">
-                <input
-                  ref={commentInputRef}
-                  type="text"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Add a comment..."
-                  className="flex-1 bg-momo-gray-800 text-momo-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-momo-purple"
-                  disabled={submitting}
-                />
+            <form onSubmit={user ? handleSubmitComment : (e) => { e.preventDefault(); navigate('/login'); }} className="flex gap-2">
+              <input
+                ref={commentInputRef}
+                type="text"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder={user ? "Add a comment..." : "Sign in to comment..."}
+                className="flex-1 bg-momo-gray-800 text-momo-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-momo-purple"
+                disabled={submitting || !user}
+              />
+              {user ? (
                 <button
                   type="submit"
                   disabled={!commentText.trim() || submitting}
@@ -293,8 +293,15 @@ export const CreationModal = ({ creation, isOpen, onClose }: CreationModalProps)
                 >
                   {submitting ? 'Posting...' : 'Post'}
                 </button>
-              </form>
-            )}
+              ) : (
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-momo-purple hover:bg-momo-purple/80 text-white rounded-lg font-semibold text-sm transition-colors"
+                >
+                  Login
+                </button>
+              )}
+            </form>
           </div>
         </div>
       </div>
