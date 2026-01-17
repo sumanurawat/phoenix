@@ -91,9 +91,9 @@ Copy from `.env.example` and fill in values.
 
 | Variable | Description | Where to Get |
 |----------|-------------|--------------|
-| `GEMINI_API_KEY` | Google Gemini API | [Google AI Studio](https://makersuite.google.com/app/apikey) |
-| `OPENAI_API_KEY` | OpenAI API (optional) | [OpenAI Platform](https://platform.openai.com/api-keys) |
-| `CLAUDE_API_KEY` | Anthropic API (optional) | [Anthropic Console](https://console.anthropic.com/) |
+
+
+
 
 ### Required for Payments (Stripe)
 

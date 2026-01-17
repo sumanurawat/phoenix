@@ -1,8 +1,7 @@
 flask==2.3.3
 flask-cors==4.0.1
 gunicorn==21.2.0
-google-cloud-aiplatform==1.87.0  # For Gemini API
-google-generativeai==0.3.2  # For Gemini models
+google-cloud-aiplatform==1.87.0  # For Vertex AI Imagen 3 (image generation)
 python-dotenv==1.0.0  # For environment variable management
 flask-session==0.5.0  # For server-side session management
 PyPDF2==3.0.1  # For PDF text extraction
@@ -13,9 +12,6 @@ beautifulsoup4==4.12.2
 firebase-admin==6.2.0  # For Firebase Authentication
 requests==2.31.0  # For HTTP requests
 google-cloud-logging==3.8.0  # For GCP Cloud Logging API (log fetching script)
-anthropic==0.40.0  # For Claude API integration (analysis)
-openai==1.54.4  # For Grok API integration (OpenAI-compatible)
-httpx==0.27.2  # For HTTP requests in enhanced LLM service
 stripe==10.12.0  # For Stripe payment processing
 google-cloud-storage==2.18.2  # For Reel Maker media storage (GCS)
 boto3==1.28.85  # Cloudflare R2 storage (S3-compatible) - version 1.28.x has better R2 endpoint compatibility

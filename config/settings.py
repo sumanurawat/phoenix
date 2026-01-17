@@ -4,27 +4,19 @@ Centralizes all configuration variables for easier management.
 """
 import os
 from dotenv import load_dotenv
-from config.gemini_models import GEMINI_MODELS
 
 # Load environment variables
 load_dotenv()
 
-# API Keys
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
-GROK_API_KEY = os.getenv("GROK_API_KEY")  # xAI API key
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # OpenAI API key
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+# API Keys (only keys actually used by the application)
+# Note: Image generation uses Vertex AI Imagen 3 via Application Default Credentials
+# Video generation uses Vertex AI Veo via Application Default Credentials
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")  # For Google Search (if used)
 GOOGLE_SEARCH_ENGINE_ID = os.getenv("GOOGLE_SEARCH_ENGINE_ID")
 
-# LLM Models - Using constants from gemini_models.py
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", GEMINI_MODELS.PRIMARY)  # gemini-1.5-flash
-FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", GEMINI_MODELS.FALLBACK)  # gemini-1.5-flash-002
-FINAL_FALLBACK_MODEL = GEMINI_MODELS.FINAL_FALLBACK  # gemini-1.5-flash
-
-# Alternative model configurations (can be set via environment variables)
-HIGH_PERFORMANCE_MODEL = os.getenv("HIGH_PERFORMANCE_MODEL", GEMINI_MODELS.HIGH_PERFORMANCE)  # gemini-2.5-pro
-ULTRA_FAST_MODEL = os.getenv("ULTRA_FAST_MODEL", GEMINI_MODELS.ULTRA_FAST)  # gemini-1.5-flash-8b
+# Note: LLM/Gemini models are NOT used by Friedmomo
+# Image generation uses Vertex AI Imagen 3 (imagen-3.0-generate-001)
+# Video generation uses Vertex AI Veo
 
 # Google Cloud Storage Configuration
 # For video generation and Reel Maker features
