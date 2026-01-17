@@ -1,8 +1,8 @@
 """
-Phoenix AI Platform Application
+Friedmomo Backend Application
 
-This is the main application file that sets up the Flask application,
-registers routes, and initializes services.
+Flask backend for friedmomo.com - AI-powered image and video generation platform.
+Handles authentication, token management, content creation, and user profiles.
 """
 import os
 import logging
@@ -47,8 +47,6 @@ except Exception as e:
     logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
 
 # Import API routes (AFTER Firebase initialization)
-from api.chat_routes import chat_bp
-from api.enhanced_chat_routes import enhanced_chat_bp
 from api.auth_routes import auth_bp, login_required
 from api.stats_routes import stats_bp
 from api.stripe_routes import stripe_bp, subscription_bp
@@ -60,8 +58,6 @@ from api.user_routes import user_bp
 from api.feed_routes import feed_bp
 
 # Import services (AFTER Firebase initialization)
-from services.chat_service import ChatService
-from services.enhanced_chat_service import EnhancedChatService
 from services.subscription_middleware import (
     init_subscription_context, 
     subscription_context_processor
@@ -86,26 +82,6 @@ try:
         logger.info("Firebase Admin SDK already initialized.")
 except Exception as e:
     logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
-
-# Service instances (lazy-loaded)
-_chat_service = None
-_enhanced_chat_service = None
-
-def get_chat_service():
-    """Get or create ChatService instance (lazy initialization)."""
-    global _chat_service
-    if _chat_service is None:
-        logger.info("Initializing ChatService...")
-        _chat_service = ChatService()
-    return _chat_service
-
-def get_enhanced_chat_service():
-    """Get or create EnhancedChatService instance (lazy initialization)."""
-    global _enhanced_chat_service
-    if _enhanced_chat_service is None:
-        logger.info("Initializing EnhancedChatService...")
-        _enhanced_chat_service = EnhancedChatService()
-    return _enhanced_chat_service
 
 def require_auth(f):
     """Decorator to require authentication for routes."""
@@ -196,8 +172,6 @@ def create_app():
         return {'session': session}
     
     # Register blueprints
-    app.register_blueprint(chat_bp)
-    app.register_blueprint(enhanced_chat_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(stats_bp)
     app.register_blueprint(stripe_bp)
@@ -300,76 +274,6 @@ def create_app():
         """Render the Transaction History page - requires authentication."""
         return render_template('transaction_history.html',
                            title='Transaction History')
-
-    # Token purchase success/cancel pages removed - handled by friedmomo.com frontend
-    
-
-    @app.route('/api/test-grok', methods=['GET'])
-    def test_grok_api():
-        """Test endpoint to diagnose Grok API issues."""
-        try:
-            from flask import jsonify
-            from services.enhanced_llm_service import EnhancedLLMService, ModelProvider
-            import os
-            
-            # Check environment
-            grok_key = os.getenv('GROK_API_KEY')
-            
-            diagnostics = {
-                "grok_api_key_present": bool(grok_key),
-                "grok_api_key_length": len(grok_key) if grok_key else 0,
-                "grok_api_key_prefix": grok_key[:10] + "..." if grok_key else None
-            }
-            
-            # Try direct OpenAI client creation
-            try:
-                import openai
-                diagnostics["openai_version"] = openai.__version__
-                
-                # Test direct client creation
-                client = openai.OpenAI(
-                    api_key=grok_key,
-                    base_url="https://api.x.ai/v1"
-                )
-                diagnostics["direct_client_creation"] = "success"
-                
-                # Test API call
-                response = client.chat.completions.create(
-                    model="grok-2-1212",
-                    messages=[{"role": "user", "content": "Hello"}],
-                    max_tokens=5
-                )
-                diagnostics["api_call_test"] = "success"
-                diagnostics["response_content"] = response.choices[0].message.content
-                
-            except Exception as e:
-                diagnostics["direct_client_error"] = str(e)
-                diagnostics["error_type"] = type(e).__name__
-            
-            # Test via EnhancedLLMService
-            try:
-                service = EnhancedLLMService(provider=ModelProvider.GROK, model="grok-2-1212")
-                diagnostics["enhanced_service_init"] = "success"
-                diagnostics["grok_client_available"] = bool(service.grok_client)
-                
-                if service.grok_client:
-                    result = service.generate_text("Hello, respond with 'Hi'")
-                    diagnostics["enhanced_service_test"] = "success" if result.get("success") else "failed"
-                    diagnostics["enhanced_service_response"] = result.get("text", result.get("error"))
-            except Exception as e:
-                diagnostics["enhanced_service_error"] = str(e)
-            
-            return jsonify({
-                "success": True,
-                "diagnostics": diagnostics
-            })
-            
-        except Exception as e:
-            return jsonify({
-                "success": False,
-                "error": str(e),
-                "error_type": type(e).__name__
-            }), 500
 
     @app.route('/image-generator')
     @login_required
