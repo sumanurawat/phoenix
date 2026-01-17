@@ -444,8 +444,56 @@ class AccountDeletionService:
             f"{'='*60}"
         )
 
+        # Structured JSON logging for Cloud Monitoring alerts
+        import json
+
+        firestore_docs_deleted = sum(v for v in cleanup_summary['firestore'].values() if isinstance(v, int))
+
+        alert_payload = {
+            'event_type': 'account_deletion',
+            'status': 'success' if success else 'error',
+            'user_id': user_id,
+            'username': username,
+            'cleanup_summary': {
+                'firestore_docs': firestore_docs_deleted,
+                'r2_files': cleanup_summary['storage'].get('r2_files', 0),
+                'stripe': cleanup_summary['external'].get('stripe_customer', 'unknown'),
+                'firebase_auth': cleanup_summary['external'].get('firebase_auth', 'unknown')
+            },
+            'duration_ms': duration_ms,
+            'timestamp': end_time.isoformat(),
+            'initiated_by': 'ADMIN' if admin_initiated else 'USER'
+        }
+
         if errors:
-            logger.error(f"Deletion errors for {user_id}: {errors}")
+            # Determine severity based on error type
+            # CRITICAL: Firebase Auth or user document deletion failed (user still has access)
+            # WARNING: External service failed (Stripe, R2) but user is deleted
+            critical_errors = [e for e in errors if 'Firebase Auth' in e or 'user document' in e]
+            warning_errors = [e for e in errors if e not in critical_errors]
+
+            alert_payload['errors'] = errors
+            alert_payload['error_count'] = len(errors)
+            alert_payload['severity'] = 'CRITICAL' if critical_errors else 'WARNING'
+
+            if critical_errors:
+                # CRITICAL: User may still be able to log in
+                logger.critical(
+                    f"ALERT_CRITICAL: Account deletion failed critically for {username or user_id}. "
+                    f"User may still have access! Errors: {critical_errors}"
+                )
+                logger.critical(f"DELETION_ALERT_CRITICAL: {json.dumps(alert_payload)}")
+            else:
+                # WARNING: User deleted but cleanup incomplete
+                logger.warning(
+                    f"ALERT_WARNING: Account deletion completed with warnings for {username or user_id}. "
+                    f"Some artifacts may remain. Errors: {warning_errors}"
+                )
+                logger.warning(f"DELETION_ALERT_WARNING: {json.dumps(alert_payload)}")
+        else:
+            # SUCCESS: Log for audit trail
+            alert_payload['severity'] = 'INFO'
+            logger.info(f"DELETION_ALERT_SUCCESS: {json.dumps(alert_payload)}")
 
         return result
 
