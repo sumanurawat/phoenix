@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
+import { TokenBalanceProvider } from './contexts/TokenBalanceContext';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
@@ -26,8 +27,9 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
+    <TokenBalanceProvider>
+      <BrowserRouter>
+        <Routes>
         {/* Landing page - shows different content based on auth status */}
         <Route path="/" element={<LandingPage />} />
 
@@ -52,8 +54,9 @@ function App() {
             This catch-all route must be LAST - it only matches if no other route does.
             Profiles are public and shareable via direct username links. */}
         <Route path="/:username" element={<ProfilePage />} />
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </TokenBalanceProvider>
   );
 }
 

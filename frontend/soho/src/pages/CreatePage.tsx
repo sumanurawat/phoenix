@@ -30,7 +30,7 @@ type MediaType = 'image' | 'video';
 export const CreatePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { balance, refreshBalance } = useTokenBalance();
+  const { balance, refreshBalance, deductTokens } = useTokenBalance();
   const [prompt, setPrompt] = useState('');
   const [mediaType, setMediaType] = useState<MediaType>('image');
   const [duration, setDuration] = useState<4 | 6 | 8>(8);
@@ -58,13 +58,16 @@ export const CreatePage = () => {
       setGenerating(true);
       setError(null);
 
+      // Optimistic update: deduct tokens immediately for responsive UI
+      deductTokens(cost);
+
       await api.post(endpoints.creations, {
         prompt: prompt.trim(),
         type: mediaType,
         duration: mediaType === 'video' ? duration : undefined,
       });
 
-      // Refresh token balance
+      // Sync with server to get exact balance (in case of any discrepancy)
       refreshBalance();
 
       // Navigate to profile drafts tab to see the creation
@@ -92,6 +95,8 @@ export const CreatePage = () => {
     } catch (err: any) {
       console.error('Failed to create:', err);
       setError(err.response?.data?.error || 'Failed to start generation. Please try again.');
+      // Restore correct balance from server since optimistic update was wrong
+      refreshBalance();
     } finally {
       setGenerating(false);
     }

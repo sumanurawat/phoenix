@@ -1,12 +1,20 @@
 import { useState } from 'react';
 import { api, endpoints } from '../../services/api';
+import { useTokenBalance } from '../../hooks/useTokenBalance';
 
 type SendTokensProps = {
   recipientUsername: string;
   onSuccess?: (newBalance: number) => void;
 };
 
+/**
+ * SendTokens - Component for sending tokens to another user
+ *
+ * After a successful transfer, it updates the global token balance
+ * so the Header and other components reflect the new balance immediately.
+ */
 export const SendTokens = ({ recipientUsername, onSuccess }: SendTokensProps) => {
+  const { updateBalance } = useTokenBalance();
   const [amount, setAmount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +68,12 @@ export const SendTokens = ({ recipientUsername, onSuccess }: SendTokensProps) =>
       if (response.data.success) {
         setSuccess(response.data.message || `Sent ${amount} tokens to @${recipientUsername}`);
         setAmount(0);
+
+        // Update global token balance so Header reflects the change immediately
+        if (typeof response.data.newBalance === 'number') {
+          updateBalance(response.data.newBalance);
+        }
+
         if (onSuccess) {
           onSuccess(response.data.newBalance);
         }
