@@ -9,6 +9,7 @@ from services.user_service import (
     UsernameValidationError,
     UsernameTakenError
 )
+from services.account_deletion_service import get_deletion_service, AccountDeletionError
 
 logger = logging.getLogger(__name__)
 
@@ -289,4 +290,141 @@ def update_profile():
         logger.error(f"Error updating profile for user {user_id}: {e}", exc_info=True)
         return jsonify({
             'error': 'Failed to update profile'
+        }), 500
+
+
+@user_bp.route('/api/users/me', methods=['DELETE'])
+@login_required
+def delete_account():
+    """
+    Delete the authenticated user's account and all associated data.
+
+    This permanently deletes:
+    - User profile
+    - All creations (images/videos)
+    - All transactions
+    - Social media connections
+    - Comments on other users' creations
+    - Session data
+    - Username (becomes available for others)
+
+    Returns:
+        200: { success: true, message: "...", summary: {...} }
+        401: Not authenticated
+        500: Deletion failed
+    """
+    user_id = session.get('user_id')
+
+    if not user_id:
+        return jsonify({
+            'success': False,
+            'error': 'User not authenticated'
+        }), 401
+
+    logger.warning(f"Account deletion requested by user: {user_id}")
+
+    try:
+        # Get deletion service
+        deletion_service = get_deletion_service()
+
+        # First, get summary of what will be deleted
+        summary = deletion_service.get_user_data_summary(user_id)
+
+        if not summary.get('exists'):
+            return jsonify({
+                'success': False,
+                'error': 'User account not found'
+            }), 404
+
+        # Perform the deletion
+        result = deletion_service.delete_account(user_id)
+
+        # Clear the session
+        session.clear()
+
+        if result['success']:
+            logger.info(
+                f"Account deleted successfully: {result.get('username', user_id)} | "
+                f"Summary: {result.get('cleanup_summary')}"
+            )
+
+            return jsonify({
+                'success': True,
+                'message': 'Your account and all associated data have been permanently deleted.',
+                'summary': result.get('cleanup_summary'),
+                'username_released': result.get('username')
+            })
+        else:
+            logger.error(
+                f"Account deletion completed with errors for {user_id}: "
+                f"{result.get('errors')}"
+            )
+
+            return jsonify({
+                'success': False,
+                'error': 'Account deletion completed with some errors',
+                'details': result.get('errors'),
+                'partial_summary': result.get('cleanup_summary')
+            }), 500
+
+    except AccountDeletionError as e:
+        logger.error(f"Account deletion failed for {user_id}: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': f'Account deletion failed: {str(e)}'
+        }), 500
+
+    except Exception as e:
+        logger.error(f"Unexpected error during account deletion for {user_id}: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'An unexpected error occurred while deleting your account'
+        }), 500
+
+
+@user_bp.route('/api/users/me/data-summary', methods=['GET'])
+@login_required
+def get_data_summary():
+    """
+    Get a summary of all data associated with the current user's account.
+    Useful for showing users what will be deleted before account deletion.
+
+    Returns:
+        200: {
+            success: true,
+            summary: {
+                user_id: string,
+                username: string,
+                data_counts: {
+                    creations: number,
+                    transactions: number,
+                    social_accounts: number
+                }
+            }
+        }
+        401: Not authenticated
+        500: Server error
+    """
+    user_id = session.get('user_id')
+
+    if not user_id:
+        return jsonify({
+            'success': False,
+            'error': 'User not authenticated'
+        }), 401
+
+    try:
+        deletion_service = get_deletion_service()
+        summary = deletion_service.get_user_data_summary(user_id)
+
+        return jsonify({
+            'success': True,
+            'summary': summary
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting data summary for {user_id}: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'Failed to get data summary'
         }), 500
