@@ -10,7 +10,7 @@ In a world where AI transforms ideas into reality in seconds, **prompts are the 
 
 **The prompt revolution is happening now.** While others are still figuring out how to use AI, Friedmomo users are already:
 - 🎨 **Creating stunning images** powered by Google's Imagen 3 (1 token)
-- 🎬 **Generating professional videos** with Veo 3.1 AI (45 tokens)
+- 🎬 **Generating professional videos** with Veo 3.1 AI (50 tokens)
 - 🌍 **Sharing their creations** with a vibrant community
 - 💬 **Engaging with fellow creators** through likes and comments
 - ⚡ **Iterating rapidly** with an affordable token-based economy
@@ -106,7 +106,7 @@ The React frontend is located in `frontend/soho/` and deploys separately to frie
 - High-quality, prompt-accurate images
 - Perfect for rapid ideation
 
-### 🎬 Video Generation (45 tokens)
+### 🎬 Video Generation (50 tokens)
 - Powered by Google Veo 3.1
 - 2-5 minute processing time
 - Professional-grade output

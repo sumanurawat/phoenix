@@ -210,7 +210,7 @@ def generate_video(payload: Dict[str, Any]) -> Dict[str, Any]:
     """
     creation_id = payload['creationId']
     user_id = None
-    cost = 45  # Video generation cost
+    cost = 50  # Video generation cost
 
     try:
         logger.info(f"🎬 Starting video generation for {creation_id}")
@@ -228,7 +228,8 @@ def generate_video(payload: Dict[str, Any]) -> Dict[str, Any]:
         user_id = creation_data.get('userId')
         prompt = creation_data.get('prompt')
         aspect_ratio = creation_data.get('aspectRatio', '9:16')
-        duration = creation_data.get('duration', 8)
+        # Duration is always 8 seconds (fixed, not configurable)
+        duration = 8
         current_status = creation_data.get('status')
 
         logger.info(f"📋 Creation: user={user_id}, status={current_status}")

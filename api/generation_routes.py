@@ -150,7 +150,8 @@ def create_generation():
 
         # Get optional parameters
         aspect_ratio = data.get('aspectRatio', '9:16')
-        duration = data.get('duration', 8) if creation_type == 'video' else None
+        # Duration is fixed at 8 seconds for all videos (ignore any user input)
+        duration = 8 if creation_type == 'video' else None
 
         # Validate video-specific parameters
         if creation_type == 'video':
@@ -158,12 +159,6 @@ def create_generation():
                 return jsonify({
                     'success': False,
                     'error': 'Invalid aspect ratio (must be 16:9 or 9:16)'
-                }), 400
-
-            if duration not in [4, 6, 8]:
-                return jsonify({
-                    'success': False,
-                    'error': 'Duration must be 4, 6, or 8 seconds'
                 }), 400
 
         logger.info(
@@ -190,7 +185,7 @@ def create_generation():
             )
 
         except InsufficientTokensError as e:
-            cost = 1 if creation_type == 'image' else 45
+            cost = 1 if creation_type == 'image' else 50
             logger.warning(f"Insufficient tokens for {user_id}: {e}")
             return jsonify({
                 'success': False,
@@ -245,7 +240,7 @@ def create_generation():
             }), 503
 
         # Return 202 Accepted
-        cost = 1 if creation_type == 'image' else 45
+        cost = 1 if creation_type == 'image' else 50
         return jsonify({
             'success': True,
             'creationId': creation_id,

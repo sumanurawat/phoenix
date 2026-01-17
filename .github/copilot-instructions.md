@@ -1,6 +1,6 @@
 # Friedmomo (Phoenix) - AI Image & Video Generation Platform
 
-Friedmomo is a Flask-based Python web application for AI-powered image and video generation. Users can create images (1 token) and videos (45 tokens), share them publicly, and interact with other creators. The platform uses Google Imagen 3 for images and Veo 3.1 for videos, with Firebase Firestore for persistence and Stripe for token purchases.
+Friedmomo is a Flask-based Python web application for AI-powered image and video generation. Users can create images (1 token) and videos (50 tokens), share them publicly, and interact with other creators. The platform uses Google Imagen 3 for images and Veo 3.1 for videos, with Firebase Firestore for persistence and Stripe for token purchases.
 
 **Architecture**: Multi-service Flask app with Blueprint-based routing, Cloud Run Jobs for async generation, and Firebase-first authentication. Frontend at friedmomo.com (React SPA), backend API only.
 
@@ -186,7 +186,7 @@ Friedmomo follows a consistent pattern:
 
 ### Core Features
 1. **Image Generation** - Imagen 3 API, 1 token, instant results via Cloud Run Job
-2. **Video Generation** - Veo 3.1 API, 45 tokens, 2-5 min processing via Cloud Run Job
+2. **Video Generation** - Veo 3.1 API, 50 tokens, 2-5 min processing via Cloud Run Job
 3. **Social Feed** - Public gallery, likes, comments, user profiles
 4. **Token Economy** - Stripe integration, $10 = 1000 tokens, free tier 100 tokens
 5. **Authentication** - Firebase Auth (Google OAuth), session-based backend

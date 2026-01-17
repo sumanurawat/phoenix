@@ -122,7 +122,7 @@ export const TokensPage = () => {
               </div>
               <div>
                 <p className="font-semibold">Video Generation</p>
-                <p className="text-momo-gray-400 text-sm">45 tokens per video</p>
+                <p className="text-momo-gray-400 text-sm">50 tokens per video</p>
               </div>
             </div>
           </div>
@@ -194,7 +194,7 @@ export const TokensPage = () => {
                     <div className="flex items-center gap-4 text-sm text-momo-gray-400">
                       <span>~{pkg.tokens} images</span>
                       <span>•</span>
-                      <span>~{Math.floor(pkg.tokens / 45)} videos</span>
+                      <span>~{Math.floor(pkg.tokens / 50)} videos</span>
                     </div>
                   </div>
 

@@ -33,13 +33,12 @@ export const CreatePage = () => {
   const { balance, refreshBalance, deductTokens } = useTokenBalance();
   const [prompt, setPrompt] = useState('');
   const [mediaType, setMediaType] = useState<MediaType>('image');
-  const [duration, setDuration] = useState<4 | 6 | 8>(8);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const COSTS = {
     image: 1,
-    video: 45,
+    video: 50,
   };
 
   // Redirect to login if not authenticated
@@ -87,7 +86,6 @@ export const CreatePage = () => {
       await api.post(endpoints.creations, {
         prompt: prompt.trim(),
         type: mediaType,
-        duration: mediaType === 'video' ? duration : undefined,
       });
 
       // Sync with server to get exact balance (in case of any discrepancy)
@@ -191,33 +189,6 @@ export const CreatePage = () => {
               </button>
             </div>
           </div>
-
-          {/* Duration Selection (for video)
-              Veo 3.1 API only accepts 4, 6, or 8 seconds - no continuous range.
-              Using discrete buttons instead of a slider for better UX. */}
-          {mediaType === 'video' && (
-            <div>
-              <label className="block text-sm font-semibold mb-3">
-                Duration
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {([4, 6, 8] as const).map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => setDuration(d)}
-                    className={`py-3 px-4 rounded-lg font-semibold transition-all ${
-                      duration === d
-                        ? 'bg-momo-purple text-white'
-                        : 'bg-momo-gray-700 text-momo-gray-300 hover:bg-momo-gray-600'
-                    }`}
-                  >
-                    {d} seconds
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Prompt Input */}
           <div>

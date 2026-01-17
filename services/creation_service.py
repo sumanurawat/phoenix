@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 
 # Generation costs (in tokens)
 # Images: Low cost, quick generation via Imagen API
-# Videos: Higher cost due to Veo 3.1 API compute requirements
+# Videos: Higher cost due to Veo 3.1 API compute requirements (8-second fixed duration)
 IMAGE_GENERATION_COST = 1
-VIDEO_GENERATION_COST = 45
+VIDEO_GENERATION_COST = 50
 
 
 class CreationService:
