@@ -47,6 +47,11 @@ function App() {
         <Route path="/tokens" element={<TokensPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+
+        {/* Instagram-style profile URLs: friedmomo.com/username
+            This catch-all route must be LAST - it only matches if no other route does.
+            Profiles are public and shareable via direct username links. */}
+        <Route path="/:username" element={<ProfilePage />} />
       </Routes>
     </BrowserRouter>
   );
