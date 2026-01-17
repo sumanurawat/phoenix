@@ -1,19 +1,33 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { useTokenBalance } from '../hooks/useTokenBalance';
+import { useAuth } from '../hooks/useAuth';
 import type { TokenPackage } from '../types/token';
 import { api, endpoints } from '../services/api';
 
 export const TokensPage = () => {
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const { balance, loading: balanceLoading } = useTokenBalance();
   const [packages, setPackages] = useState<TokenPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState<string | null>(null);
 
+  // Redirect to login if not authenticated
   useEffect(() => {
-    fetchPackages();
-  }, []);
+    if (!authLoading && !user) {
+      navigate('/login', { state: { from: '/tokens' } });
+    }
+  }, [authLoading, user, navigate]);
+
+  useEffect(() => {
+    // Only fetch packages if user is authenticated
+    if (user) {
+      fetchPackages();
+    }
+  }, [user]);
 
   const fetchPackages = async () => {
     try {
@@ -42,6 +56,22 @@ export const TokensPage = () => {
       setPurchasing(null);
     }
   };
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-momo-purple"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
 
   return (
     <Layout>

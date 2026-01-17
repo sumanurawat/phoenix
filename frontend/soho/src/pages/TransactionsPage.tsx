@@ -1,16 +1,30 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
+import { useAuth } from '../hooks/useAuth';
 import type { Transaction } from '../types/token';
 import { api, endpoints } from '../services/api';
 
 export const TransactionsPage = () => {
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Redirect to login if not authenticated
   useEffect(() => {
-    fetchTransactions();
-  }, []);
+    if (!authLoading && !user) {
+      navigate('/login', { state: { from: '/transactions' } });
+    }
+  }, [authLoading, user, navigate]);
+
+  useEffect(() => {
+    // Only fetch if user is authenticated
+    if (user) {
+      fetchTransactions();
+    }
+  }, [user]);
 
   const fetchTransactions = async () => {
     try {
@@ -91,6 +105,22 @@ export const TransactionsPage = () => {
         return 'Transaction';
     }
   };
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-momo-purple"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
 
   return (
     <Layout>

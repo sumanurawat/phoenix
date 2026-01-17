@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { useTokenBalance } from '../hooks/useTokenBalance';
@@ -29,7 +29,7 @@ type MediaType = 'image' | 'video';
 
 export const CreatePage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { balance, refreshBalance, deductTokens } = useTokenBalance();
   const [prompt, setPrompt] = useState('');
   const [mediaType, setMediaType] = useState<MediaType>('image');
@@ -41,6 +41,29 @@ export const CreatePage = () => {
     image: 1,
     video: 45,
   };
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login', { state: { from: '/create' } });
+    }
+  }, [authLoading, user, navigate]);
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-momo-purple"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
