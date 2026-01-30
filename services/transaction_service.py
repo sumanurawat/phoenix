@@ -48,7 +48,7 @@ class TransactionService:
         """
         self.db = db or admin_firestore.client()
         self.collection = 'transactions'
-        logger.info("TransactionService initialized")
+        logger.debug("TransactionService initialized")
     
     def record_transaction(
         self,

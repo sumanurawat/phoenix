@@ -41,7 +41,7 @@ class TokenService:
             db: Firestore client instance (uses default if not provided)
         """
         self.db = db or admin_firestore.client()
-        logger.info("TokenService initialized")
+        logger.debug("TokenService initialized")
     
     def get_balance(self, user_id: str) -> int:
         """

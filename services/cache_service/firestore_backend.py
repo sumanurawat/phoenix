@@ -53,7 +53,7 @@ class FirestoreCache(CacheServiceInterface):
         self.collection_name = collection_name
         self.db = firestore.client()
         self.collection = self.db.collection(collection_name)
-        logger.info(f"FirestoreCache initialized with collection: {collection_name}")
+        logger.debug(f"FirestoreCache initialized with collection: {collection_name}")
 
     def get(self, key: str) -> Optional[Dict[str, Any]]:
         """

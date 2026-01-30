@@ -48,7 +48,7 @@ class StripeService:
             # Log only once at startup
             key_prefix = self.stripe_secret_key[:15] if self.stripe_secret_key else "None"
             mode = "TEST" if self.stripe_secret_key.startswith('sk_test_') else "LIVE"
-            logger.info(f"🔑 Stripe service initialized (Mode: {mode})")
+            logger.debug(f"Stripe service initialized (Mode: {mode})")
 
             if not self.premium_price_id:
                 logger.warning("❌ No price ID configured - checkout will fail")

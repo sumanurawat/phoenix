@@ -20,6 +20,8 @@ type ProfileSummary = {
   totalTokensEarned: number;
   tokenBalance?: number;
   totalTokensPurchased?: number;
+  followersCount?: number;
+  followingCount?: number;
 };
 
 export const ProfilePage = () => {
@@ -35,6 +37,8 @@ export const ProfilePage = () => {
   const [creations, setCreations] = useState<Creation[]>([]);
   const [activeTab, setActiveTab] = useState<'published' | 'drafts'>('published');
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
   const [creationsLoading, setCreationsLoading] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -119,8 +123,11 @@ export const ProfilePage = () => {
           totalTokensEarned: typeof publicRecord.totalTokensEarned === 'number' ? publicRecord.totalTokensEarned : 0,
           tokenBalance,
           totalTokensPurchased,
+          followersCount: typeof publicRecord.followersCount === 'number' ? publicRecord.followersCount : 0,
+          followingCount: typeof publicRecord.followingCount === 'number' ? publicRecord.followingCount : 0,
         });
         setIsOwnProfile(Boolean(payload.isOwnProfile));
+        setIsFollowing(Boolean(payload.isFollowing));
       } catch (err) {
         if (!isMounted) {
           return;
@@ -180,8 +187,8 @@ export const ProfilePage = () => {
           const response = await api.get(endpoints.drafts);
           const list = Array.isArray(response.data?.creations)
             ? response.data.creations.map((item: Record<string, unknown>) =>
-                normalizeCreation(item, { fallbackUsername: profile?.username ?? profileUsername })
-              )
+              normalizeCreation(item, { fallbackUsername: profile?.username ?? profileUsername })
+            )
             : [];
 
           if (isMounted) {
@@ -193,8 +200,8 @@ export const ProfilePage = () => {
         const response = await api.get(endpoints.userCreations(profileUsername));
         const list = Array.isArray(response.data?.creations)
           ? response.data.creations.map((item: Record<string, unknown>) =>
-              normalizeCreation(item, { fallbackUsername: profile?.username ?? profileUsername })
-            )
+            normalizeCreation(item, { fallbackUsername: profile?.username ?? profileUsername })
+          )
           : [];
 
         if (isMounted) {
@@ -231,6 +238,28 @@ export const ProfilePage = () => {
   const tokensValue = isOwnProfile
     ? profile?.tokenBalance ?? '—'
     : profile?.totalTokensEarned ?? 0;
+
+  // Handle follow/unfollow toggle
+  const handleFollowToggle = async () => {
+    if (!profile?.username || isFollowLoading) return;
+
+    setIsFollowLoading(true);
+    try {
+      const response = await api.post(endpoints.followUser(profile.username));
+      if (response.data?.success) {
+        setIsFollowing(response.data.following);
+        // Update follower count optimistically
+        setProfile(prev => prev ? {
+          ...prev,
+          followersCount: (prev.followersCount ?? 0) + (response.data.following ? 1 : -1)
+        } : null);
+      }
+    } catch (err) {
+      console.error('Failed to update follow status:', err);
+    } finally {
+      setIsFollowLoading(false);
+    }
+  };
 
   if (isUsernameMissing) {
     return (
@@ -300,14 +329,52 @@ export const ProfilePage = () => {
                   <span className="text-momo-gray-400 ml-1">{creationsLabel}</span>
                 </div>
                 <div>
+                  <span className="font-bold text-momo-white">{profile.followersCount ?? 0}</span>
+                  <span className="text-momo-gray-400 ml-1">followers</span>
+                </div>
+                <div>
+                  <span className="font-bold text-momo-white">{profile.followingCount ?? 0}</span>
+                  <span className="text-momo-gray-400 ml-1">following</span>
+                </div>
+                <div>
                   <span className="font-bold text-momo-white">{tokensValue}</span>
                   <span className="text-momo-gray-400 ml-1">{tokensLabel}</span>
                 </div>
               </div>
 
-              {/* Send Tokens - only show on other users' profiles when logged in */}
+              {/* Actions - only show on other users' profiles when logged in */}
               {!isOwnProfile && currentUser && profile.username && (
-                <div className="pt-2">
+                <div className="flex items-center gap-3 pt-2">
+                  {/* Follow Button */}
+                  <button
+                    onClick={handleFollowToggle}
+                    disabled={isFollowLoading}
+                    className={`px-6 py-2 rounded-lg font-semibold transition-all ${isFollowing
+                        ? 'bg-momo-gray-700 text-white hover:bg-momo-gray-600'
+                        : 'bg-momo-purple text-white hover:bg-momo-purple/80'
+                      } ${isFollowLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {isFollowLoading ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        ...
+                      </span>
+                    ) : isFollowing ? (
+                      <span className="flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        Following
+                      </span>
+                    ) : (
+                      'Follow'
+                    )}
+                  </button>
+
+                  {/* Send Tokens */}
                   <SendTokens recipientUsername={profile.username} />
                 </div>
               )}
@@ -332,11 +399,10 @@ export const ProfilePage = () => {
         <div className="border-b border-momo-gray-700">
           <div className="flex gap-8">
             <button
-              className={`pb-3 px-1 border-b-2 transition-colors ${
-                activeTab === 'published'
-                  ? 'border-momo-purple text-momo-white'
-                  : 'border-transparent text-momo-gray-400 hover:text-momo-white'
-              }`}
+              className={`pb-3 px-1 border-b-2 transition-colors ${activeTab === 'published'
+                ? 'border-momo-purple text-momo-white'
+                : 'border-transparent text-momo-gray-400 hover:text-momo-white'
+                }`}
               onClick={() => setActiveTab('published')}
             >
               <div className="flex items-center gap-2">
@@ -349,11 +415,10 @@ export const ProfilePage = () => {
 
             {isOwnProfile && (
               <button
-                className={`pb-3 px-1 border-b-2 transition-colors ${
-                  activeTab === 'drafts'
-                    ? 'border-momo-purple text-momo-white'
-                    : 'border-transparent text-momo-gray-400 hover:text-momo-white'
-                }`}
+                className={`pb-3 px-1 border-b-2 transition-colors ${activeTab === 'drafts'
+                  ? 'border-momo-purple text-momo-white'
+                  : 'border-transparent text-momo-gray-400 hover:text-momo-white'
+                  }`}
                 onClick={() => setActiveTab('drafts')}
               >
                 <div className="flex items-center gap-2">
@@ -416,7 +481,7 @@ export const ProfilePage = () => {
         )}
       </div>
 
-            {/* Creation/Draft Modal */}
+      {/* Creation/Draft Modal */}
       {selectedCreation && (
         activeTab === 'drafts' ? (
           <DraftModal

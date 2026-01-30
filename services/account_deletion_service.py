@@ -126,7 +126,7 @@ class AccountDeletionService:
         self.r2_bucket = os.getenv('R2_BUCKET_NAME', 'ai-image-posts-prod')
         self.r2_public_url = os.getenv('R2_PUBLIC_URL', '')
 
-        logger.info(
+        logger.debug(
             f"AccountDeletionService initialized | "
             f"Stripe: {'enabled' if self.stripe_configured else 'disabled'} | "
             f"R2 Bucket: {self.r2_bucket}"
@@ -364,6 +364,25 @@ class AccountDeletionService:
         except Exception as e:
             errors.append(f"Failed to delete comments: {e}")
             logger.error(f"❌ Error deleting comments: {e}")
+
+        # ---------------------------------------------------------------------
+        # STEP 12b: Clean up follow relationships
+        # Remove user from all followers/following lists
+        # ---------------------------------------------------------------------
+        try:
+            from services.follow_service import get_follow_service
+            follow_service = get_follow_service()
+            follow_cleanup = follow_service.remove_all_follow_relationships(user_id)
+            cleanup_summary['firestore']['followers_cleaned'] = follow_cleanup.get('followers_cleaned', 0)
+            cleanup_summary['firestore']['following_cleaned'] = follow_cleanup.get('following_cleaned', 0)
+            logger.info(
+                f"✅ Cleaned follow relationships: "
+                f"{follow_cleanup.get('followers_cleaned', 0)} followers, "
+                f"{follow_cleanup.get('following_cleaned', 0)} following"
+            )
+        except Exception as e:
+            errors.append(f"Failed to clean follow relationships: {e}")
+            logger.error(f"❌ Error cleaning follow relationships: {e}")
 
         # ---------------------------------------------------------------------
         # STEP 13: Delete Stripe customer (external API)

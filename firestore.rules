@@ -117,7 +117,11 @@ service cloud.firestore {
           'totalTokensPurchased',
           'totalTokensSpent',
           'username',
-          'usernameLower'
+          'usernameLower',
+          'following',
+          'followers',
+          'followingCount',
+          'followersCount'
         ]);
 
       // Allow user to create their profile (excluding protected fields)
@@ -129,7 +133,11 @@ service cloud.firestore {
           'totalTokensPurchased',
           'totalTokensSpent',
           'username',
-          'usernameLower'
+          'usernameLower',
+          'following',
+          'followers',
+          'followingCount',
+          'followersCount'
         ]);
 
       // Protected fields can ONLY be modified by server (Admin SDK bypasses these rules)

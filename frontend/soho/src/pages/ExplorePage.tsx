@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Layout } from '../components/layout/Layout';
 import { PostCard } from '../components/feed/PostCard';
 import { PostCardSkeleton } from '../components/common/PostCardSkeleton';
@@ -6,34 +6,66 @@ import { CreationModal } from '../components/modals/CreationModal';
 import type { Creation } from '../types/creation';
 import { api, endpoints } from '../services/api';
 import { normalizeCreation } from '../utils/creationMapper';
+import { useAuth } from '../hooks/useAuth';
+
+type FeedType = 'global' | 'following';
 
 export const ExplorePage = () => {
   const [creations, setCreations] = useState<Creation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCreation, setSelectedCreation] = useState<Creation | null>(null);
+  const [feedType, setFeedType] = useState<FeedType>('global');
+  const [emptyMessage, setEmptyMessage] = useState<string | null>(null);
+
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
+
+  const fetchCreations = useCallback(async (type: FeedType) => {
+    setLoading(true);
+    setError(null);
+    setEmptyMessage(null);
+
+    try {
+      const endpoint = type === 'global' ? endpoints.explore : endpoints.followingFeed;
+      const response = await api.get(endpoint, {
+        params: { limit: 20 }
+      });
+
+      const fetched = Array.isArray(response.data?.creations)
+        ? response.data.creations.map((creation: Record<string, unknown>) => normalizeCreation(creation))
+        : [];
+
+      setCreations(fetched);
+
+      // Set empty message for following feed
+      if (type === 'following' && fetched.length === 0 && response.data?.message) {
+        setEmptyMessage(response.data.message);
+      }
+    } catch (err) {
+      console.error('Failed to fetch creations:', err);
+      // If following feed fails due to auth, fall back to global
+      if (type === 'following') {
+        setError('Sign in to see posts from people you follow');
+      } else {
+        setError('Failed to load creations');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchCreations = async () => {
-      try {
-        const response = await api.get(endpoints.explore, {
-          params: { limit: 20 }
-        });
-        const fetched = Array.isArray(response.data?.creations)
-          ? response.data.creations.map((creation: Record<string, unknown>) => normalizeCreation(creation))
-          : [];
+    fetchCreations(feedType);
+  }, [feedType, fetchCreations]);
 
-        setCreations(fetched);
-      } catch (err) {
-        console.error('Failed to fetch creations:', err);
-        setError('Failed to load creations');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCreations();
-  }, []);
+  const handleFeedChange = (type: FeedType) => {
+    if (type === 'following' && !isAuthenticated) {
+      // Don't switch to following if not authenticated
+      return;
+    }
+    setFeedType(type);
+  };
 
   return (
     <Layout>
@@ -44,6 +76,32 @@ export const ExplorePage = () => {
           <p className="text-momo-gray-400 mt-2">
             Discover amazing creations from the community
           </p>
+        </div>
+
+        {/* Feed Toggle */}
+        <div className="flex justify-center gap-1 p-1 bg-momo-gray-800 rounded-lg">
+          <button
+            onClick={() => handleFeedChange('global')}
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${feedType === 'global'
+              ? 'bg-momo-purple text-white'
+              : 'text-momo-gray-400 hover:text-white'
+              }`}
+          >
+            For You
+          </button>
+          <button
+            onClick={() => handleFeedChange('following')}
+            disabled={!isAuthenticated}
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${feedType === 'following'
+              ? 'bg-momo-purple text-white'
+              : isAuthenticated
+                ? 'text-momo-gray-400 hover:text-white'
+                : 'text-momo-gray-600 cursor-not-allowed'
+              }`}
+            title={!isAuthenticated ? 'Sign in to see posts from people you follow' : undefined}
+          >
+            Following
+          </button>
         </div>
 
         {/* Loading State */}
@@ -60,7 +118,7 @@ export const ExplorePage = () => {
           <div className="bg-momo-red/10 border border-momo-red/20 rounded-lg p-4 text-center">
             <p className="text-momo-red font-semibold">{error}</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => fetchCreations(feedType)}
               className="mt-3 px-4 py-2 bg-momo-red text-white rounded-lg hover:bg-momo-red/80 transition-colors"
             >
               Try Again
@@ -75,10 +133,14 @@ export const ExplorePage = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
             <p className="text-momo-gray-400 text-lg mb-2">
-              No creations yet
+              {feedType === 'following'
+                ? emptyMessage || 'No posts from people you follow yet'
+                : 'No creations yet'}
             </p>
             <p className="text-momo-gray-500 text-sm">
-              Be the first to create something amazing!
+              {feedType === 'following'
+                ? 'Follow some creators to see their posts here!'
+                : 'Be the first to create something amazing!'}
             </p>
           </div>
         )}

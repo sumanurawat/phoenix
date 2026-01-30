@@ -35,14 +35,14 @@ try:
         try:
             cred = credentials.Certificate('firebase-credentials.json')
             firebase_admin.initialize_app(cred)
-            logger.info("Firebase Admin SDK initialized with service account.")
+            logger.debug("Firebase Admin SDK initialized with service account.")
         except FileNotFoundError:
             # Fallback to Application Default Credentials (for production)
             cred = credentials.ApplicationDefault()
             firebase_admin.initialize_app(cred)
-            logger.info("Firebase Admin SDK initialized with Application Default Credentials.")
+            logger.debug("Firebase Admin SDK initialized with Application Default Credentials.")
     else:
-        logger.info("Firebase Admin SDK already initialized.")
+        logger.debug("Firebase Admin SDK already initialized.")
 except Exception as e:
     logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
 
@@ -56,6 +56,7 @@ from api.image_routes import image_bp
 from api.generation_routes import generation_bp  # Unified creation endpoint (images + videos for Friedmomo)
 from api.user_routes import user_bp
 from api.feed_routes import feed_bp
+from api.follow_routes import follow_bp
 
 # Import services (AFTER Firebase initialization)
 from services.subscription_middleware import (
@@ -64,24 +65,8 @@ from services.subscription_middleware import (
 )
 from config.app_display_names import get_display_name
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
 logger = logging.getLogger(__name__)
 
-# Initialize Firebase Admin SDK (only once, globally)
-try:
-    # Check if Firebase app is already initialized
-    if not firebase_admin._apps:
-        cred = credentials.ApplicationDefault()
-        firebase_admin.initialize_app(cred)
-        logger.info("Firebase Admin SDK initialized successfully.")
-    else:
-        logger.info("Firebase Admin SDK already initialized.")
-except Exception as e:
-    logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
 
 def require_auth(f):
     """Decorator to require authentication for routes."""
@@ -182,6 +167,7 @@ def create_app():
     app.register_blueprint(generation_bp)  # Unified draft-first creation with Cloud Run Jobs (Friedmomo)
     app.register_blueprint(user_bp)  # Phase 4: User profiles & usernames
     app.register_blueprint(feed_bp)  # Phase 4: Social feed & likes
+    app.register_blueprint(follow_bp)  # Phase 5: Follow feature
     
     # Setup subscription middleware
     @app.before_request

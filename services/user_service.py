@@ -50,7 +50,7 @@ class UserService:
         self.db = db or admin_firestore.client()
         self.users_collection = 'users'
         self.usernames_collection = 'usernames'
-        logger.info("UserService initialized")
+        logger.debug("UserService initialized")
 
     def validate_username(self, username: str) -> str:
         """

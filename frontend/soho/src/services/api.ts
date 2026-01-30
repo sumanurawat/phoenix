@@ -31,7 +31,7 @@ export const getCsrfToken = async (): Promise<string> => {
   if (csrfToken) {
     return csrfToken;
   }
-  
+
   try {
     const response = await axios.get(`${API_BASE_URL}/api/csrf-token`, {
       withCredentials: true,
@@ -70,7 +70,7 @@ api.interceptors.response.use(
     if (error.response?.status === 400 && error.response?.data?.error?.includes('CSRF')) {
       console.log('CSRF token expired, fetching new token...');
       csrfToken = null; // Clear cached token
-      
+
       // Retry the request with new token
       const config = error.config;
       if (config && !config._retry) {
@@ -80,7 +80,7 @@ api.interceptors.response.use(
         return api.request(config);
       }
     }
-    
+
     // For now, just log 401 errors without redirecting
     // The app can handle unauthenticated state gracefully
     if (error.response?.status === 401) {
@@ -123,4 +123,9 @@ export const endpoints = {
   packages: '/api/tokens/packages',
   checkout: '/api/tokens/create-checkout-session',
   transferTokens: '/api/tokens/transfer',
+
+  // Follow
+  followingFeed: '/api/feed/following',
+  followUser: (username: string) => `/api/users/${username}/follow`,
+  followStatus: (username: string) => `/api/users/${username}/follow-status`,
 };

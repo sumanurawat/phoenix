@@ -45,7 +45,7 @@ def get_cache_service(force_recreate: bool = False) -> CacheServiceInterface:
         return _cache_instance
 
     backend = os.getenv('CACHE_BACKEND', 'firestore').lower()
-    logger.info(f"Initializing cache service with backend: {backend}")
+    logger.debug(f"Initializing cache service with backend: {backend}")
 
     if backend == 'firestore':
         collection_name = os.getenv('CACHE_COLLECTION_NAME', 'cache_sessions')
@@ -66,7 +66,7 @@ def get_cache_service(force_recreate: bool = False) -> CacheServiceInterface:
     else:
         raise ValueError(f"Invalid CACHE_BACKEND: {backend}. Use 'firestore' or 'redis'")
 
-    logger.info(f"Cache service initialized: {type(_cache_instance).__name__}")
+    logger.debug(f"Cache service initialized: {type(_cache_instance).__name__}")
     return _cache_instance
 
 

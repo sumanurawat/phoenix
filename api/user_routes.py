@@ -195,7 +195,7 @@ def get_user_by_username(username):
         username: Username to look up
 
     Returns:
-        200: { success: true, user: {...}, isOwnProfile: boolean }
+        200: { success: true, user: {...}, isOwnProfile: boolean, isFollowing: boolean }
         404: User not found
         500: Server error
     """
@@ -210,22 +210,33 @@ def get_user_by_username(username):
 
         # Check if viewing own profile
         current_user_id = session.get('user_id')
+        target_user_id = user_data.get('firebase_uid')
         is_own_profile = False
+        is_following = False
         
         if current_user_id:
             # Compare Firebase UID
-            is_own_profile = (user_data.get('firebase_uid') == current_user_id)
+            is_own_profile = (target_user_id == current_user_id)
+            
+            # Check if current user follows this profile (only if not own profile)
+            if not is_own_profile and target_user_id:
+                from services.follow_service import get_follow_service
+                follow_service = get_follow_service()
+                is_following = follow_service.is_following(current_user_id, target_user_id)
 
         # Return public profile (hide sensitive data)
         return jsonify({
             'success': True,
             'isOwnProfile': is_own_profile,
+            'isFollowing': is_following,
             'user': {
                 'username': user_data.get('username'),
                 'displayName': user_data.get('displayName'),
                 'bio': user_data.get('bio'),
                 'profileImageUrl': user_data.get('profileImageUrl'),
-                'totalTokensEarned': user_data.get('totalTokensEarned', 0)
+                'totalTokensEarned': user_data.get('totalTokensEarned', 0),
+                'followersCount': user_data.get('followersCount', 0),
+                'followingCount': user_data.get('followingCount', 0)
                 # Note: tokenBalance is private (not included)
             }
         })

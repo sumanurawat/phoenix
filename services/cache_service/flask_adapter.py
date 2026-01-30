@@ -68,7 +68,7 @@ class CacheSessionInterface(SessionInterface):
         self.key_prefix = key_prefix
         self.permanent_lifetime = permanent_lifetime
         self.cache = get_cache_service()
-        logger.info(f"CacheSessionInterface initialized with {type(self.cache).__name__}")
+        logger.debug(f"CacheSessionInterface initialized with {type(self.cache).__name__}")
 
     def _generate_sid(self) -> str:
         """Generate a unique session ID."""
