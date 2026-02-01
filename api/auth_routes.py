@@ -102,18 +102,13 @@ def signup():
             session['user_email'] = data.get('email')
             session['user_id'] = data.get('localId')
             
-            # Ensure user record and free subscription exist
+            # Ensure user record exists in Firestore
             try:
-                StripeService().ensure_free_subscription(session['user_id'], session.get('user_email'))
-                # also ensure a minimal users collection record
-                try:
-                    db = firestore.client()
-                    db.collection('users').document(session['user_id']).set({
-                        'firebase_uid': session['user_id'],
-                        'email': session.get('user_email')
-                    }, merge=True)
-                except Exception:
-                    pass
+                db = firestore.client()
+                db.collection('users').document(session['user_id']).set({
+                    'firebase_uid': session['user_id'],
+                    'email': session.get('user_email')
+                }, merge=True)
             except Exception:
                 pass
             
@@ -189,20 +184,16 @@ def login():
             session['user_email'] = data.get('email')
             session['user_id'] = data.get('localId')
             
-            # Ensure user record and free subscription exist
+            # Ensure user record exists in Firestore
             try:
-                StripeService().ensure_free_subscription(session['user_id'], session.get('user_email'))
-                try:
-                    db = firestore.client()
-                    db.collection('users').document(session['user_id']).set({
-                        'firebase_uid': session['user_id'],
-                        'email': session.get('user_email')
-                    }, merge=True)
-                except Exception:
-                    pass
+                db = firestore.client()
+                db.collection('users').document(session['user_id']).set({
+                    'firebase_uid': session['user_id'],
+                    'email': session.get('user_email')
+                }, merge=True)
             except Exception:
                 pass
-            
+
             # Check if this is an API request (from React) or traditional form submission
             is_api_request = (
                 request.headers.get('Content-Type', '').startswith('application/x-www-form-urlencoded') and
@@ -375,33 +366,29 @@ def google_callback():
         session.permanent = True  # Make session permanent
         session.modified = True   # Force session to save
 
-        # Ensure user record and free subscription exist
+        # Ensure user record exists in Firestore
         db = firestore.client()
         user_has_username = False
 
         try:
-            StripeService().ensure_free_subscription(session['user_id'], session.get('user_email'))
-            try:
-                # Get or create user document
-                user_ref = db.collection('users').document(session['user_id'])
-                user_doc = user_ref.get()
+            # Get or create user document
+            user_ref = db.collection('users').document(session['user_id'])
+            user_doc = user_ref.get()
 
-                # Create/update user document
-                user_ref.set({
-                    'firebase_uid': session['user_id'],
-                    'email': session.get('user_email'),
-                    'name': session.get('user_name'),
-                    'picture': session.get('user_picture')
-                }, merge=True)
+            # Create/update user document
+            user_ref.set({
+                'firebase_uid': session['user_id'],
+                'email': session.get('user_email'),
+                'name': session.get('user_name'),
+                'picture': session.get('user_picture')
+            }, merge=True)
 
-                # Check if user already has a username
-                if user_doc.exists:
-                    user_data = user_doc.to_dict()
-                    user_has_username = bool(user_data.get('username'))
-            except Exception as e:
-                logger.error(f"Error creating user document: {e}")
+            # Check if user already has a username
+            if user_doc.exists:
+                user_data = user_doc.to_dict()
+                user_has_username = bool(user_data.get('username'))
         except Exception as e:
-            logger.error(f"Error ensuring free subscription: {e}")
+            logger.error(f"Error creating user document: {e}")
 
         # Handle redirect after OAuth
         # Note: next_url was already decoded from the stateless state parameter above

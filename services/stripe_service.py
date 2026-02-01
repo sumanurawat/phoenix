@@ -97,42 +97,6 @@ class StripeService:
         # If it's not clearly free, treat as paid baseline
         return 'five'
 
-    def ensure_free_subscription(self, firebase_uid: str, email: Optional[str] = None) -> bool:
-        """Ensure a free subscription record exists for the user in Firestore.
-
-        Creates a lightweight document for visibility and analytics. This will not
-        interfere with premium checks which look for status in ['active','trialing'].
-        Document ID convention: f"free_{firebase_uid}".
-        """
-        if not self.db or not firebase_uid:
-            return False
-        try:
-            doc_id = f"free_{firebase_uid}"
-            sub_ref = self.db.collection('user_subscriptions').document(doc_id)
-            doc = sub_ref.get()
-            if doc.exists:
-                # Keep the record updated but don't overwrite timestamps unnecessarily
-                sub_ref.set({
-                    'firebase_uid': firebase_uid,
-                    'email': email,
-                    'status': 'free',
-                    'plan_id': 'zero',
-                    'updated_at': firestore.SERVER_TIMESTAMP
-                }, merge=True)
-            else:
-                sub_ref.set({
-                    'firebase_uid': firebase_uid,
-                    'email': email,
-                    'status': 'free',
-                    'plan_id': 'zero',
-                    'created_at': firestore.SERVER_TIMESTAMP,
-                    'updated_at': firestore.SERVER_TIMESTAMP
-                })
-            return True
-        except Exception as e:
-            logger.error(f"Failed to ensure free subscription for {firebase_uid}: {e}")
-            return False
-    
     def get_config(self) -> Dict[str, Any]:
         """Get Stripe configuration for frontend."""
         return {
