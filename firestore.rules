@@ -157,9 +157,27 @@ service cloud.firestore {
       allow write: if false; // Only allow writes from backend
     }
 
-    // Default read access for authenticated users; writes must be explicitly allowed above
+    // =============================================================
+    // DEFAULT DENY - Security best practice
+    // =============================================================
+    // All collections must have explicit rules defined above.
+    // This prevents accidental data exposure from new collections.
+    //
+    // Note: Your React frontend accesses Firestore through the Flask API,
+    // which uses Admin SDK and bypasses these rules entirely.
+    // These rules only protect against direct client-side access.
+    //
+    // Collections protected by explicit rules above:
+    // - usernames, posts, likes, image_generations, transactions
+    // - creations (+ comments subcollection), conversations, messages
+    // - conversation_documents, users, user_subscriptions, user_usage
+    //
+    // Server-only collections (denied to clients, accessed via Admin SDK):
+    // - cache_sessions, security_alerts, oauth_states
+    // - user_social_accounts, social_posts, shortened_links, link_clicks
+    // =============================================================
     match /{document=**} {
-      allow read: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }
