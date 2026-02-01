@@ -9,6 +9,7 @@ Endpoints:
 - GET /api/feed/following - Get posts from followed users
 """
 import logging
+from typing import Optional
 from flask import Blueprint, request, jsonify, session
 from firebase_admin import firestore
 
@@ -30,7 +31,7 @@ db = firestore.client()
 user_service = UserService()
 
 
-def _get_user_id_from_username(username: str) -> str | None:
+def _get_user_id_from_username(username: str) -> Optional[str]:
     """Helper to resolve username to user_id."""
     user_data = user_service.get_user_by_username(username)
     if user_data:
