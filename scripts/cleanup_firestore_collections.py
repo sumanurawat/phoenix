@@ -120,14 +120,32 @@ Examples:
 
     # Initialize Firebase
     if not firebase_admin._apps:
-        # Try to use default credentials
         try:
-            firebase_admin.initialize_app()
+            creds_path = os.getenv("FIREBASE_CREDENTIALS_PATH", "firebase-credentials.json")
+
+            # Try to load from JSON file
+            if os.path.exists(creds_path):
+                print(f"Using credentials from: {creds_path}")
+                cred = credentials.Certificate(creds_path)
+                firebase_admin.initialize_app(cred)
+            # Alternatively, load from environment variable
+            elif os.getenv("FIREBASE_CREDENTIALS"):
+                import json
+                print("Using credentials from FIREBASE_CREDENTIALS env var")
+                cred_dict = json.loads(os.getenv("FIREBASE_CREDENTIALS"))
+                cred = credentials.Certificate(cred_dict)
+                firebase_admin.initialize_app(cred)
+            # Try GOOGLE_APPLICATION_CREDENTIALS or gcloud ADC
+            else:
+                print("Using default application credentials")
+                firebase_admin.initialize_app()
         except Exception as e:
             print(f"Error initializing Firebase: {e}")
-            print("\nMake sure you have:")
-            print("  1. GOOGLE_APPLICATION_CREDENTIALS env var set, OR")
-            print("  2. Run: gcloud auth application-default login")
+            print("\nMake sure you have one of:")
+            print("  1. firebase-credentials.json in project root")
+            print("  2. FIREBASE_CREDENTIALS env var with JSON credentials")
+            print("  3. GOOGLE_APPLICATION_CREDENTIALS env var set")
+            print("  4. Run: gcloud auth application-default login")
             sys.exit(1)
 
     db = firestore.client()

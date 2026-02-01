@@ -7,11 +7,9 @@ This document provides essential context about the Phoenix platform that every A
 Phoenix is a sophisticated AI-powered platform that combines multiple services into a unified web application. It demonstrates modern web development practices with advanced AI integration.
 
 ### **Core Services**
-1. **Derplexity** - Multi-turn conversational AI assistant
-2. **Doogle** - Intelligent web search with AI summaries  
-3. **Robin** - AI-powered news aggregation and analysis
-4. **Reel Maker & Video Generation** - Short-form video workflows with Veo API
-5. **URL Shortener (Deep Links)** - Link management with analytics
+1. **Image Generator** - AI-powered image generation
+2. **Video Generator** - AI-powered video generation with Veo API
+3. **Social Gallery** - User creations feed and profiles
 
 ### **Key Features**
 - **Multi-Provider AI**: Support for Gemini, Claude, OpenAI, and Grok
@@ -98,9 +96,16 @@ All sensitive information stored in GCP Secret Manager:
 ## 📊 **Database Schema**
 
 ### **Firebase Collections**
-- **users**: User profiles and preferences
-- **links**: URL shortener data with analytics
-- **conversations**: Chat history and interactions
+- **users**: User profiles, token balances, settings
+- **usernames**: Username reservation/lookup
+- **creations**: User-generated images/videos
+- **transactions**: Token purchase/spend history
+- **user_subscriptions**: Stripe subscription records
+- **user_social_accounts**: Connected social media accounts
+- **cache_sessions**: Flask session storage
+- **rate_limits**: API rate limiting records
+- **security_alerts**: Token security violation alerts
+- **website_stats**: Global site statistics
 
 ### **Key Data Patterns**
 - Real-time updates using Firestore listeners
