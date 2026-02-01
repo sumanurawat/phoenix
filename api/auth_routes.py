@@ -434,7 +434,14 @@ def google_callback():
                 is_frontend_oauth = True
                 logger.info(f"Detected frontend OAuth from FRONTEND_URL env var: {frontend_url}")
 
-        # If OAuth came from frontend, ALWAYS redirect back to frontend with token
+        # If OAuth came from frontend, redirect back to frontend
+        # SECURITY: Do NOT pass token in URL - it exposes credentials in:
+        #   - Browser history
+        #   - Server logs
+        #   - Referrer headers
+        #   - Shoulder surfing
+        # The session cookie is already set (lines 370-376) and the frontend
+        # verifies it via /api/users/me call in OAuthCallbackPage.tsx
         if is_frontend_oauth:
             frontend_url = os.getenv('FRONTEND_URL', 'https://friedmomo.com')
             # Use next_url if it's a frontend URL, otherwise use default /oauth/callback
@@ -446,12 +453,10 @@ def google_callback():
                     redirect_target = f"{frontend_url}/oauth/callback"
             else:
                 redirect_target = f"{frontend_url}/oauth/callback"
-            
-            # Pass Firebase ID token in URL for frontend to establish session
-            separator = '&' if '?' in redirect_target else '?'
-            redirect_url = f"{redirect_target}{separator}token={firebase_user['idToken']}&user_id={session['user_id']}"
-            logger.info(f"Redirecting to frontend with token | url={redirect_target}")
-            return redirect(redirect_url)
+
+            # Redirect without sensitive data - session cookie handles authentication
+            logger.info(f"Redirecting to frontend (session cookie set) | url={redirect_target}")
+            return redirect(redirect_target)
 
         # Traditional Flask redirect logic (for backend-only flows)
         if next_url and is_safe_url(next_url):
