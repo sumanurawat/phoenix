@@ -8,14 +8,18 @@ Features:
 - Atomic transactions using Firestore transactions
 - Transfer tokens between users (tipping)
 - Balance validation and insufficient funds handling
+- Audit logging for all token operations
 """
 from __future__ import annotations
 
 import logging
+import uuid
 from typing import Optional, Dict, Any
 from datetime import datetime
 from google.cloud import firestore
 from firebase_admin import firestore as admin_firestore
+
+from services.token_audit_service import TokenAuditService
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +40,12 @@ class TokenService:
     def __init__(self, db: firestore.Client = None):
         """
         Initialize token service.
-        
+
         Args:
             db: Firestore client instance (uses default if not provided)
         """
         self.db = db or admin_firestore.client()
+        self.audit_service = TokenAuditService(db=self.db)
         logger.debug("TokenService initialized")
     
     def get_balance(self, user_id: str) -> int:
@@ -92,59 +97,88 @@ class TokenService:
             logger.error(f"Failed to get total earned for {user_id}: {str(e)}", exc_info=True)
             return 0
     
-    def deduct_tokens(self, user_id: str, amount: int, reason: str = None) -> bool:
+    def deduct_tokens(
+        self,
+        user_id: str,
+        amount: int,
+        reason: str = None,
+        reference_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        ip_address: Optional[str] = None
+    ) -> bool:
         """
         Deduct tokens from user's balance atomically.
-        
+
         Args:
             user_id: Firebase Auth UID
             amount: Number of tokens to deduct (must be positive)
             reason: Optional reason for logging
-            
+            reference_id: Optional reference ID (e.g., creation_id)
+            metadata: Optional additional context for audit log
+            ip_address: Optional IP address for fraud detection
+
         Returns:
             True if successful
-            
+
         Raises:
             InsufficientTokensError: If user doesn't have enough tokens
             ValueError: If amount is invalid
         """
         if amount <= 0:
             raise ValueError("Deduct amount must be positive")
-        
+
+        balance_before = None
+
         try:
             user_ref = self.db.collection('users').document(user_id)
-            
+
             logger.info(f"Deducting {amount} tokens from {user_id} (reason: {reason})")
-            
+
             # Use transactional decorator inline
             @admin_firestore.transactional
             def deduct_in_transaction(transaction):
+                nonlocal balance_before
                 user_doc = user_ref.get(transaction=transaction)
-                
+
                 if not user_doc.exists:
                     raise ValueError(f"User does not exist")
-                
-                current_balance = user_doc.to_dict().get('tokenBalance', 0)
-                
-                if current_balance < amount:
+
+                balance_before = user_doc.to_dict().get('tokenBalance', 0)
+
+                if balance_before < amount:
                     raise InsufficientTokensError(
-                        f"Insufficient tokens: have {current_balance}, need {amount}"
+                        f"Insufficient tokens: have {balance_before}, need {amount}"
                     )
-                
+
                 # Atomically decrement balance
                 transaction.update(user_ref, {
                     'tokenBalance': admin_firestore.Increment(-amount)
                 })
-                
+
                 return True
-            
+
             # Execute the transaction
             transaction = self.db.transaction()
             deduct_in_transaction(transaction)
-            
+
+            # Calculate balance after
+            balance_after = balance_before - amount
+
+            # Log audit entry
+            self.audit_service.log_debit(
+                user_id=user_id,
+                amount=amount,
+                balance_before=balance_before,
+                balance_after=balance_after,
+                reason=reason or "debit",
+                reference_id=reference_id,
+                metadata=metadata,
+                ip_address=ip_address
+            )
+
             logger.info(f"Successfully deducted {amount} tokens from {user_id}")
             return True
-            
+
         except InsufficientTokensError:
             logger.warning(f"Insufficient tokens for {user_id}: tried to deduct {amount}")
             raise
@@ -204,7 +238,10 @@ class TokenService:
         user_id: str,
         amount: int,
         reason: str = None,
-        increment_earned: bool = False
+        increment_earned: bool = False,
+        reference_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        ip_address: Optional[str] = None
     ) -> int:
         """
         Add tokens to user's balance atomically.
@@ -214,6 +251,9 @@ class TokenService:
             amount: Number of tokens to add (must be positive)
             reason: Optional reason for logging
             increment_earned: If True, also increment totalTokensEarned (for tips)
+            reference_id: Optional reference ID (e.g., transaction_id)
+            metadata: Optional additional context for audit log
+            ip_address: Optional IP address for fraud detection
 
         Returns:
             The user's balance after adding tokens
@@ -259,6 +299,19 @@ class TokenService:
             if balance_after == expected_balance:
                 logger.info(f"✅ ✅ ✅ VERIFICATION PASSED: Balance increased correctly!")
                 logger.info(f"🔵 ========== TOKEN PURCHASE SUCCESS ==========")
+
+                # Log audit entry
+                self.audit_service.log_credit(
+                    user_id=user_id,
+                    amount=amount,
+                    balance_before=balance_before,
+                    balance_after=balance_after,
+                    reason=reason or "credit",
+                    reference_id=reference_id,
+                    metadata=metadata,
+                    ip_address=ip_address
+                )
+
                 return balance_after
             else:
                 logger.error(f"❌❌❌ VERIFICATION FAILED: Balance mismatch!")
@@ -277,75 +330,119 @@ class TokenService:
         self,
         sender_id: str,
         recipient_id: str,
-        amount: int
+        amount: int,
+        reference_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        ip_address: Optional[str] = None
     ) -> bool:
         """
         Transfer tokens from one user to another (tipping).
-        
+
         This is an atomic operation that ensures either both the deduction
         and addition succeed, or neither happens.
-        
+
         Args:
             sender_id: Firebase Auth UID of sender
             recipient_id: Firebase Auth UID of recipient
             amount: Number of tokens to transfer (must be positive)
-            
+            reference_id: Optional reference ID for the transfer
+            metadata: Optional additional context for audit log
+            ip_address: Optional IP address for fraud detection
+
         Returns:
             True if successful
-            
+
         Raises:
             InsufficientTokensError: If sender doesn't have enough tokens
             ValueError: If sender and recipient are the same or amount invalid
         """
         if amount <= 0:
             raise ValueError("Transfer amount must be positive")
-        
+
         if sender_id == recipient_id:
             raise ValueError("Cannot transfer tokens to yourself")
-        
+
+        sender_balance_before = None
+        recipient_balance_before = None
+
         try:
             sender_ref = self.db.collection('users').document(sender_id)
             recipient_ref = self.db.collection('users').document(recipient_id)
-            
+
             logger.info(f"Transferring {amount} tokens from {sender_id} to {recipient_id}")
-            
+
             # Use transactional decorator inline
             @admin_firestore.transactional
             def transfer_in_transaction(transaction):
+                nonlocal sender_balance_before, recipient_balance_before
+
                 # Check sender's balance
                 sender_doc = sender_ref.get(transaction=transaction)
                 if not sender_doc.exists:
                     raise ValueError("Sender does not exist")
-                
-                sender_balance = sender_doc.to_dict().get('tokenBalance', 0)
-                if sender_balance < amount:
+
+                sender_balance_before = sender_doc.to_dict().get('tokenBalance', 0)
+                if sender_balance_before < amount:
                     raise InsufficientTokensError(
-                        f"Insufficient tokens: sender has {sender_balance}, needs {amount}"
+                        f"Insufficient tokens: sender has {sender_balance_before}, needs {amount}"
                     )
-                
+
                 # Check recipient exists
                 recipient_doc = recipient_ref.get(transaction=transaction)
                 if not recipient_doc.exists:
                     raise ValueError("Recipient does not exist")
-                
+
+                recipient_balance_before = recipient_doc.to_dict().get('tokenBalance', 0)
+
                 # Deduct from sender
                 transaction.update(sender_ref, {
                     'tokenBalance': admin_firestore.Increment(-amount)
                 })
-                
+
                 # Add to recipient (and increment their totalTokensEarned)
                 transaction.update(recipient_ref, {
                     'tokenBalance': admin_firestore.Increment(amount),
                     'totalTokensEarned': admin_firestore.Increment(amount)
                 })
-            
+
             # Execute the transaction
             transaction = self.db.transaction()
             transfer_in_transaction(transaction)
-            
+
+            # Generate a transfer reference ID if not provided
+            transfer_ref_id = reference_id or f"transfer_{uuid.uuid4().hex[:12]}"
+
+            # Calculate balances after
+            sender_balance_after = sender_balance_before - amount
+            recipient_balance_after = recipient_balance_before + amount
+
+            # Log audit entry for sender (transfer out)
+            self.audit_service.log_transfer_out(
+                user_id=sender_id,
+                amount=amount,
+                balance_before=sender_balance_before,
+                balance_after=sender_balance_after,
+                recipient_id=recipient_id,
+                reference_id=transfer_ref_id,
+                metadata=metadata,
+                ip_address=ip_address
+            )
+
+            # Log audit entry for recipient (transfer in)
+            self.audit_service.log_transfer_in(
+                user_id=recipient_id,
+                amount=amount,
+                balance_before=recipient_balance_before,
+                balance_after=recipient_balance_after,
+                sender_id=sender_id,
+                reference_id=transfer_ref_id,
+                metadata=metadata,
+                ip_address=ip_address
+            )
+
             logger.info(f"Successfully transferred {amount} tokens from {sender_id} to {recipient_id}")
             return True
-            
+
         except InsufficientTokensError:
             logger.warning(f"Insufficient tokens for transfer: {sender_id} → {recipient_id} ({amount})")
             raise

@@ -19,6 +19,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 # Import configurations
 from config.settings import (
     SECRET_KEY, FLASK_ENV, FLASK_DEBUG,
@@ -399,7 +400,7 @@ def create_app():
         # If requesting a specific file (like .js, .css, .svg), serve it directly
         if path and os.path.exists(os.path.join('static/momo', path)):
             return send_from_directory('static/momo', path)
-        
+
         # Otherwise, serve index.html and let React Router handle the routing
         return send_from_directory('static/momo', 'index.html')
 
