@@ -102,19 +102,37 @@ def create_app():
 
     # --- Rate Limiting ---
     # Protects against brute force, DoS, and enumeration attacks
-    # Uses in-memory storage (resets on container restart - acceptable for Cloud Run)
+    # Uses Firestore storage for persistence across restarts and multi-instance support
     def get_rate_limit_key():
         """Get rate limit key - prefer user_id if authenticated, else IP."""
         if 'user_id' in session:
             return f"user:{session['user_id']}"
         return get_remote_address()
 
-    limiter = Limiter(
-        app=app,
-        key_func=get_rate_limit_key,
-        default_limits=["200 per day", "50 per hour"],  # Default for all routes
-        storage_uri="memory://",  # In-memory (resets on restart)
-    )
+    # Check if we should use Firestore (production) or memory (development/testing)
+    use_firestore_limiter = os.getenv('USE_FIRESTORE_RATE_LIMITS', '1') == '1'
+
+    if use_firestore_limiter:
+        # Register Firestore storage backend for rate limiting
+        from services.cache_service.limiter_storage import register_firestore_storage
+        register_firestore_storage()
+
+        limiter = Limiter(
+            app=app,
+            key_func=get_rate_limit_key,
+            default_limits=["200 per day", "50 per hour"],  # Default for all routes
+            storage_uri="firestore://",
+            storage_options={"collection_name": "rate_limits"}
+        )
+        logger.info("Rate limiting initialized with Firestore storage")
+    else:
+        limiter = Limiter(
+            app=app,
+            key_func=get_rate_limit_key,
+            default_limits=["200 per day", "50 per hour"],  # Default for all routes
+            storage_uri="memory://",  # In-memory (resets on restart)
+        )
+        logger.info("Rate limiting initialized with in-memory storage")
     # Store limiter on app for use in blueprints
     app.limiter = limiter
 

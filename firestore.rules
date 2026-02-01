@@ -152,9 +152,17 @@ service cloud.firestore {
 
     // User usage collection - tracks daily usage
     match /user_usage/{usageId} {
-      allow read: if request.auth != null 
+      allow read: if request.auth != null
         && request.auth.uid == resource.data.firebase_uid;
       allow write: if false; // Only allow writes from backend
+    }
+
+    // Rate limits collection - server-only access
+    // Stores rate limit counters for Flask-Limiter
+    // Prevents users from clearing their own rate limits
+    match /rate_limits/{documentId} {
+      // Only backend can read/write rate limits (via Admin SDK)
+      allow read, write: if false;
     }
 
     // =============================================================
@@ -173,7 +181,7 @@ service cloud.firestore {
     // - conversation_documents, users, user_subscriptions, user_usage
     //
     // Server-only collections (denied to clients, accessed via Admin SDK):
-    // - cache_sessions, security_alerts, oauth_states
+    // - cache_sessions, security_alerts, oauth_states, rate_limits
     // - user_social_accounts, social_posts, shortened_links, link_clicks
     // =============================================================
     match /{document=**} {
