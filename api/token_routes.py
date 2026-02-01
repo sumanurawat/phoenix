@@ -3,7 +3,7 @@ Token Purchase API Routes
 Handles token package purchases via Stripe checkout
 """
 import logging
-from flask import Blueprint, jsonify, request, session, render_template, redirect, url_for
+from flask import Blueprint, jsonify, request, session, render_template, redirect, url_for, current_app
 from functools import wraps
 from services.stripe_service import StripeService
 from services.token_service import TokenService

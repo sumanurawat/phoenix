@@ -1,15 +1,10 @@
 """
-Stripe API routes for subscription management.
+Stripe API routes for token purchases via Stripe.
 """
 import logging
 from flask import Blueprint, request, jsonify, session, redirect, url_for, render_template
 from api.auth_routes import login_required
 from services.stripe_service import StripeService
-from services.subscription_middleware import (
-    init_subscription_context, 
-    premium_required,
-    check_feature_limit
-)
 
 logger = logging.getLogger(__name__)
 
@@ -184,10 +179,7 @@ def check_usage(feature):
 @subscription_bp.route('/subscription')
 @login_required
 def manage():
-    """Subscription management page."""
-    # Initialize subscription context
-    init_subscription_context()
-    
+    """Subscription management page (legacy - tokens only now)."""
     firebase_uid = session.get('user_id')
     
     # Get subscription status

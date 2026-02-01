@@ -18,4 +18,5 @@ psutil==5.9.5  # For system monitoring in jobs
 Pillow==10.0.1  # For thumbnail image optimization
 cryptography==41.0.7  # For social media token encryption
 instaloader==4.13  # For Instagram public profile scraping (Socials feature)
+Flask-Limiter==3.5.0  # For rate limiting API endpoints
 

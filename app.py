@@ -8,9 +8,11 @@ import os
 import logging
 import secrets
 from functools import wraps
-from flask import Flask, render_template, session, request, redirect, url_for, flash, abort, jsonify, jsonify, send_from_directory
+from flask import Flask, render_template, session, request, redirect, url_for, flash, abort, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_session import Session
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Set up logging first
@@ -59,10 +61,6 @@ from api.feed_routes import feed_bp
 from api.follow_routes import follow_bp
 
 # Import services (AFTER Firebase initialization)
-from services.subscription_middleware import (
-    init_subscription_context, 
-    subscription_context_processor
-)
 from config.app_display_names import get_display_name
 
 logger = logging.getLogger(__name__)
@@ -101,6 +99,24 @@ def create_app():
         expose_headers=['X-CSRF-Token'],
         allow_headers=['Content-Type', 'X-CSRF-Token', 'X-Requested-With', 'Authorization']
     )
+
+    # --- Rate Limiting ---
+    # Protects against brute force, DoS, and enumeration attacks
+    # Uses in-memory storage (resets on container restart - acceptable for Cloud Run)
+    def get_rate_limit_key():
+        """Get rate limit key - prefer user_id if authenticated, else IP."""
+        if 'user_id' in session:
+            return f"user:{session['user_id']}"
+        return get_remote_address()
+
+    limiter = Limiter(
+        app=app,
+        key_func=get_rate_limit_key,
+        default_limits=["200 per day", "50 per hour"],  # Default for all routes
+        storage_uri="memory://",  # In-memory (resets on restart)
+    )
+    # Store limiter on app for use in blueprints
+    app.limiter = limiter
 
     # Configure application - Set ENV first
     app.config["ENV"] = FLASK_ENV
@@ -168,12 +184,14 @@ def create_app():
     app.register_blueprint(user_bp)  # Phase 4: User profiles & usernames
     app.register_blueprint(feed_bp)  # Phase 4: Social feed & likes
     app.register_blueprint(follow_bp)  # Phase 5: Follow feature
-    
-    # Setup subscription middleware
-    @app.before_request
-    def setup_subscription_context():
-        """Initialize subscription context for each request."""
-        init_subscription_context()
+
+    # --- Apply Rate Limits to Sensitive Endpoints ---
+    # These limits protect against brute force, enumeration, and DoS attacks
+    limiter.limit("30 per minute")(app.view_functions['token.get_balance'])
+    limiter.limit("5 per hour")(app.view_functions['token.transfer_tokens'])
+    limiter.limit("10 per minute")(app.view_functions['auth.login'])
+    limiter.limit("10 per minute")(app.view_functions['auth.signup'])
+    limiter.limit("20 per minute")(app.view_functions['auth.google_login'])
 
     # Username enforcement middleware (Phase 4)
     @app.before_request
@@ -219,9 +237,6 @@ def create_app():
             logger.error(f"Error checking username in middleware: {e}")
 
         return None
-
-    # Add subscription context processor for templates
-    app.context_processor(subscription_context_processor)
 
     # Inject app display names into templates for header
     @app.context_processor
