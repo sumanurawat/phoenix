@@ -1,45 +1,28 @@
 """
 Social Media Service
 
-Handles social media account connections, post fetching, and OAuth management.
-Supports Instagram, YouTube, and Twitter integrations with secure token management.
+Handles social media account connections and post fetching.
+Supports Instagram via public scraping (instaloader).
+
+Note: OAuth-based connections have been removed. All syncing uses public scraping.
 """
-import os
 import logging
-import secrets
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from firebase_admin import firestore
-from cryptography.fernet import Fernet
 
 logger = logging.getLogger(__name__)
 
 
 class SocialsService:
-    """Service for managing social media account connections and posts."""
-    
+    """Service for managing social media account connections and posts.
+
+    Note: OAuth-based connections have been removed. All social media
+    syncing now uses public scraping via instaloader for Instagram.
+    """
+
     def __init__(self):
         """Initialize the socials service."""
         self.db = firestore.client()
-        self.cipher_suite = self._get_cipher_suite()
-    
-    def _get_cipher_suite(self):
-        """Get or create encryption cipher for token storage."""
-        encryption_key = os.environ.get('SOCIAL_TOKEN_ENCRYPTION_KEY')
-        
-        if not encryption_key:
-            # For development only - generate temporary key
-            # In production, this MUST be set in environment
-            logger.warning(
-                "SOCIAL_TOKEN_ENCRYPTION_KEY not set! "
-                "Using temporary key - tokens will not persist across restarts. "
-                "Set SOCIAL_TOKEN_ENCRYPTION_KEY in production!"
-            )
-            encryption_key = Fernet.generate_key()
-        
-        if isinstance(encryption_key, str):
-            encryption_key = encryption_key.encode()
-        
-        return Fernet(encryption_key)
     
     # ========== Account Management ==========
     
@@ -219,198 +202,28 @@ class SocialsService:
             logger.error(f"Error getting account by ID: {str(e)}")
             return None
     
-    # ========== OAuth Flow ==========
-    
+    # ========== OAuth Flow (Removed - Using Public Scraping Only) ==========
+    # Note: Instagram OAuth was removed as the service is no longer maintained.
+    # All Instagram syncing now uses public scraping via instaloader.
+
     def initiate_oauth_flow(self, user_id, platform):
         """
-        Start secure OAuth flow with state parameter.
-        
-        Args:
-            user_id: Firebase user ID
-            platform: Social platform (instagram, youtube, twitter)
-            
-        Returns:
-            dict: OAuth URL and state token
+        OAuth flow is not currently supported.
+        Use add_public_account() to connect accounts via public scraping.
         """
-        try:
-            if platform == 'instagram':
-                from services.instagram_oauth_service import get_instagram_oauth_service
-                ig_service = get_instagram_oauth_service()
-                
-                if not ig_service.is_configured():
-                    raise ValueError("Instagram OAuth not configured. Please set INSTAGRAM_CLIENT_ID, INSTAGRAM_CLIENT_SECRET, and INSTAGRAM_REDIRECT_URI")
-                
-                # Generate state token for CSRF protection
-                state = secrets.token_urlsafe(32)
-                
-                # Store state in Firestore with expiration (5 minutes)
-                state_ref = self.db.collection('oauth_states').document(state)
-                state_ref.set({
-                    'user_id': user_id,
-                    'platform': platform,
-                    'created_at': datetime.now(timezone.utc),
-                    'expires_at': datetime.now(timezone.utc) + timedelta(minutes=5)
-                })
-                
-                # Generate authorization URL
-                auth_url = ig_service.get_authorization_url(state=state)
-                
-                logger.info(f"Initiated Instagram OAuth for user {user_id}")
-                
-                return {
-                    'authorization_url': auth_url,
-                    'state': state,
-                    'platform': platform
-                }
-            
-            elif platform == 'youtube':
-                # TODO: Implement YouTube OAuth in future
-                raise NotImplementedError("YouTube OAuth not yet implemented")
-            
-            elif platform == 'twitter':
-                # TODO: Implement Twitter OAuth in future
-                raise NotImplementedError("Twitter/X OAuth not yet implemented")
-            
-            else:
-                raise ValueError(f"Unsupported platform: {platform}")
-                
-        except Exception as e:
-            logger.error(f"Error initiating OAuth flow: {str(e)}")
-            raise e
-    
+        raise NotImplementedError(
+            f"{platform.title()} OAuth is not currently supported. "
+            "Please use public account connection instead."
+        )
+
     def handle_oauth_callback(self, platform, code, state):
         """
-        Handle OAuth callback and exchange code for tokens.
-        
-        Args:
-            platform: Social platform
-            code: Authorization code
-            state: State parameter for validation
-            
-        Returns:
-            dict: Account data including account_id
+        OAuth callback is not currently supported.
         """
-        try:
-            # Validate state token
-            state_ref = self.db.collection('oauth_states').document(state)
-            state_doc = state_ref.get()
-            
-            if not state_doc.exists:
-                raise ValueError("Invalid or expired state token")
-            
-            state_data = state_doc.to_dict()
-            
-            # Check expiration
-            if datetime.now(timezone.utc) > state_data['expires_at']:
-                state_ref.delete()
-                raise ValueError("State token expired")
-            
-            # Verify platform matches
-            if state_data['platform'] != platform:
-                raise ValueError("Platform mismatch")
-            
-            user_id = state_data['user_id']
-            
-            # Platform-specific token exchange
-            if platform == 'instagram':
-                result = self._handle_instagram_oauth(user_id, code)
-            else:
-                raise ValueError(f"Unsupported platform: {platform}")
-            
-            # Delete used state token
-            state_ref.delete()
-            
-            return result
-            
-        except Exception as e:
-            logger.error(f"Error handling OAuth callback: {str(e)}")
-            raise e
-    
-    def _handle_instagram_oauth(self, user_id, code):
-        """
-        Handle Instagram OAuth token exchange and account creation.
-        
-        Args:
-            user_id: Firebase user ID
-            code: Authorization code
-            
-        Returns:
-            dict: Account data
-        """
-        from services.instagram_oauth_service import get_instagram_oauth_service
-        ig_service = get_instagram_oauth_service()
-        
-        # Exchange code for short-lived token
-        token_data = ig_service.exchange_code_for_token(code)
-        short_lived_token = token_data['access_token']
-        instagram_user_id = token_data['user_id']
-        
-        # Exchange for long-lived token (60 days)
-        long_lived_data = ig_service.get_long_lived_token(short_lived_token)
-        access_token = long_lived_data['access_token']
-        expires_in = long_lived_data['expires_in']  # Seconds
-        
-        # Get user profile
-        profile = ig_service.get_user_profile(access_token)
-        username = profile['username']
-        
-        # Check if account already exists
-        existing = self._get_existing_account(user_id, 'instagram', username)
-        if existing:
-            # Update existing account
-            account_id = existing.id
-            account_ref = self.db.collection('user_social_accounts').document(account_id)
-            
-            account_ref.update({
-                'encrypted_access_token': self._encrypt_token(access_token),
-                'token_expires_at': datetime.now(timezone.utc) + timedelta(seconds=expires_in),
-                'instagram_user_id': instagram_user_id,
-                'account_type': 'oauth',
-                'is_active': True,
-                'connected_at': datetime.now(timezone.utc),
-                'status': 'active'
-            })
-            
-            logger.info(f"Updated existing Instagram account @{username} for user {user_id}")
-        else:
-            # Create new account
-            account_data = {
-                'user_id': user_id,
-                'platform': 'instagram',
-                'account_type': 'oauth',
-                'username': username,
-                'display_name': f"@{username}",
-                'instagram_user_id': instagram_user_id,
-                'encrypted_access_token': self._encrypt_token(access_token),
-                'token_expires_at': datetime.now(timezone.utc) + timedelta(seconds=expires_in),
-                'is_active': True,
-                'connected_at': datetime.now(timezone.utc),
-                'last_sync': None,
-                'posts_count': 0,
-                'status': 'active',
-                'profile_url': f"https://instagram.com/{username}"
-            }
-            
-            doc_ref = self.db.collection('user_social_accounts').add(account_data)
-            account_id = doc_ref[1].id
-            
-            logger.info(f"Created new Instagram OAuth account @{username} for user {user_id}")
-        
-        # Return safe account data
-        return {
-            'account_id': account_id,
-            'platform': 'instagram',
-            'username': username,
-            'account_type': 'oauth'
-        }
-    
-    def _encrypt_token(self, token):
-        """Encrypt access token for storage."""
-        return self.cipher_suite.encrypt(token.encode()).decode()
-    
-    def _decrypt_token(self, encrypted_token):
-        """Decrypt access token from storage."""
-        return self.cipher_suite.decrypt(encrypted_token.encode()).decode()
+        raise NotImplementedError(
+            f"{platform.title()} OAuth is not currently supported. "
+            "Please use public account connection instead."
+        )
     
     # ========== Post Fetching (Phase 4+) ==========
     
@@ -513,120 +326,17 @@ class SocialsService:
     
     def _sync_instagram_posts(self, account, max_posts=12):
         """
-        Fetch Instagram posts using OAuth or fallback to public scraping.
-        
+        Fetch Instagram posts using public scraping (instaloader).
+
         Args:
             account: Account dictionary with all fields
             max_posts: Maximum posts to fetch
-            
+
         Returns:
             dict: Result with posts_fetched count
         """
-        account_id = account['id']
-        user_id = account['user_id']
-        username = account['username']
-        account_type = account.get('account_type', 'public')
-        
-        # Try OAuth first if available
-        if account_type == 'oauth' and 'encrypted_access_token' in account:
-            try:
-                return self._sync_instagram_oauth(account, max_posts)
-            except Exception as oauth_error:
-                logger.warning(f"OAuth sync failed for @{username}: {str(oauth_error)}")
-                logger.info(f"Falling back to public scraping for @{username}")
-                # Fall through to public scraping
-        
-        # Fallback to public scraping (for public accounts or OAuth failure)
+        # All Instagram syncing uses public scraping
         return self._sync_instagram_public(account, max_posts)
-    
-    def _sync_instagram_oauth(self, account, max_posts=12):
-        """
-        Fetch Instagram posts using OAuth token.
-        
-        Args:
-            account: Account dictionary with encrypted_access_token
-            max_posts: Maximum posts to fetch
-            
-        Returns:
-            dict: Result with posts_fetched count
-        """
-        from services.instagram_oauth_service import get_instagram_oauth_service
-        
-        account_id = account['id']
-        user_id = account['user_id']
-        username = account['username']
-        
-        # Decrypt access token
-        encrypted_token = account['encrypted_access_token']
-        access_token = self._decrypt_token(encrypted_token)
-        
-        # Check if token is expired and refresh if needed
-        token_expires_at = account.get('token_expires_at')
-        if token_expires_at and datetime.now(timezone.utc) > token_expires_at - timedelta(days=7):
-            logger.info(f"Token expiring soon for @{username}, refreshing...")
-            try:
-                ig_service = get_instagram_oauth_service()
-                refresh_data = ig_service.refresh_access_token(access_token)
-                access_token = refresh_data['access_token']
-                
-                # Update stored token
-                account_ref = self.db.collection('user_social_accounts').document(account_id)
-                account_ref.update({
-                    'encrypted_access_token': self._encrypt_token(access_token),
-                    'token_expires_at': datetime.now(timezone.utc) + timedelta(seconds=refresh_data['expires_in'])
-                })
-            except Exception as e:
-                logger.error(f"Failed to refresh token: {str(e)}")
-                raise e
-        
-        # Fetch media using OAuth
-        ig_service = get_instagram_oauth_service()
-        media_items = ig_service.get_user_media(access_token, limit=max_posts)
-        
-        # Save posts to Firestore
-        posts_fetched = 0
-        posts_ref = self.db.collection('social_posts')
-        
-        for media in media_items:
-            # Check if post already exists
-            existing_query = (posts_ref
-                            .where('account_id', '==', account_id)
-                            .where('post_id', '==', media['id'])
-                            .limit(1))
-            
-            if list(existing_query.stream()):
-                continue  # Skip existing posts
-            
-            # Prepare post data
-            post_data = {
-                'user_id': user_id,
-                'account_id': account_id,
-                'platform': 'instagram',
-                'post_id': media['id'],
-                'username': username,
-                'media_type': media.get('media_type', 'IMAGE').lower(),
-                'media_url': media.get('media_url'),
-                'thumbnail_url': media.get('thumbnail_url'),
-                'permalink': media.get('permalink'),
-                'caption': media.get('caption', ''),
-                'posted_at': datetime.fromisoformat(media['timestamp'].replace('Z', '+00:00')),
-                'fetched_at': datetime.now(timezone.utc),
-                'likes_count': None,  # Not available in Basic Display API
-                'comments_count': None,  # Not available in Basic Display API
-                'is_video': media.get('media_type') == 'VIDEO'
-            }
-            
-            # Save to Firestore
-            posts_ref.add(post_data)
-            posts_fetched += 1
-        
-        logger.info(f"Fetched {posts_fetched} new posts for @{username} via OAuth")
-        
-        return {
-            'posts_fetched': posts_fetched,
-            'method': 'oauth',
-            'success': True
-        }
     
     def _sync_instagram_public(self, account, max_posts=12):
         """
@@ -751,21 +461,3 @@ class SocialsService:
             logger.error(f"Error syncing Instagram posts: {str(e)}")
             raise e
     
-    # ========== Token Management (Phase 6+) ==========
-    
-    def _get_valid_access_token(self, account_id):
-        """Get a valid access token, refreshing if necessary."""
-        # Will be implemented in Phase 6
-        raise NotImplementedError("Token management will be implemented in Phase 6")
-    
-    def _encrypt_token(self, token):
-        """Encrypt a token for storage."""
-        if not token:
-            return None
-        return self.cipher_suite.encrypt(token.encode()).decode()
-    
-    def _decrypt_token(self, encrypted_token):
-        """Decrypt a stored token."""
-        if not encrypted_token:
-            return None
-        return self.cipher_suite.decrypt(encrypted_token.encode()).decode()

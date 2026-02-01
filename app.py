@@ -166,6 +166,37 @@ def create_app():
         if token:
             resp.headers['X-CSRF-Token'] = token
         return resp
+
+    # --- Security Headers ---
+    # Protect against XSS, clickjacking, MIME sniffing, and other attacks
+    @app.after_request
+    def add_security_headers(resp):
+        # Prevent clickjacking - deny all framing
+        resp.headers['X-Frame-Options'] = 'DENY'
+        # Prevent MIME type sniffing
+        resp.headers['X-Content-Type-Options'] = 'nosniff'
+        # Enable XSS filter (legacy browsers)
+        resp.headers['X-XSS-Protection'] = '1; mode=block'
+        # Referrer policy - don't leak full URL to external sites
+        resp.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        # Permissions policy - disable unnecessary browser features
+        resp.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+        # Content Security Policy - restrict resource loading
+        # Note: 'unsafe-inline' needed for Vite dev server and some inline styles
+        # In production, consider using nonces or hashes for stricter CSP
+        if not app.config.get('DEBUG'):
+            resp.headers['Content-Security-Policy'] = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://js.stripe.com; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                "font-src 'self' https://fonts.gstatic.com; "
+                "img-src 'self' data: blob: https://*.r2.cloudflarestorage.com https://*.googleusercontent.com; "
+                "connect-src 'self' https://api.stripe.com https://*.firebaseio.com https://*.googleapis.com; "
+                "frame-src https://js.stripe.com; "
+                "object-src 'none'; "
+                "base-uri 'self';"
+            )
+        return resp
     
     # Make session accessible in templates
     @app.context_processor
