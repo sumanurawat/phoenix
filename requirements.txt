@@ -4,11 +4,8 @@ gunicorn==21.2.0
 google-cloud-aiplatform==1.87.0  # For Vertex AI Imagen 3 (image generation)
 python-dotenv==1.0.0  # For environment variable management
 flask-session==0.5.0  # For server-side session management
-PyPDF2==3.0.1  # For PDF text extraction
-python-docx==1.0.1  # For DOCX text extraction
 Werkzeug==2.3.7  # For secure file handling
 google-api-python-client==2.70.0  # For Google API client
-beautifulsoup4==4.12.2
 firebase-admin==6.2.0  # For Firebase Authentication
 requests==2.31.0  # For HTTP requests
 google-cloud-logging==3.8.0  # For GCP Cloud Logging API (log fetching script)
