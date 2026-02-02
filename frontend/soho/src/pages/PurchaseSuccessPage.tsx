@@ -8,7 +8,7 @@ export const PurchaseSuccessPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { balance, loading: balanceLoading, refresh: refreshBalance } = useTokenBalance();
+  const { balance, loading: balanceLoading, refreshBalance } = useTokenBalance();
   const [countdown, setCountdown] = useState(5);
 
   const sessionId = searchParams.get('session_id');
