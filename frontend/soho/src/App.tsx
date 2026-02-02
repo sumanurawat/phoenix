@@ -13,6 +13,7 @@ import { DemoPage } from './pages/DemoPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage';
 import { UsernameSetupPage } from './pages/UsernameSetupPage';
+import { PurchaseSuccessPage } from './pages/PurchaseSuccessPage';
 
 function App() {
   const { loading } = useAuth();
@@ -49,6 +50,7 @@ function App() {
         <Route path="/tokens" element={<TokensPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/purchase-success" element={<PurchaseSuccessPage />} />
 
         {/* Instagram-style profile URLs: friedmomo.com/username
             This catch-all route must be LAST - it only matches if no other route does.
