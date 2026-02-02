@@ -90,7 +90,11 @@ def create_checkout_session():
         # Get Stripe price ID from environment
         price_id_env = package_config['price_id_env']
         price_id = os.getenv(price_id_env)
-        
+
+        # Strip whitespace/newlines that may come from secrets
+        if price_id:
+            price_id = price_id.strip()
+
         if not price_id:
             logger.error(f"Stripe price ID not configured for {package_id} ({price_id_env})")
             return jsonify({'error': 'Package not available - contact support'}), 500
