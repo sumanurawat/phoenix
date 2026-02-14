@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Header } from '../components/layout/Header';
 
@@ -22,7 +22,7 @@ export const LandingPage = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-momo-black via-momo-purple/20 to-momo-black text-momo-white">
         <Header />
-        
+
         {/* Hero Section for Logged-in Users */}
         <section className="pt-32 pb-20 px-4">
           <div className="max-w-7xl mx-auto text-center">
@@ -90,8 +90,9 @@ export const LandingPage = () => {
           <div className="flex justify-between items-center h-16">
             <button
               onClick={() => navigate('/')}
-              className="hover:opacity-80 transition"
+              className="hover:opacity-80 transition flex items-center gap-2"
             >
+              <img src="/logo.png" alt="Fried Momo" className="w-8 h-8" />
               <span className="text-2xl font-bold bg-gradient-to-r from-momo-purple to-momo-blue bg-clip-text text-transparent">
                 fried momo
               </span>
@@ -366,8 +367,8 @@ export const LandingPage = () => {
             <div className="p-8 bg-momo-gray-800/50 backdrop-blur rounded-2xl border border-momo-gray-700 hover:border-momo-purple transition group">
               <div className="inline-block p-4 bg-momo-purple/20 rounded-xl mb-6 group-hover:scale-110 transition">
                 <svg className="w-10 h-10 text-momo-purple" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
-                  <path d="M12 8.5l-3 3 3 3 3-3-3-3z" opacity="0.7"/>
+                  <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
+                  <path d="M12 8.5l-3 3 3 3 3-3-3-3z" opacity="0.7" />
                 </svg>
               </div>
               <h3 className="text-2xl font-bold mb-4">💎 Own Your Work</h3>
@@ -415,6 +416,7 @@ export const LandingPage = () => {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
+              <img src="/logo.png" alt="Fried Momo" className="w-6 h-6" />
               <span className="text-xl font-bold bg-gradient-to-r from-momo-purple to-momo-blue bg-clip-text text-transparent">
                 fried momo
               </span>
@@ -425,9 +427,9 @@ export const LandingPage = () => {
             </div>
 
             <div className="flex gap-6 text-momo-gray-400">
-              <a href="#" className="hover:text-momo-purple transition">Privacy</a>
-              <a href="#" className="hover:text-momo-purple transition">Terms</a>
-              <a href="#" className="hover:text-momo-purple transition">Contact</a>
+              <Link to="/privacy" className="hover:text-momo-purple transition">Privacy</Link>
+              <Link to="/terms" className="hover:text-momo-purple transition">Terms</Link>
+              <Link to="/contact" className="hover:text-momo-purple transition">Contact</Link>
             </div>
           </div>
 

@@ -13,6 +13,10 @@ import { DemoPage } from './pages/DemoPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage';
 import { UsernameSetupPage } from './pages/UsernameSetupPage';
+import { PrivacyPage } from './pages/PrivacyPage';
+import { TermsPage } from './pages/TermsPage';
+import { ContactPage } from './pages/ContactPage';
+import { ScrollToTop } from './components/utils/ScrollToTop';
 
 function App() {
   const { loading } = useAuth();
@@ -29,31 +33,35 @@ function App() {
   return (
     <TokenBalanceProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
-        {/* Landing page - shows different content based on auth status */}
-        <Route path="/" element={<LandingPage />} />
+          {/* Landing page - shows different content based on auth status */}
+          <Route path="/" element={<LandingPage />} />
 
-        {/* Auth routes */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
-        <Route path="/username-setup" element={<UsernameSetupPage />} />
+          {/* Auth routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+          <Route path="/username-setup" element={<UsernameSetupPage />} />
 
-        {/* Public routes (accessible to everyone) */}
-        <Route path="/explore" element={<ExplorePage />} />
-        <Route path="/demo" element={<DemoPage />} />
+          {/* Public routes (accessible to everyone) */}
+          <Route path="/explore" element={<ExplorePage />} />
+          <Route path="/demo" element={<DemoPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/contact" element={<ContactPage />} />
 
-        {/* Protected routes (require authentication) */}
-        <Route path="/create" element={<CreatePage />} />
-        <Route path="/profile/:username" element={<ProfilePage />} />
-        <Route path="/tokens" element={<TokensPage />} />
-        <Route path="/transactions" element={<TransactionsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
+          {/* Protected routes (require authentication) */}
+          <Route path="/create" element={<CreatePage />} />
+          <Route path="/profile/:username" element={<ProfilePage />} />
+          <Route path="/tokens" element={<TokensPage />} />
+          <Route path="/transactions" element={<TransactionsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
 
-        {/* Instagram-style profile URLs: friedmomo.com/username
+          {/* Instagram-style profile URLs: friedmomo.com/username
             This catch-all route must be LAST - it only matches if no other route does.
             Profiles are public and shareable via direct username links. */}
-        <Route path="/:username" element={<ProfilePage />} />
+          <Route path="/:username" element={<ProfilePage />} />
         </Routes>
       </BrowserRouter>
     </TokenBalanceProvider>

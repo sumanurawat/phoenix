@@ -56,6 +56,7 @@ from api.image_routes import image_bp
 from api.generation_routes import generation_bp  # Unified creation endpoint (images + videos for Friedmomo)
 from api.user_routes import user_bp
 from api.feed_routes import feed_bp
+from api.contact_routes import contact_bp
 
 # Import services (AFTER Firebase initialization)
 from services.subscription_middleware import (
@@ -182,6 +183,7 @@ def create_app():
     app.register_blueprint(generation_bp)  # Unified draft-first creation with Cloud Run Jobs (Friedmomo)
     app.register_blueprint(user_bp)  # Phase 4: User profiles & usernames
     app.register_blueprint(feed_bp)  # Phase 4: Social feed & likes
+    app.register_blueprint(contact_bp)
     
     # Setup subscription middleware
     @app.before_request

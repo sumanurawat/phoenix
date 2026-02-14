@@ -49,10 +49,11 @@ export const Header = () => {
         {/* Brand */}
         <div className="flex items-center gap-8">
           <button
-            className="cursor-pointer hover:opacity-80 transition"
+            className="cursor-pointer hover:opacity-80 transition flex items-center gap-2"
             onClick={() => navigate('/')}
             title="Go to home"
           >
+            <img src="/logo.png" alt="Fried Momo" className="w-8 h-8" />
             <span className="text-2xl font-bold bg-gradient-to-r from-momo-purple to-momo-blue bg-clip-text text-transparent">
               fried momo
             </span>
@@ -63,8 +64,8 @@ export const Header = () => {
         <nav className="flex items-center gap-6">
           <button
             className={`p-2 rounded-lg transition-colors ${location.pathname === '/explore'
-                ? 'bg-momo-gray-800 text-momo-purple'
-                : 'hover:bg-momo-gray-800 text-momo-white'
+              ? 'bg-momo-gray-800 text-momo-purple'
+              : 'hover:bg-momo-gray-800 text-momo-white'
               }`}
             title="Explore"
             onClick={() => navigate('/explore')}
@@ -76,8 +77,8 @@ export const Header = () => {
 
           <button
             className={`p-2 rounded-lg transition-colors ${location.pathname === '/create'
-                ? 'bg-momo-gray-800'
-                : 'hover:bg-momo-gray-800'
+              ? 'bg-momo-gray-800'
+              : 'hover:bg-momo-gray-800'
               }`}
             title="Create"
             onClick={() => navigate('/create')}
@@ -89,8 +90,8 @@ export const Header = () => {
 
           <button
             className={`p-2 rounded-lg transition-colors ${location.pathname.startsWith('/profile')
-                ? 'bg-momo-gray-800 text-momo-purple'
-                : 'hover:bg-momo-gray-800 text-momo-white'
+              ? 'bg-momo-gray-800 text-momo-purple'
+              : 'hover:bg-momo-gray-800 text-momo-white'
               } ${!hasUsername && 'opacity-50 cursor-default'}`}
             title={hasUsername ? 'Profile' : 'Set up your username first'}
             onClick={() => hasUsername && user?.username && navigate(`/profile/${user.username}`)}
